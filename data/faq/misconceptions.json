@@ -1,0 +1,10 @@
+[
+  {
+    "faq_id": "faq_gd_001",
+    "related_node_id": "ml_gradient_descent",
+    "question": "梯度下降为什么沿负梯度方向更新？",
+    "answer": "梯度方向表示函数值上升最快的方向，因此沿负梯度方向移动通常可以让损失函数下降。",
+    "misconception": "把梯度方向误认为损失下降最快的方向。",
+    "source_ids": ["book_zhou_ml", "book_mml_deisenroth", "book_pumpkin_ml"]
+  }
+]

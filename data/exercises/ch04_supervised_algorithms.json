@@ -1,0 +1,500 @@
+{
+  "chapter_id": "ch04",
+  "chapter_title": "经典监督学习算法",
+  "exercise_schema_version": "v1",
+  "status": "drafted",
+  "target_count": 8,
+  "exercises": [
+    {
+      "exercise_id": "ex_ch04_dt_001",
+      "version": "v1",
+      "title": "决策树划分节点的依据",
+      "type": "choice",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_decision_tree",
+      "assesses": ["ml_decision_tree"],
+      "also_assesses": ["ml_performance_metrics"],
+      "prerequisite_node_ids": ["ml_supervised_unsupervised", "ml_performance_metrics"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "训练决策树时，选择划分特征通常希望达到什么目标？",
+      "options": [
+        {"label": "A", "text": "让划分后的子节点样本更纯，类别混杂程度更低"},
+        {"label": "B", "text": "让树的每个节点都随机选择特征，不考虑数据"},
+        {"label": "C", "text": "让所有样本都被分到同一个叶子节点"},
+        {"label": "D", "text": "只选择编号最大的特征"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "决策树划分通常希望降低不纯度，例如提升信息增益或降低基尼指数，使子节点类别更集中。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾信息增益、基尼指数和节点纯度之间的关系。",
+        "by_option": {
+          "B": "普通决策树划分不是完全随机选择，而是根据某种划分准则选择较优特征。",
+          "C": "所有样本都在同一叶子节点通常无法有效分类。",
+          "D": "特征编号本身不是划分优劣的依据。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_decision_tree"],
+          "recommend_review_nodes": ["ml_supervised_unsupervised", "ml_performance_metrics"]
+        }
+      },
+      "misconception_tags": ["decision_tree_random_split", "ignore_node_purity"],
+      "source_ids": ["book_zhou_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["decision-tree", "split-criterion", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch04_dt_002",
+      "version": "v1",
+      "title": "计算二分类节点的基尼指数",
+      "type": "coding",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_decision_tree",
+      "assesses": ["ml_decision_tree"],
+      "also_assesses": ["ml_performance_metrics"],
+      "prerequisite_node_ids": ["ml_probability_statistics_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `gini_binary` 函数。输入一个节点中正类样本数 `pos` 和负类样本数 `neg`，返回该节点的二分类基尼指数。",
+      "starter_code": "def gini_binary(pos, neg):\n    # TODO: gini = 1 - p_pos ** 2 - p_neg ** 2\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def gini_binary(pos, neg):\n    total = pos + neg\n    if total == 0:\n        return 0\n    p_pos = pos / total\n    p_neg = neg / total\n    return 1 - p_pos ** 2 - p_neg ** 2\n",
+        "explanation": "二分类节点的基尼指数为 1 - p_pos^2 - p_neg^2，越小表示节点越纯。"
+      },
+      "rubric": [
+        {"criterion": "正确计算总样本数", "score": 1},
+        {"criterion": "正确计算两个类别比例", "score": 1},
+        {"criterion": "正确套用基尼指数公式", "score": 1},
+        {"criterion": "处理空节点情况", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"pos": 3, "neg": 1},
+          "expected": 0.375
+        },
+        {
+          "input": {"pos": 2, "neg": 2},
+          "expected": 0.5
+        },
+        {
+          "input": {"pos": 0, "neg": 0},
+          "expected": 0
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否先计算类别比例，再代入 1 - sum(p_k^2)。",
+        "common_errors": {
+          "use_counts_directly": "你可能直接使用样本数平方，基尼指数需要类别比例。",
+          "missing_empty_case": "如果节点样本数为 0，本题约定返回 0。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_decision_tree"],
+          "recommend_review_nodes": ["ml_probability_statistics_basic"]
+        }
+      },
+      "misconception_tags": ["gini_formula_confusion", "use_counts_instead_of_probability"],
+      "source_ids": ["book_zhou_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["decision-tree", "gini", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch04_svm_001",
+      "version": "v1",
+      "title": "支持向量机的最大间隔思想",
+      "type": "short_answer",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_svm",
+      "assesses": ["ml_svm"],
+      "also_assesses": ["ml_linear_algebra_basic", "ml_performance_metrics"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic", "ml_linear_discriminant_analysis"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "请用自己的话解释：支持向量机中的“最大间隔”想法是什么？为什么它有助于分类？",
+      "options": [],
+      "answer": {
+        "reference_answer": "支持向量机希望找到一个分类超平面，使两类样本中离超平面最近的点到超平面的距离尽可能大。更大的间隔通常意味着分类边界更稳健，对边界附近扰动更不敏感，因此有助于泛化。",
+        "key_points": ["找到分类超平面", "关注离超平面最近的样本", "最大化类别间隔", "更大间隔有助于稳健分类或泛化"]
+      },
+      "rubric": [
+        {"criterion": "说明 SVM 寻找分类超平面", "score": 1},
+        {"criterion": "说明支持向量是靠近边界的关键样本", "score": 1},
+        {"criterion": "说明最大化间隔", "score": 1},
+        {"criterion": "说明最大间隔和稳健性/泛化有关", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请围绕超平面、支持向量和间隔三个关键词组织回答。",
+        "missing_key_point_feedback": {
+          "关注离超平面最近的样本": "需要说明支持向量是决定间隔的关键样本。",
+          "更大间隔有助于稳健分类或泛化": "需要说明为什么不只追求把训练样本分开。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_svm"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic", "ml_linear_discriminant_analysis"]
+        }
+      },
+      "misconception_tags": ["svm_only_fits_training_points", "ignore_margin"],
+      "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["svm", "margin", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch04_svm_002",
+      "version": "v1",
+      "title": "核函数适合解决什么问题",
+      "type": "choice",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_svm",
+      "assesses": ["ml_svm"],
+      "also_assesses": ["ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic", "ml_linear_discriminant_analysis"],
+      "difficulty": 3,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "application"],
+      "question": "在 SVM 中引入核函数的主要目的是什么？",
+      "options": [
+        {"label": "A", "text": "在不显式构造高维特征的情况下处理非线性分类问题"},
+        {"label": "B", "text": "让模型完全不需要训练数据"},
+        {"label": "C", "text": "把所有分类问题都变成无监督聚类问题"},
+        {"label": "D", "text": "保证训练集和测试集准确率都为 100%"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "核函数可以通过核技巧计算高维特征空间中的内积，使 SVM 能处理非线性可分问题。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾核技巧和非线性分类之间的关系。",
+        "by_option": {
+          "B": "核函数不会取消训练数据需求。",
+          "C": "SVM 仍然是监督学习方法，不是聚类。",
+          "D": "核函数不能保证任何数据集上都 100% 准确。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_svm"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic"]
+        }
+      },
+      "misconception_tags": ["kernel_guarantees_accuracy", "svm_unsupervised_confusion"],
+      "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["svm", "kernel", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch04_bayes_001",
+      "version": "v1",
+      "title": "朴素贝叶斯为什么“朴素”",
+      "type": "choice",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_bayesian_classifier",
+      "assesses": ["ml_bayesian_classifier"],
+      "also_assesses": ["ml_probability_statistics_basic"],
+      "prerequisite_node_ids": ["ml_probability_statistics_basic"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "朴素贝叶斯分类器中的“朴素”主要指什么假设？",
+      "options": [
+        {"label": "A", "text": "给定类别后，各特征之间条件独立"},
+        {"label": "B", "text": "所有样本没有标签"},
+        {"label": "C", "text": "模型不需要概率"},
+        {"label": "D", "text": "所有特征必须完全相同"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "朴素贝叶斯的核心简化是假设在给定类别条件下，各特征条件独立。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾朴素贝叶斯的条件独立假设。",
+        "by_option": {
+          "B": "朴素贝叶斯是监督学习分类方法，需要标签估计类别相关概率。",
+          "C": "贝叶斯分类器正是基于概率建模。",
+          "D": "特征完全相同不是朴素贝叶斯的假设。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_bayesian_classifier"],
+          "recommend_review_nodes": ["ml_probability_statistics_basic"]
+        }
+      },
+      "misconception_tags": ["naive_bayes_no_probability", "conditional_independence_confusion"],
+      "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["bayes", "naive-bayes", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch04_bayes_002",
+      "version": "v1",
+      "title": "用贝叶斯思想选择类别",
+      "type": "coding",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_bayesian_classifier",
+      "assesses": ["ml_bayesian_classifier"],
+      "also_assesses": ["ml_probability_statistics_basic"],
+      "prerequisite_node_ids": ["ml_probability_statistics_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `choose_class` 函数。给定每个类别的先验概率 `priors` 和似然 `likelihoods`，返回 posterior score 最大的类别。这里 posterior score = prior * likelihood。",
+      "starter_code": "def choose_class(priors, likelihoods):\n    # priors and likelihoods are dicts with the same keys\n    # TODO: return class with max priors[c] * likelihoods[c]\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def choose_class(priors, likelihoods):\n    return max(priors.keys(), key=lambda c: priors[c] * likelihoods[c])\n",
+        "explanation": "贝叶斯分类常比较各类别的先验与似然乘积，选择得分最大的类别。"
+      },
+      "rubric": [
+        {"criterion": "正确遍历类别", "score": 1},
+        {"criterion": "正确计算 prior * likelihood", "score": 2},
+        {"criterion": "返回得分最大的类别", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"priors": {"spam": 0.4, "normal": 0.6}, "likelihoods": {"spam": 0.8, "normal": 0.3}},
+          "expected": "spam"
+        },
+        {
+          "input": {"priors": {"A": 0.7, "B": 0.3}, "likelihoods": {"A": 0.2, "B": 0.8}},
+          "expected": "B"
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否同时使用了先验概率和似然。",
+        "common_errors": {
+          "use_prior_only": "你可能只比较了先验，没有乘以似然。",
+          "use_likelihood_only": "你可能只比较了似然，没有考虑先验。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_bayesian_classifier", "ml_probability_statistics_basic"],
+          "recommend_review_nodes": ["ml_probability_statistics_basic"]
+        }
+      },
+      "misconception_tags": ["ignore_prior", "ignore_likelihood"],
+      "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["bayes", "classification", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch04_ens_001",
+      "version": "v1",
+      "title": "Bagging 和 Boosting 的基本区别",
+      "type": "short_answer",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_ensemble_learning",
+      "assesses": ["ml_ensemble_learning"],
+      "also_assesses": ["ml_random_forest", "ml_bias_variance"],
+      "prerequisite_node_ids": ["ml_decision_tree", "ml_bias_variance"],
+      "difficulty": 3,
+      "estimated_minutes": 7,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "请简要比较 Bagging 和 Boosting 的基本思想。它们在组合多个基学习器时有什么不同？",
+      "options": [],
+      "answer": {
+        "reference_answer": "Bagging 通常并行训练多个基学习器，通过随机采样和投票/平均降低方差，随机森林是典型例子。Boosting 通常串行训练基学习器，后续模型更关注前面模型分错或难学的样本，通过逐步提升整体表现。",
+        "key_points": ["Bagging 通常并行训练", "Bagging 通过采样和平均/投票降低方差", "Boosting 通常串行训练", "Boosting 关注前面模型的错误或难样本"]
+      },
+      "rubric": [
+        {"criterion": "说明 Bagging 通常并行训练多个基学习器", "score": 1},
+        {"criterion": "说明 Bagging 的采样和平均/投票思想", "score": 1},
+        {"criterion": "说明 Boosting 通常串行训练", "score": 1},
+        {"criterion": "说明 Boosting 关注错误样本或逐步提升", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从并行/串行、采样/加权错误样本两个角度比较。",
+        "missing_key_point_feedback": {
+          "Bagging 通过采样和平均/投票降低方差": "需要说明 Bagging 不只是简单堆模型，还强调随机采样和组合。",
+          "Boosting 关注前面模型的错误或难样本": "需要说明 Boosting 的后续学习器会针对前面不足继续学习。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_ensemble_learning"],
+          "recommend_review_nodes": ["ml_decision_tree", "ml_bias_variance"]
+        }
+      },
+      "misconception_tags": ["bagging_boosting_confusion", "ensemble_is_simple_average_only"],
+      "source_ids": ["book_zhou_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["ensemble", "bagging", "boosting", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch04_ens_002",
+      "version": "v1",
+      "title": "随机森林为什么能降低方差",
+      "type": "case_analysis",
+      "chapter_id": "ch04",
+      "related_node_id": "ml_ensemble_learning",
+      "assesses": ["ml_ensemble_learning"],
+      "also_assesses": ["ml_random_forest", "ml_decision_tree", "ml_overfitting_underfitting"],
+      "prerequisite_node_ids": ["ml_decision_tree", "ml_bias_variance"],
+      "difficulty": 3,
+      "estimated_minutes": 7,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["application"],
+      "question": "一个单棵决策树在训练集上表现很好，但验证集波动很大。你会建议尝试随机森林吗？请说明理由。",
+      "case_context": "该任务有足够训练样本，单棵树容易受训练数据扰动影响。",
+      "options": [],
+      "answer": {
+        "reference_answer": "可以建议尝试随机森林。随机森林通过对样本和特征引入随机性，训练多棵决策树并进行投票或平均，能降低单棵树对训练数据扰动的敏感性，从而降低方差并改善泛化稳定性。",
+        "key_points": ["建议尝试随机森林", "随机森林组合多棵决策树", "通过随机采样或特征随机性增加多样性", "投票/平均有助于降低方差或提升稳定性"]
+      },
+      "rubric": [
+        {"criterion": "明确建议或合理考虑随机森林", "score": 1},
+        {"criterion": "说明随机森林组合多棵决策树", "score": 1},
+        {"criterion": "说明随机性带来模型多样性", "score": 1},
+        {"criterion": "说明投票/平均降低方差或提升泛化稳定性", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从单棵树高方差、多棵树组合和投票/平均三个角度分析。",
+        "missing_key_point_feedback": {
+          "通过随机采样或特征随机性增加多样性": "需要说明随机森林不是复制同一棵树很多次。",
+          "投票/平均有助于降低方差或提升稳定性": "需要说明组合为什么比单棵树更稳。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_ensemble_learning", "ml_random_forest"],
+          "recommend_review_nodes": ["ml_decision_tree", "ml_bias_variance"]
+        }
+      },
+      "misconception_tags": ["random_forest_is_one_tree", "ignore_model_variance"],
+      "source_ids": ["book_zhou_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["ensemble", "random-forest", "decision-tree", "p0"]
+    }
+  ]
+}

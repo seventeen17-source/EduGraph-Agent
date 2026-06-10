@@ -1,0 +1,488 @@
+{
+  "chapter_id": "ch01",
+  "chapter_title": "机器学习导论与模型评估",
+  "exercise_schema_version": "v1",
+  "status": "drafted",
+  "target_count": 8,
+  "exercises": [
+    {
+      "exercise_id": "ex_ch01_overfit_001",
+      "version": "v1",
+      "title": "根据训练与验证表现判断过拟合",
+      "type": "choice",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_overfitting_underfitting",
+      "assesses": ["ml_overfitting_underfitting"],
+      "also_assesses": ["ml_generalization"],
+      "prerequisite_node_ids": ["ml_generalization"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "application"],
+      "question": "某模型在训练集上准确率 98%，但在验证集上准确率只有 62%。这种现象最可能说明什么？",
+      "options": [
+        {"label": "A", "text": "模型可能过拟合了训练数据"},
+        {"label": "B", "text": "模型一定欠拟合"},
+        {"label": "C", "text": "验证集准确率不重要，只看训练集即可"},
+        {"label": "D", "text": "模型不需要任何调整"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "训练集表现很好而验证集表现明显较差，通常说明模型对训练数据拟合过强，泛化能力不足。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请关注训练集表现和验证集表现之间的差距。",
+        "by_option": {
+          "B": "欠拟合通常表现为训练集和验证集效果都不理想。",
+          "C": "验证集用于估计泛化表现，不能忽略。",
+          "D": "训练和验证表现差距很大时，通常需要调整模型或训练策略。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_overfitting_underfitting"],
+          "recommend_review_nodes": ["ml_generalization", "ml_dataset_split"]
+        }
+      },
+      "misconception_tags": ["training_accuracy_is_enough", "overfit_underfit_confusion"],
+      "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["overfitting", "generalization", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch01_overfit_002",
+      "version": "v1",
+      "title": "区分过拟合与欠拟合",
+      "type": "short_answer",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_overfitting_underfitting",
+      "assesses": ["ml_overfitting_underfitting"],
+      "also_assesses": ["ml_bias_variance"],
+      "prerequisite_node_ids": ["ml_generalization"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "application"],
+      "question": "请说明过拟合和欠拟合分别是什么，并各举一个可能的解决思路。",
+      "options": [],
+      "answer": {
+        "reference_answer": "过拟合是模型对训练数据细节甚至噪声拟合过强，训练表现好但泛化差，可通过正则化、减少模型复杂度、增加数据等方式缓解。欠拟合是模型表达能力不足或训练不充分，训练和验证表现都较差，可通过提高模型复杂度、增加特征或训练更充分来缓解。",
+        "key_points": ["过拟合训练好但泛化差", "欠拟合训练和验证都可能差", "给出缓解过拟合的方法", "给出缓解欠拟合的方法"]
+      },
+      "rubric": [
+        {"criterion": "正确解释过拟合", "score": 1},
+        {"criterion": "正确解释欠拟合", "score": 1},
+        {"criterion": "给出合理的过拟合缓解方法", "score": 1},
+        {"criterion": "给出合理的欠拟合缓解方法", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请分别从训练表现、验证表现和模型复杂度角度区分二者。",
+        "missing_key_point_feedback": {
+          "过拟合训练好但泛化差": "需要说明过拟合的关键是训练好但未见数据表现差。",
+          "欠拟合训练和验证都可能差": "需要说明欠拟合通常连训练数据也没有学好。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_overfitting_underfitting"],
+          "recommend_review_nodes": ["ml_generalization", "ml_bias_variance"]
+        }
+      },
+      "misconception_tags": ["overfit_underfit_confusion", "only_data_size_matters"],
+      "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["overfitting", "underfitting", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch01_reg_001",
+      "version": "v1",
+      "title": "正则化为什么能缓解过拟合",
+      "type": "choice",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_regularization",
+      "assesses": ["ml_regularization"],
+      "also_assesses": ["ml_overfitting_underfitting", "ml_loss_function"],
+      "prerequisite_node_ids": ["ml_overfitting_underfitting", "ml_loss_function"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "正则化项通常通过什么方式帮助缓解过拟合？",
+      "options": [
+        {"label": "A", "text": "惩罚过大的参数或过高的模型复杂度"},
+        {"label": "B", "text": "删除测试集中的错误样本"},
+        {"label": "C", "text": "保证模型在任何数据上都达到 100% 准确率"},
+        {"label": "D", "text": "让模型完全不训练"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "正则化通常在目标函数中加入对参数规模或复杂度的惩罚，降低模型过度拟合训练数据的风险。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾正则化和模型复杂度之间的关系。",
+        "by_option": {
+          "B": "正则化不会通过修改测试集来提高表现。",
+          "C": "正则化不能保证任何数据上都 100% 准确。",
+          "D": "正则化不是停止训练，而是在训练目标中加入约束或惩罚。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_regularization"],
+          "recommend_review_nodes": ["ml_overfitting_underfitting", "ml_loss_function"]
+        }
+      },
+      "misconception_tags": ["regularization_guarantees_accuracy", "regularization_changes_test_set"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["regularization", "overfitting", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch01_reg_002",
+      "version": "v1",
+      "title": "L1 与 L2 正则化的直觉区别",
+      "type": "case_analysis",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_regularization",
+      "assesses": ["ml_regularization"],
+      "also_assesses": ["ml_sparse_learning"],
+      "prerequisite_node_ids": ["ml_overfitting_underfitting", "ml_loss_function"],
+      "difficulty": 3,
+      "estimated_minutes": 7,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["application"],
+      "question": "如果希望模型倾向于只保留少量关键特征，从而得到更稀疏的参数，你会优先考虑 L1 还是 L2 正则化？为什么？",
+      "case_context": "某个特征工程后的模型包含大量候选特征，团队希望模型更容易解释，并减少无关特征的影响。",
+      "options": [],
+      "answer": {
+        "reference_answer": "可以优先考虑 L1 正则化。L1 正则化更容易把一部分参数压到 0，从而产生稀疏解，有助于特征选择和解释；L2 正则化更常见的效果是让参数整体变小但不一定为 0。",
+        "key_points": ["优先考虑 L1 正则化", "L1 更容易产生稀疏参数", "稀疏参数有助于特征选择或解释", "L2 通常让参数变小但不一定为 0"]
+      },
+      "rubric": [
+        {"criterion": "明确选择 L1 正则化", "score": 1},
+        {"criterion": "说明 L1 更容易产生稀疏解", "score": 1},
+        {"criterion": "联系特征选择或可解释性", "score": 1},
+        {"criterion": "能与 L2 的作用做基本对比", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从参数是否容易变为 0 的角度比较 L1 和 L2。",
+        "missing_key_point_feedback": {
+          "L1 更容易产生稀疏参数": "需要说明 L1 与稀疏解之间的关系。",
+          "能与 L2 的作用做基本对比": "需要指出 L2 更偏向压小参数规模，而不是大量置零。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_regularization"],
+          "recommend_review_nodes": ["ml_overfitting_underfitting", "ml_loss_function"]
+        }
+      },
+      "misconception_tags": ["l1_l2_same", "regularization_only_reduces_accuracy"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["regularization", "l1", "l2", "sparsity", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch01_eval_001",
+      "version": "v1",
+      "title": "训练集、验证集、测试集的作用",
+      "type": "choice",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_evaluation_methods",
+      "assesses": ["ml_evaluation_methods"],
+      "also_assesses": ["ml_dataset_split"],
+      "prerequisite_node_ids": ["ml_dataset_split", "ml_generalization"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "在常见机器学习流程中，验证集最主要的用途是什么？",
+      "options": [
+        {"label": "A", "text": "用于模型选择和调参，估计不同设置的泛化表现"},
+        {"label": "B", "text": "用于最终报告中唯一可信的测试结果"},
+        {"label": "C", "text": "用于替代训练集来更新模型参数"},
+        {"label": "D", "text": "用于删除所有分类错误的样本"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "验证集常用于调参和模型选择；测试集通常保留到最后，用于较客观地评估最终模型。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请区分训练集、验证集和测试集各自的角色。",
+        "by_option": {
+          "B": "最终报告通常应尽量使用独立测试集，而不是反复调参用过的验证集。",
+          "C": "训练集主要用于学习参数，验证集主要用于模型选择。",
+          "D": "验证集不是用来删除错误样本的。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_evaluation_methods", "ml_dataset_split"],
+          "recommend_review_nodes": ["ml_dataset_split", "ml_generalization"]
+        }
+      },
+      "misconception_tags": ["validation_test_confusion", "use_validation_for_training"],
+      "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["evaluation", "dataset-split", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch01_eval_002",
+      "version": "v1",
+      "title": "什么时候使用交叉验证",
+      "type": "short_answer",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_evaluation_methods",
+      "assesses": ["ml_evaluation_methods"],
+      "also_assesses": ["ml_generalization"],
+      "prerequisite_node_ids": ["ml_dataset_split", "ml_generalization"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "application"],
+      "question": "为什么在数据量较小时，经常会考虑使用 K 折交叉验证？它相比单次留出法有什么好处？",
+      "options": [],
+      "answer": {
+        "reference_answer": "数据量较小时，单次划分可能导致评估结果受偶然划分影响较大。K 折交叉验证会多次轮换训练和验证划分，让每个样本都有机会作为验证样本，从而得到相对更稳定的性能估计。",
+        "key_points": ["数据少时单次划分不稳定", "K 折会多次划分训练和验证", "每个样本有机会参与验证", "性能估计通常更稳定"]
+      },
+      "rubric": [
+        {"criterion": "说明小数据下单次划分可能不稳定", "score": 1},
+        {"criterion": "说明 K 折会多次轮换划分", "score": 1},
+        {"criterion": "说明样本可轮流作为验证样本", "score": 1},
+        {"criterion": "说明估计更稳定或更充分利用数据", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从数据利用率和评估稳定性两个角度解释交叉验证。",
+        "missing_key_point_feedback": {
+          "K 折会多次划分训练和验证": "需要说明交叉验证不是只做一次划分。",
+          "性能估计通常更稳定": "需要说明多次评估能减小偶然划分带来的影响。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_evaluation_methods"],
+          "recommend_review_nodes": ["ml_dataset_split", "ml_generalization"]
+        }
+      },
+      "misconception_tags": ["cross_validation_is_data_augmentation", "single_split_always_enough"],
+      "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["evaluation", "cross-validation", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch01_metric_001",
+      "version": "v1",
+      "title": "准确率在类别不平衡时的问题",
+      "type": "case_analysis",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_performance_metrics",
+      "assesses": ["ml_performance_metrics"],
+      "also_assesses": ["ml_evaluation_methods"],
+      "prerequisite_node_ids": ["ml_evaluation_methods"],
+      "difficulty": 3,
+      "estimated_minutes": 7,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["application"],
+      "question": "某疾病筛查任务中，阳性样本只占 1%。一个模型总是预测阴性，准确率仍可达到 99%。你认为只用准确率评价是否合适？还应关注哪些指标？",
+      "case_context": "该任务更关心尽可能发现阳性病例，同时也希望控制误报。",
+      "options": [],
+      "answer": {
+        "reference_answer": "只用准确率不合适，因为类别极不平衡时，总是预测多数类也能得到很高准确率。应关注召回率来衡量发现阳性病例的能力，也可关注精确率、F1、AUC 或混淆矩阵，以平衡漏报和误报。",
+        "key_points": ["指出只用准确率不合适", "说明类别不平衡会让准确率误导", "关注召回率", "可补充精确率、F1、AUC 或混淆矩阵"]
+      },
+      "rubric": [
+        {"criterion": "指出只看准确率不合适", "score": 1},
+        {"criterion": "说明类别不平衡导致准确率误导", "score": 1},
+        {"criterion": "提出应关注召回率", "score": 1},
+        {"criterion": "补充精确率、F1、AUC 或混淆矩阵等指标", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请关注类别不平衡场景下多数类预测带来的准确率陷阱。",
+        "missing_key_point_feedback": {
+          "关注召回率": "疾病筛查通常非常关注漏诊，因此召回率很关键。",
+          "说明类别不平衡会让准确率误导": "需要说明为什么 99% 准确率并不代表模型真的有用。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_performance_metrics"],
+          "recommend_review_nodes": ["ml_evaluation_methods"]
+        }
+      },
+      "misconception_tags": ["accuracy_always_enough", "ignore_class_imbalance"],
+      "source_ids": ["book_zhou_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["metrics", "accuracy", "recall", "class-imbalance", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch01_metric_002",
+      "version": "v1",
+      "title": "计算精确率、召回率和 F1",
+      "type": "coding",
+      "chapter_id": "ch01",
+      "related_node_id": "ml_performance_metrics",
+      "assesses": ["ml_performance_metrics"],
+      "also_assesses": ["ml_evaluation_methods"],
+      "prerequisite_node_ids": ["ml_evaluation_methods"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `precision_recall_f1` 函数，给定 TP、FP、FN，返回 precision、recall 和 F1。若分母为 0，本题约定对应指标为 0。",
+      "starter_code": "def precision_recall_f1(tp, fp, fn):\n    # TODO: compute precision, recall, f1\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def precision_recall_f1(tp, fp, fn):\n    precision = tp / (tp + fp) if tp + fp > 0 else 0\n    recall = tp / (tp + fn) if tp + fn > 0 else 0\n    f1 = 2 * precision * recall / (precision + recall) if precision + recall > 0 else 0\n    return precision, recall, f1\n",
+        "explanation": "精确率衡量预测为正的样本中有多少是真的正，召回率衡量真实正样本中有多少被找回，F1 是二者的调和平均。"
+      },
+      "rubric": [
+        {"criterion": "正确计算 precision", "score": 1},
+        {"criterion": "正确计算 recall", "score": 1},
+        {"criterion": "正确计算 F1", "score": 1},
+        {"criterion": "处理分母为 0 的情况", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"tp": 8, "fp": 2, "fn": 4},
+          "expected": [0.8, 0.6666666667, 0.7272727273]
+        },
+        {
+          "input": {"tp": 0, "fp": 0, "fn": 5},
+          "expected": [0, 0, 0]
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查 precision、recall 和 F1 的分母是否写对。",
+        "common_errors": {
+          "precision_recall_swapped": "你可能把精确率和召回率的分母写反了。",
+          "f1_arithmetic_mean": "F1 不是简单算术平均，而是 2PR/(P+R)。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.1,
+          "confidence_delta": 0.05
+        },
+        "on_wrong": {
+          "mastery_delta": -0.08,
+          "add_weak_points": ["ml_performance_metrics"],
+          "recommend_review_nodes": ["ml_evaluation_methods"]
+        }
+      },
+      "misconception_tags": ["precision_recall_swapped", "f1_formula_confusion"],
+      "source_ids": ["book_zhou_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["metrics", "precision", "recall", "f1", "coding", "p0"]
+    }
+  ]
+}

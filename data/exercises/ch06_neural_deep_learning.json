@@ -1,0 +1,741 @@
+{
+  "chapter_id": "ch06",
+  "chapter_title": "神经网络与深度学习基础",
+  "exercise_schema_version": "v1",
+  "status": "drafted",
+  "target_count": 12,
+  "exercises": [
+    {
+      "exercise_id": "ex_ch06_bp_001",
+      "version": "v1",
+      "title": "反向传播和梯度下降的分工",
+      "type": "choice",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_backpropagation",
+      "assesses": ["ml_backpropagation"],
+      "also_assesses": ["ml_gradient_descent", "ml_multilayer_neural_network"],
+      "prerequisite_node_ids": ["ml_gradient_descent", "ml_multilayer_neural_network"],
+      "difficulty": 3,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "关于反向传播和梯度下降的关系，下列说法哪项更准确？",
+      "options": [
+        {"label": "A", "text": "反向传播负责计算各层参数的梯度，梯度下降负责用这些梯度更新参数"},
+        {"label": "B", "text": "反向传播就是一种激活函数"},
+        {"label": "C", "text": "梯度下降只能用于单层模型，不能用于神经网络"},
+        {"label": "D", "text": "反向传播不需要损失函数"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "反向传播利用链式法则计算梯度，梯度下降或其变体再根据梯度更新参数。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请区分“计算梯度”和“使用梯度更新参数”这两个步骤。",
+        "by_option": {
+          "B": "激活函数用于引入非线性，反向传播是梯度计算算法。",
+          "C": "神经网络训练中也常使用梯度下降、SGD 或 Mini-batch 变体。",
+          "D": "反向传播通常从损失函数对输出的梯度开始。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_backpropagation"],
+          "recommend_review_nodes": ["ml_gradient_descent", "ml_multilayer_neural_network"]
+        }
+      },
+      "misconception_tags": ["backprop_equals_gradient_descent", "backprop_without_loss"],
+      "source_ids": ["book_d2l", "course_stanford_cs231n"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["backpropagation", "gradient-descent", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_bp_002",
+      "version": "v1",
+      "title": "用链式法则理解反向传播",
+      "type": "short_answer",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_backpropagation",
+      "assesses": ["ml_backpropagation"],
+      "also_assesses": ["ml_calculus_optimization_basic", "ml_multilayer_neural_network"],
+      "prerequisite_node_ids": ["ml_calculus_optimization_basic", "ml_multilayer_neural_network"],
+      "difficulty": 4,
+      "estimated_minutes": 7,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "calculation"],
+      "question": "请用自己的话解释：为什么反向传播需要从输出层向前层逐层传递梯度？链式法则在其中起什么作用？",
+      "options": [],
+      "answer": {
+        "reference_answer": "多层神经网络中，前面层的参数通过后续多层计算间接影响最终损失。反向传播从损失函数开始，利用链式法则把梯度从输出层逐层传回前面的层，从而计算每一层参数对损失的影响。",
+        "key_points": ["前层参数通过后续层间接影响损失", "从损失函数或输出层开始计算梯度", "链式法则用于分解复合函数梯度", "每层参数都能得到对应梯度"]
+      },
+      "rubric": [
+        {"criterion": "说明前层参数对损失的影响是间接的", "score": 1},
+        {"criterion": "说明反向传播从损失或输出层开始", "score": 1},
+        {"criterion": "说明链式法则用于复合函数求导", "score": 1},
+        {"criterion": "说明最终要得到各层参数梯度", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请把神经网络看成多层复合函数，再思考损失如何依赖每一层参数。",
+        "missing_key_point_feedback": {
+          "链式法则用于分解复合函数梯度": "需要明确反向传播的数学基础是链式法则。",
+          "每层参数都能得到对应梯度": "需要说明反向传播的目标是计算各层参数梯度。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_backpropagation"],
+          "recommend_review_nodes": ["ml_calculus_optimization_basic", "ml_multilayer_neural_network"]
+        }
+      },
+      "misconception_tags": ["ignore_chain_rule", "only_last_layer_has_gradient"],
+      "source_ids": ["book_d2l", "course_stanford_cs231n"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["backpropagation", "chain-rule", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_bp_003",
+      "version": "v1",
+      "title": "实现 ReLU 的反向梯度",
+      "type": "coding",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_backpropagation",
+      "assesses": ["ml_backpropagation"],
+      "also_assesses": ["ml_activation_function"],
+      "prerequisite_node_ids": ["ml_activation_function", "ml_calculus_optimization_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `relu_backward` 函数：输入前向传播时的 `x` 和上游梯度 `upstream_grad`，返回经过 ReLU 的反向梯度。",
+      "starter_code": "def relu_backward(x, upstream_grad):\n    # TODO: ReLU'(x) is 1 when x > 0, otherwise 0\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def relu_backward(x, upstream_grad):\n    return upstream_grad if x > 0 else 0\n",
+        "explanation": "ReLU 在 x > 0 时导数为 1，否则导数为 0；反向传播时需要乘以上游梯度。"
+      },
+      "rubric": [
+        {"criterion": "正确判断 x > 0 的情况", "score": 1},
+        {"criterion": "正区间返回 upstream_grad", "score": 1},
+        {"criterion": "非正区间返回 0", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 3,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"x": 2.0, "upstream_grad": 0.5},
+          "expected": 0.5
+        },
+        {
+          "input": {"x": -1.0, "upstream_grad": 0.5},
+          "expected": 0
+        },
+        {
+          "input": {"x": 0.0, "upstream_grad": 1.0},
+          "expected": 0
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否把 ReLU 的局部导数和上游梯度相乘。",
+        "common_errors": {
+          "return_derivative_only": "你可能只返回了局部导数，但反向传播还要乘以上游梯度。",
+          "wrong_zero_case": "本题约定 x <= 0 时梯度为 0。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_backpropagation", "ml_activation_function"],
+          "recommend_review_nodes": ["ml_activation_function", "ml_calculus_optimization_basic"]
+        }
+      },
+      "misconception_tags": ["backprop_ignores_upstream_gradient", "relu_derivative_confusion"],
+      "source_ids": ["book_d2l", "course_stanford_cs231n"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["backpropagation", "relu", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_cnn_001",
+      "version": "v1",
+      "title": "CNN 为什么适合图像",
+      "type": "choice",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_cnn",
+      "assesses": ["ml_cnn"],
+      "also_assesses": ["ml_multilayer_neural_network"],
+      "prerequisite_node_ids": ["ml_multilayer_neural_network"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "卷积神经网络相比普通全连接网络更适合处理图像，一个关键原因是什么？",
+      "options": [
+        {"label": "A", "text": "卷积层利用局部连接和参数共享来提取局部模式"},
+        {"label": "B", "text": "CNN 不需要训练数据"},
+        {"label": "C", "text": "CNN 只能处理一维表格数据"},
+        {"label": "D", "text": "CNN 不包含任何可学习参数"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "图像具有局部空间结构，卷积层通过局部连接和参数共享高效提取边缘、纹理等局部模式。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾卷积层的局部连接、参数共享和空间结构建模。",
+        "by_option": {
+          "B": "CNN 仍然需要数据训练参数。",
+          "C": "CNN 常用于图像等网格结构数据，而不是只能处理表格。",
+          "D": "卷积核权重就是可学习参数。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_cnn"],
+          "recommend_review_nodes": ["ml_multilayer_neural_network"]
+        }
+      },
+      "misconception_tags": ["cnn_no_parameters", "cnn_not_for_images"],
+      "source_ids": ["book_d2l", "course_stanford_cs231n", "course_mit_6s191"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["cnn", "image", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_cnn_002",
+      "version": "v1",
+      "title": "卷积层输出尺寸计算",
+      "type": "short_answer",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_cnn",
+      "assesses": ["ml_cnn"],
+      "also_assesses": ["ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "apply",
+      "assessment_focus": ["calculation"],
+      "question": "一个 28x28 的单通道图像，使用 3x3 卷积核，stride=1，padding=0。输出特征图的空间尺寸是多少？请说明计算过程。",
+      "options": [],
+      "answer": {
+        "reference_answer": "输出尺寸为 26x26。因为每个方向的输出长度为 (28 - 3 + 2*0) / 1 + 1 = 26。",
+        "key_points": ["使用卷积输出尺寸公式", "代入输入尺寸 28、卷积核 3、padding 0、stride 1", "得到单个方向长度 26", "输出空间尺寸为 26x26"]
+      },
+      "rubric": [
+        {"criterion": "写出或正确使用输出尺寸计算逻辑", "score": 1},
+        {"criterion": "正确代入 28、3、0、1", "score": 1},
+        {"criterion": "得到单方向输出 26", "score": 1},
+        {"criterion": "说明空间尺寸为 26x26", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾卷积输出尺寸公式：(input - kernel + 2*padding) / stride + 1。",
+        "missing_key_point_feedback": {
+          "输出空间尺寸为 26x26": "需要分别计算高和宽，二者在本题中都是 26。",
+          "使用卷积输出尺寸公式": "请先写出尺寸计算公式再代入。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.07,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_cnn"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic"]
+        }
+      },
+      "misconception_tags": ["conv_output_size_confusion", "ignore_padding_stride"],
+      "source_ids": ["book_d2l", "course_stanford_cs231n"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["cnn", "convolution", "calculation", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_cnn_003",
+      "version": "v1",
+      "title": "实现一维卷积的单点计算",
+      "type": "coding",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_cnn",
+      "assesses": ["ml_cnn"],
+      "also_assesses": ["ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `conv1d_at` 函数，计算输入序列从 `start` 开始、与卷积核逐元素相乘后求和的结果。",
+      "starter_code": "def conv1d_at(x, kernel, start):\n    # x and kernel are lists of numbers\n    # TODO: return sum(x[start + i] * kernel[i])\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def conv1d_at(x, kernel, start):\n    return sum(x[start + i] * kernel[i] for i in range(len(kernel)))\n",
+        "explanation": "卷积的核心计算可以理解为局部窗口与卷积核逐元素相乘后求和。"
+      },
+      "rubric": [
+        {"criterion": "正确遍历卷积核长度", "score": 1},
+        {"criterion": "正确使用局部窗口 x[start + i]", "score": 1},
+        {"criterion": "正确逐元素相乘并求和", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 3,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"x": [1, 2, 3, 4], "kernel": [1, 0, -1], "start": 0},
+          "expected": -2
+        },
+        {
+          "input": {"x": [1, 2, 3, 4], "kernel": [2, 1], "start": 2},
+          "expected": 10
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否只使用了从 start 开始的局部窗口，而不是整个输入序列。",
+        "common_errors": {
+          "use_full_sequence": "卷积核只和局部窗口对齐，不是和整个序列直接相乘。",
+          "missing_sum": "逐元素相乘后还需要求和。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_cnn"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic"]
+        }
+      },
+      "misconception_tags": ["convolution_window_confusion", "missing_dot_product"],
+      "source_ids": ["book_d2l", "course_stanford_cs231n"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["cnn", "convolution", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_attn_001",
+      "version": "v1",
+      "title": "Q、K、V 的基本作用",
+      "type": "choice",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_attention_mechanism",
+      "assesses": ["ml_attention_mechanism"],
+      "also_assesses": ["ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "在注意力机制中，Query 和 Key 通常主要用于什么？",
+      "options": [
+        {"label": "A", "text": "计算当前位置对其他位置的关注权重"},
+        {"label": "B", "text": "直接保存模型所有训练数据"},
+        {"label": "C", "text": "替代损失函数"},
+        {"label": "D", "text": "决定学习率是否衰减"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "Query 与 Key 的相似度用于计算注意力分数，再经过归一化得到关注权重。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾 Q、K 用于匹配和打分，V 用于被加权汇总。",
+        "by_option": {
+          "B": "Q、K、V 是中间表示，不是训练数据存储器。",
+          "C": "损失函数用于训练目标，注意力权重用于信息聚合。",
+          "D": "学习率调度属于优化策略，不是 Q、K 的主要作用。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_attention_mechanism"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic"]
+        }
+      },
+      "misconception_tags": ["qkv_role_confusion", "attention_as_memory_storage"],
+      "source_ids": ["book_d2l", "course_hung_yi_lee_ml"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["attention", "qkv", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_attn_002",
+      "version": "v1",
+      "title": "为什么注意力有助于长程依赖",
+      "type": "short_answer",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_attention_mechanism",
+      "assesses": ["ml_attention_mechanism"],
+      "also_assesses": ["ml_rnn"],
+      "prerequisite_node_ids": ["ml_rnn"],
+      "difficulty": 4,
+      "estimated_minutes": 7,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["concept", "application"],
+      "question": "相比普通 RNN 逐步传递隐藏状态，注意力机制为什么更有助于建模长程依赖？",
+      "options": [],
+      "answer": {
+        "reference_answer": "普通 RNN 通常需要沿时间步逐步传递信息，长距离信息容易衰减。注意力机制可以让当前位置直接根据权重关注序列中其他位置的信息，因此更容易捕捉远距离依赖。",
+        "key_points": ["RNN 信息通常逐步传递", "长距离信息可能衰减", "注意力可直接关注其他位置", "通过权重聚合相关信息"]
+      },
+      "rubric": [
+        {"criterion": "说明普通 RNN 逐步传递信息", "score": 1},
+        {"criterion": "说明长距离信息可能衰减或难以保留", "score": 1},
+        {"criterion": "说明注意力可以直接关注远处位置", "score": 1},
+        {"criterion": "说明注意力通过权重聚合相关信息", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从信息传递路径长度和加权聚合两个角度比较 RNN 与注意力。",
+        "missing_key_point_feedback": {
+          "注意力可直接关注其他位置": "需要说明注意力不是只能依赖相邻时间步逐步传递。",
+          "通过权重聚合相关信息": "需要说明注意力权重决定哪些位置更重要。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_attention_mechanism"],
+          "recommend_review_nodes": ["ml_rnn"]
+        }
+      },
+      "misconception_tags": ["attention_same_as_rnn", "ignore_long_range_dependency"],
+      "source_ids": ["book_d2l", "course_hung_yi_lee_ml"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["attention", "long-range-dependency", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_attn_003",
+      "version": "v1",
+      "title": "实现加权求和注意力",
+      "type": "coding",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_attention_mechanism",
+      "assesses": ["ml_attention_mechanism"],
+      "also_assesses": ["ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `weighted_sum` 函数，给定注意力权重 `weights` 和 value 列表 `values`，返回加权求和结果。这里假设 values 是一维数值。",
+      "starter_code": "def weighted_sum(weights, values):\n    # weights and values have the same length\n    # TODO: return sum(weights[i] * values[i])\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def weighted_sum(weights, values):\n    return sum(w * v for w, v in zip(weights, values))\n",
+        "explanation": "注意力输出可以看作对 value 的加权求和，权重表示每个 value 的重要程度。"
+      },
+      "rubric": [
+        {"criterion": "正确配对 weight 和 value", "score": 1},
+        {"criterion": "正确逐项相乘", "score": 1},
+        {"criterion": "正确求和并返回", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 3,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"weights": [0.2, 0.8], "values": [10, 20]},
+          "expected": 18.0
+        },
+        {
+          "input": {"weights": [0.1, 0.3, 0.6], "values": [1, 2, 3]},
+          "expected": 2.5
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否把每个 value 乘以对应权重后再求和。",
+        "common_errors": {
+          "sum_values_only": "你可能只对 values 求和，忽略了注意力权重。",
+          "sum_weights_only": "注意力输出不是权重本身，而是 value 的加权聚合。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_attention_mechanism"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic"]
+        }
+      },
+      "misconception_tags": ["attention_ignores_values", "weighted_sum_confusion"],
+      "source_ids": ["book_d2l", "course_hung_yi_lee_ml"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["attention", "weighted-sum", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_trans_001",
+      "version": "v1",
+      "title": "Transformer 的核心机制",
+      "type": "choice",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_transformer",
+      "assesses": ["ml_transformer"],
+      "also_assesses": ["ml_attention_mechanism"],
+      "prerequisite_node_ids": ["ml_attention_mechanism", "ml_multilayer_neural_network"],
+      "difficulty": 3,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "Transformer 架构最核心的组成机制之一是什么？",
+      "options": [
+        {"label": "A", "text": "自注意力机制"},
+        {"label": "B", "text": "只能逐步循环计算的隐藏状态"},
+        {"label": "C", "text": "K-Means 聚类中心更新"},
+        {"label": "D", "text": "决策树的信息增益划分"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "Transformer 的核心是自注意力机制，并结合前馈网络、残差连接、归一化和位置编码等模块。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾 Transformer 与自注意力机制之间的关系。",
+        "by_option": {
+          "B": "逐步循环隐藏状态是 RNN 的典型特征，不是 Transformer 的核心优势。",
+          "C": "K-Means 属于聚类算法。",
+          "D": "信息增益划分属于决策树相关内容。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_transformer"],
+          "recommend_review_nodes": ["ml_attention_mechanism"]
+        }
+      },
+      "misconception_tags": ["transformer_equals_rnn", "transformer_core_confusion"],
+      "source_ids": ["book_d2l", "course_hung_yi_lee_ml", "course_mit_6s191"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["transformer", "self-attention", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_trans_002",
+      "version": "v1",
+      "title": "为什么 Transformer 需要位置编码",
+      "type": "short_answer",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_transformer",
+      "assesses": ["ml_transformer"],
+      "also_assesses": ["ml_attention_mechanism"],
+      "prerequisite_node_ids": ["ml_attention_mechanism"],
+      "difficulty": 4,
+      "estimated_minutes": 7,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "自注意力可以同时关注序列中不同位置的信息，为什么 Transformer 仍然需要位置编码？",
+      "options": [],
+      "answer": {
+        "reference_answer": "自注意力本身主要根据内容相似度计算权重，并不天然包含词或元素的顺序信息。位置编码为每个位置注入顺序或位置信息，使模型能区分相同 token 出现在不同位置时的意义差异。",
+        "key_points": ["自注意力本身不天然包含顺序信息", "位置编码注入位置信息", "帮助模型区分不同位置", "对序列任务很重要"]
+      },
+      "rubric": [
+        {"criterion": "说明自注意力本身缺少显式顺序信息", "score": 1},
+        {"criterion": "说明位置编码用于注入位置信息", "score": 1},
+        {"criterion": "说明它帮助区分不同位置的元素", "score": 1},
+        {"criterion": "能联系序列建模任务说明重要性", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请思考：如果打乱序列位置，自注意力本身是否知道原始顺序？",
+        "missing_key_point_feedback": {
+          "自注意力本身不天然包含顺序信息": "需要明确位置编码解决的是顺序信息问题。",
+          "位置编码注入位置信息": "需要说明位置编码给模型提供位置相关信号。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_transformer"],
+          "recommend_review_nodes": ["ml_attention_mechanism"]
+        }
+      },
+      "misconception_tags": ["attention_has_position_by_default", "position_encoding_unnecessary"],
+      "source_ids": ["book_d2l", "course_hung_yi_lee_ml"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["transformer", "position-encoding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch06_trans_003",
+      "version": "v1",
+      "title": "选择 Transformer 学习前置路径",
+      "type": "case_analysis",
+      "chapter_id": "ch06",
+      "related_node_id": "ml_transformer",
+      "assesses": ["ml_transformer"],
+      "also_assesses": ["ml_attention_mechanism", "ml_multilayer_neural_network"],
+      "prerequisite_node_ids": ["ml_attention_mechanism", "ml_multilayer_neural_network"],
+      "difficulty": 4,
+      "estimated_minutes": 8,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["application"],
+      "question": "某学生想直接学习 Transformer，但他只了解线性回归和梯度下降，不熟悉多层神经网络和注意力机制。你会建议怎样安排前置学习路径？为什么？",
+      "case_context": "目标是在较短时间内理解 Transformer 的核心结构，而不是完整掌握所有深度学习细节。",
+      "options": [],
+      "answer": {
+        "reference_answer": "建议先补多层神经网络的基本结构和前向传播，再学习注意力机制中的 Q、K、V 与加权求和，最后进入 Transformer 的自注意力、位置编码和前馈网络。这样可以先建立神经网络模块化结构，再理解 Transformer 最核心的注意力计算。",
+        "key_points": ["先补多层神经网络基础", "再学习注意力机制", "最后学习 Transformer 核心模块", "说明这样安排符合前置依赖"]
+      },
+      "rubric": [
+        {"criterion": "提出多层神经网络作为前置", "score": 1},
+        {"criterion": "提出注意力机制作为直接前置", "score": 1},
+        {"criterion": "说明最后进入 Transformer 核心模块", "score": 1},
+        {"criterion": "能结合前置依赖解释原因", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从知识图谱前置关系角度思考：Transformer 依赖注意力机制和多层神经网络。",
+        "missing_key_point_feedback": {
+          "再学习注意力机制": "注意力机制是 Transformer 的直接核心前置，不能跳过。",
+          "提出多层神经网络作为前置": "Transformer 仍然是深度神经网络结构，需要理解基本网络模块。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_transformer"],
+          "recommend_review_nodes": ["ml_multilayer_neural_network", "ml_attention_mechanism"]
+        }
+      },
+      "misconception_tags": ["skip_transformer_prerequisites", "transformer_only_attention"],
+      "source_ids": ["book_d2l", "course_hung_yi_lee_ml", "course_mit_6s191"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["transformer", "learning-path", "case-analysis", "p0"]
+    }
+  ]
+}

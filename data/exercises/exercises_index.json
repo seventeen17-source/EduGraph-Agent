@@ -1,0 +1,101 @@
+[
+  {
+    "chapter_id": "ch01",
+    "file": "data/exercises/ch01_intro_evaluation.json",
+    "priority": "P0",
+    "target_count": 8,
+    "current_count": 8,
+    "status": "drafted",
+    "main_nodes": ["ml_overfitting_underfitting", "ml_regularization", "ml_evaluation_methods", "ml_performance_metrics"]
+  },
+  {
+    "chapter_id": "ch02",
+    "file": "data/exercises/ch02_math_optimization.json",
+    "priority": "P0",
+    "target_count": 8,
+    "current_count": 8,
+    "status": "drafted",
+    "main_nodes": ["ml_calculus_optimization_basic", "ml_loss_function", "ml_gradient_optimization_basic"]
+  },
+  {
+    "chapter_id": "ch03",
+    "file": "data/exercises/ch03_linear_models_optimization.json",
+    "priority": "P0",
+    "target_count": 12,
+    "current_count": 12,
+    "status": "drafted",
+    "main_nodes": ["ml_linear_regression", "ml_logistic_regression", "ml_gradient_descent", "ml_sgd_minibatch"]
+  },
+  {
+    "chapter_id": "ch04",
+    "file": "data/exercises/ch04_supervised_algorithms.json",
+    "priority": "P0",
+    "target_count": 8,
+    "current_count": 8,
+    "status": "drafted",
+    "main_nodes": ["ml_decision_tree", "ml_svm", "ml_bayesian_classifier", "ml_ensemble_learning"]
+  },
+  {
+    "chapter_id": "ch05",
+    "file": "data/exercises/ch05_unsupervised_representation.json",
+    "priority": "P0",
+    "target_count": 6,
+    "current_count": 6,
+    "status": "drafted",
+    "main_nodes": ["ml_clustering", "ml_kmeans", "ml_dimensionality_reduction", "ml_feature_selection"]
+  },
+  {
+    "chapter_id": "ch06",
+    "file": "data/exercises/ch06_neural_deep_learning.json",
+    "priority": "P0",
+    "target_count": 12,
+    "current_count": 12,
+    "status": "drafted",
+    "main_nodes": ["ml_backpropagation", "ml_attention_mechanism", "ml_transformer", "ml_cnn"]
+  },
+  {
+    "chapter_id": "ch07",
+    "file": "data/exercises/ch07_learning_theory.json",
+    "priority": "P2",
+    "target_count": 2,
+    "current_count": 0,
+    "status": "skeleton",
+    "main_nodes": ["ml_pac_learning", "ml_vc_dimension"]
+  },
+  {
+    "chapter_id": "ch08",
+    "file": "data/exercises/ch08_semi_supervised.json",
+    "priority": "P2",
+    "target_count": 2,
+    "current_count": 0,
+    "status": "skeleton",
+    "main_nodes": ["ml_semi_supervised_learning"]
+  },
+  {
+    "chapter_id": "ch09",
+    "file": "data/exercises/ch09_probabilistic_graphical_models.json",
+    "priority": "P2",
+    "target_count": 2,
+    "current_count": 0,
+    "status": "skeleton",
+    "main_nodes": ["ml_bayesian_network", "ml_markov_network"]
+  },
+  {
+    "chapter_id": "ch10",
+    "file": "data/exercises/ch10_rule_learning.json",
+    "priority": "P2",
+    "target_count": 2,
+    "current_count": 0,
+    "status": "skeleton",
+    "main_nodes": ["ml_rule_learning"]
+  },
+  {
+    "chapter_id": "ch11",
+    "file": "data/exercises/ch11_reinforcement_learning.json",
+    "priority": "P2",
+    "target_count": 2,
+    "current_count": 0,
+    "status": "skeleton",
+    "main_nodes": ["ml_reinforcement_learning", "ml_mdp", "ml_q_learning"]
+  }
+]

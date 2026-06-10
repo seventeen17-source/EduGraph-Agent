@@ -1,0 +1,2099 @@
+[
+  {
+    "node_id": "ml_basic_terms",
+    "name": "机器学习基本术语",
+    "chapter_id": "ch01",
+    "difficulty": 1,
+    "estimated_minutes": 25,
+    "summary": "理解样本、特征、标签、模型、训练、预测等机器学习基础术语。",
+    "keywords": [
+      "样本",
+      "特征",
+      "标签",
+      "模型",
+      "训练",
+      "预测"
+    ],
+    "prerequisites": [],
+    "related": [
+      "ml_supervised_unsupervised",
+      "ml_dataset_split"
+    ],
+    "aliases": [
+      "ML 基本术语",
+      "机器学习术语"
+    ],
+    "node_type": "foundation",
+    "role_in_path": "entry",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_supervised_unsupervised",
+    "name": "监督学习与无监督学习",
+    "chapter_id": "ch01",
+    "difficulty": 1,
+    "estimated_minutes": 25,
+    "summary": "区分有标签数据驱动的监督学习和从无标签数据中发现结构的无监督学习。",
+    "keywords": [
+      "监督学习",
+      "无监督学习",
+      "标签",
+      "分类",
+      "回归",
+      "聚类"
+    ],
+    "prerequisites": [
+      "ml_basic_terms"
+    ],
+    "related": [
+      "ml_clustering",
+      "ml_linear_regression",
+      "ml_decision_tree"
+    ],
+    "aliases": [
+      "有监督学习与无监督学习",
+      "监督 vs 无监督"
+    ],
+    "node_type": "concept",
+    "role_in_path": "entry",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_dataset_split",
+    "name": "训练集、验证集与测试集",
+    "chapter_id": "ch01",
+    "difficulty": 1,
+    "estimated_minutes": 20,
+    "summary": "理解训练集、验证集和测试集在模型训练、调参与泛化评估中的不同作用。",
+    "keywords": [
+      "训练集",
+      "验证集",
+      "测试集",
+      "数据划分",
+      "泛化"
+    ],
+    "prerequisites": [
+      "ml_basic_terms"
+    ],
+    "related": [
+      "ml_generalization",
+      "ml_evaluation_methods"
+    ],
+    "aliases": [
+      "数据集划分",
+      "训练验证测试划分"
+    ],
+    "node_type": "evaluation",
+    "role_in_path": "entry",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [
+      "为什么要验证集",
+      "训练集和测试集有什么区别"
+    ],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_generalization",
+    "name": "泛化能力",
+    "chapter_id": "ch01",
+    "difficulty": 2,
+    "estimated_minutes": 25,
+    "summary": "衡量模型在未见数据上的表现，是模型选择和评估的核心目标。",
+    "keywords": [
+      "泛化",
+      "泛化误差",
+      "训练误差",
+      "测试误差"
+    ],
+    "prerequisites": [
+      "ml_dataset_split"
+    ],
+    "related": [
+      "ml_overfitting_underfitting",
+      "ml_bias_variance"
+    ],
+    "aliases": [
+      "泛化",
+      "generalization"
+    ],
+    "node_type": "evaluation",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_overfitting_underfitting",
+    "name": "过拟合与欠拟合",
+    "chapter_id": "ch01",
+    "difficulty": 2,
+    "estimated_minutes": 30,
+    "summary": "过拟合表示模型过度贴合训练数据，欠拟合表示模型表达能力不足或训练不充分。",
+    "keywords": [
+      "过拟合",
+      "欠拟合",
+      "模型复杂度",
+      "正则化"
+    ],
+    "prerequisites": [
+      "ml_generalization"
+    ],
+    "related": [
+      "ml_bias_variance",
+      "ml_evaluation_methods",
+      "ml_regularization"
+    ],
+    "aliases": [
+      "过拟合欠拟合",
+      "overfitting and underfitting"
+    ],
+    "node_type": "evaluation",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [
+      "怎么判断过拟合",
+      "欠拟合是什么意思",
+      "过拟合怎么解决"
+    ],
+    "common_misconceptions": [
+      "训练集准确率高就说明模型一定好",
+      "欠拟合只和数据量少有关"
+    ],
+    "mastery_objectives": [
+      "能根据训练/验证表现判断过拟合或欠拟合",
+      "能提出至少两种缓解过拟合的方法"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_evaluation_methods",
+    "name": "模型评估方法",
+    "chapter_id": "ch01",
+    "difficulty": 2,
+    "estimated_minutes": 30,
+    "summary": "包括留出法、交叉验证和自助法等评估方式，用于估计模型泛化性能。",
+    "keywords": [
+      "留出法",
+      "交叉验证",
+      "自助法",
+      "模型评估"
+    ],
+    "prerequisites": [
+      "ml_dataset_split",
+      "ml_generalization"
+    ],
+    "related": [
+      "ml_performance_metrics",
+      "ml_overfitting_underfitting"
+    ],
+    "aliases": [
+      "模型验证方法",
+      "交叉验证方法"
+    ],
+    "node_type": "evaluation",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_performance_metrics",
+    "name": "性能度量",
+    "chapter_id": "ch01",
+    "difficulty": 2,
+    "estimated_minutes": 35,
+    "summary": "用准确率、精确率、召回率、F1、AUC、均方误差等指标衡量模型表现。",
+    "keywords": [
+      "准确率",
+      "精确率",
+      "召回率",
+      "F1",
+      "AUC",
+      "均方误差"
+    ],
+    "prerequisites": [
+      "ml_evaluation_methods"
+    ],
+    "related": [
+      "ml_logistic_regression",
+      "ml_linear_regression"
+    ],
+    "aliases": [
+      "评估指标",
+      "metrics"
+    ],
+    "node_type": "evaluation",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [
+      "准确率和召回率怎么选",
+      "AUC 是什么",
+      "F1 为什么重要"
+    ],
+    "common_misconceptions": [],
+    "mastery_objectives": [
+      "能根据任务选择合适指标",
+      "能解释准确率、召回率、F1 和 AUC 的区别"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_bias_variance",
+    "name": "偏差与方差",
+    "chapter_id": "ch01",
+    "difficulty": 3,
+    "estimated_minutes": 35,
+    "summary": "从误差分解角度解释模型复杂度、欠拟合、过拟合和泛化能力之间的关系。",
+    "keywords": [
+      "偏差",
+      "方差",
+      "误差分解",
+      "模型复杂度"
+    ],
+    "prerequisites": [
+      "ml_generalization",
+      "ml_overfitting_underfitting"
+    ],
+    "related": [
+      "ml_regularization",
+      "ml_ensemble_learning"
+    ],
+    "aliases": [
+      "偏差方差权衡",
+      "bias-variance tradeoff"
+    ],
+    "node_type": "theory",
+    "role_in_path": "advanced",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_linear_algebra_basic",
+    "name": "线性代数基础",
+    "chapter_id": "ch02",
+    "difficulty": 2,
+    "estimated_minutes": 40,
+    "summary": "理解向量、矩阵、矩阵乘法、范数和线性变换，为线性模型和神经网络做准备。",
+    "keywords": [
+      "向量",
+      "矩阵",
+      "范数",
+      "线性变换"
+    ],
+    "prerequisites": [],
+    "related": [
+      "ml_linear_regression",
+      "ml_multilayer_neural_network"
+    ],
+    "aliases": [
+      "线性代数",
+      "矩阵基础"
+    ],
+    "node_type": "foundation",
+    "role_in_path": "entry",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_probability_statistics_basic",
+    "name": "概率论与统计基础",
+    "chapter_id": "ch02",
+    "difficulty": 2,
+    "estimated_minutes": 45,
+    "summary": "理解概率、随机变量、条件概率、期望、方差和最大似然等基础概念。",
+    "keywords": [
+      "概率",
+      "条件概率",
+      "期望",
+      "方差",
+      "最大似然"
+    ],
+    "prerequisites": [],
+    "related": [
+      "ml_bayesian_classifier",
+      "ml_logistic_regression"
+    ],
+    "aliases": [
+      "概率统计基础",
+      "概率论基础"
+    ],
+    "node_type": "foundation",
+    "role_in_path": "entry",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_calculus_optimization_basic",
+    "name": "微积分与优化基础",
+    "chapter_id": "ch02",
+    "difficulty": 2,
+    "estimated_minutes": 40,
+    "summary": "理解函数、导数、梯度和最优化问题，为梯度下降和反向传播做准备。",
+    "keywords": [
+      "导数",
+      "梯度",
+      "最优化",
+      "损失函数"
+    ],
+    "prerequisites": [],
+    "related": [
+      "ml_gradient_descent",
+      "ml_backpropagation"
+    ],
+    "aliases": [
+      "微积分基础",
+      "优化基础"
+    ],
+    "node_type": "foundation",
+    "role_in_path": "entry",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_loss_function",
+    "name": "损失函数",
+    "chapter_id": "ch02",
+    "difficulty": 2,
+    "estimated_minutes": 30,
+    "summary": "用可优化的数值目标衡量模型预测与真实结果之间的差距。",
+    "keywords": [
+      "损失函数",
+      "目标函数",
+      "误差",
+      "优化"
+    ],
+    "prerequisites": [
+      "ml_basic_terms"
+    ],
+    "related": [
+      "ml_linear_regression",
+      "ml_logistic_regression",
+      "ml_gradient_descent"
+    ],
+    "aliases": [
+      "目标函数",
+      "损失"
+    ],
+    "node_type": "concept",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "video_script"
+    ],
+    "common_queries": [
+      "损失函数是什么",
+      "目标函数和损失函数有什么区别",
+      "为什么训练要最小化损失"
+    ],
+    "common_misconceptions": [],
+    "mastery_objectives": [
+      "能区分损失函数与评估指标",
+      "能解释为什么训练过程要最小化损失"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_gradient_optimization_basic",
+    "name": "梯度与最优化",
+    "chapter_id": "ch02",
+    "difficulty": 3,
+    "estimated_minutes": 35,
+    "summary": "理解梯度方向、参数更新和迭代优化，为学习梯度下降建立直觉。",
+    "keywords": [
+      "梯度",
+      "最优化",
+      "参数更新",
+      "迭代"
+    ],
+    "prerequisites": [
+      "ml_calculus_optimization_basic",
+      "ml_loss_function"
+    ],
+    "related": [
+      "ml_gradient_descent",
+      "ml_sgd_minibatch"
+    ],
+    "aliases": [
+      "梯度优化基础",
+      "gradient basics"
+    ],
+    "node_type": "method",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_linear_regression",
+    "name": "线性回归",
+    "chapter_id": "ch03",
+    "difficulty": 2,
+    "estimated_minutes": 35,
+    "summary": "用线性函数拟合输入特征与连续目标变量之间的关系，是理解损失函数和梯度下降的重要起点。",
+    "keywords": [
+      "线性模型",
+      "均方误差",
+      "参数估计",
+      "回归"
+    ],
+    "prerequisites": [
+      "ml_linear_algebra_basic",
+      "ml_loss_function"
+    ],
+    "related": [
+      "ml_gradient_descent",
+      "ml_logistic_regression"
+    ],
+    "aliases": [
+      "Linear Regression",
+      "线回归"
+    ],
+    "node_type": "model",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_logistic_regression",
+    "name": "逻辑回归",
+    "chapter_id": "ch03",
+    "difficulty": 3,
+    "estimated_minutes": 40,
+    "summary": "通过 Sigmoid 或 Softmax 将线性模型输出映射为类别概率，常用于分类任务。",
+    "keywords": [
+      "逻辑回归",
+      "分类",
+      "Sigmoid",
+      "交叉熵",
+      "概率"
+    ],
+    "prerequisites": [
+      "ml_linear_regression",
+      "ml_probability_statistics_basic"
+    ],
+    "related": [
+      "ml_performance_metrics",
+      "ml_bayesian_classifier"
+    ],
+    "aliases": [
+      "Logistic Regression",
+      "LR 分类"
+    ],
+    "node_type": "model",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "逻辑回归为什么能做分类",
+      "逻辑回归和线性回归有什么区别",
+      "为什么叫回归却做分类"
+    ],
+    "common_misconceptions": [
+      "逻辑回归是回归任务而不是分类任务",
+      "逻辑回归必须使用线性可分数据"
+    ],
+    "mastery_objectives": [
+      "能解释逻辑回归用于分类的原因",
+      "能说明 Sigmoid/Softmax 与概率输出的关系",
+      "能判断逻辑回归适合的任务类型"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_linear_discriminant_analysis",
+    "name": "线性判别分析",
+    "chapter_id": "ch03",
+    "difficulty": 3,
+    "estimated_minutes": 35,
+    "summary": "通过寻找投影方向让类间差异尽可能大、类内差异尽可能小，用于分类和降维。",
+    "keywords": [
+      "线性判别",
+      "投影",
+      "类间距离",
+      "类内距离"
+    ],
+    "prerequisites": [
+      "ml_linear_algebra_basic",
+      "ml_probability_statistics_basic"
+    ],
+    "related": [
+      "ml_dimensionality_reduction",
+      "ml_logistic_regression"
+    ],
+    "aliases": [
+      "LDA",
+      "Linear Discriminant Analysis"
+    ],
+    "node_type": "model",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_gradient_descent",
+    "name": "梯度下降",
+    "chapter_id": "ch03",
+    "difficulty": 3,
+    "estimated_minutes": 30,
+    "summary": "通过沿损失函数梯度反方向更新参数来最小化损失的优化方法。",
+    "keywords": [
+      "梯度",
+      "学习率",
+      "损失函数",
+      "参数更新"
+    ],
+    "prerequisites": [
+      "ml_linear_regression",
+      "ml_gradient_optimization_basic"
+    ],
+    "related": [
+      "ml_sgd_minibatch",
+      "ml_backpropagation"
+    ],
+    "aliases": [
+      "GD",
+      "Gradient Descent",
+      "梯度法"
+    ],
+    "node_type": "method",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [
+      "梯度下降是什么",
+      "为什么沿负梯度方向更新",
+      "学习率太大会怎么样",
+      "GD 和 SGD 有什么区别"
+    ],
+    "common_misconceptions": [
+      "学习率越大收敛越快",
+      "梯度下降总能找到全局最优"
+    ],
+    "mastery_objectives": [
+      "能解释梯度下降的参数更新公式",
+      "能比较 GD、SGD 和 Mini-batch 的差异",
+      "能通过代码观察学习率对收敛过程的影响"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_sgd_minibatch",
+    "name": "随机梯度下降与 Mini-batch",
+    "chapter_id": "ch03",
+    "difficulty": 3,
+    "estimated_minutes": 30,
+    "summary": "使用单个样本或小批量样本估计梯度，在计算效率和梯度稳定性之间取得平衡。",
+    "keywords": [
+      "SGD",
+      "Mini-batch",
+      "批量大小",
+      "随机优化"
+    ],
+    "prerequisites": [
+      "ml_gradient_descent"
+    ],
+    "related": [
+      "ml_backpropagation"
+    ],
+    "aliases": [
+      "SGD",
+      "Mini-batch SGD",
+      "随机梯度下降"
+    ],
+    "node_type": "method",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_decision_tree",
+    "name": "决策树",
+    "chapter_id": "ch04",
+    "difficulty": 3,
+    "estimated_minutes": 45,
+    "summary": "通过树形结构逐步划分样本空间，是可解释性较强的监督学习模型。",
+    "keywords": [
+      "决策树",
+      "信息增益",
+      "基尼指数",
+      "剪枝"
+    ],
+    "prerequisites": [
+      "ml_supervised_unsupervised",
+      "ml_performance_metrics"
+    ],
+    "related": [
+      "ml_random_forest",
+      "ml_ensemble_learning"
+    ],
+    "aliases": [
+      "Decision Tree",
+      "树模型"
+    ],
+    "node_type": "model",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_svm",
+    "name": "支持向量机",
+    "chapter_id": "ch04",
+    "difficulty": 4,
+    "estimated_minutes": 55,
+    "summary": "通过最大化分类间隔构造分类超平面，并可借助核函数处理非线性问题。",
+    "keywords": [
+      "支持向量机",
+      "间隔",
+      "核函数",
+      "超平面"
+    ],
+    "prerequisites": [
+      "ml_linear_algebra_basic",
+      "ml_linear_discriminant_analysis"
+    ],
+    "related": [
+      "ml_metric_learning",
+      "ml_regularization"
+    ],
+    "aliases": [
+      "Support Vector Machine",
+      "支持向量机分类"
+    ],
+    "node_type": "model",
+    "role_in_path": "advanced",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "SVM 为什么最大间隔",
+      "核函数有什么用"
+    ],
+    "common_misconceptions": [
+      "核函数越复杂越好",
+      "支持向量机只适合小数据集"
+    ],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_bayesian_classifier",
+    "name": "贝叶斯分类器",
+    "chapter_id": "ch04",
+    "difficulty": 3,
+    "estimated_minutes": 40,
+    "summary": "基于贝叶斯定理和概率建模进行分类，朴素贝叶斯是其常见简化形式。",
+    "keywords": [
+      "贝叶斯",
+      "条件概率",
+      "朴素贝叶斯",
+      "分类"
+    ],
+    "prerequisites": [
+      "ml_probability_statistics_basic"
+    ],
+    "related": [
+      "ml_bayesian_network",
+      "ml_logistic_regression"
+    ],
+    "aliases": [
+      "朴素贝叶斯",
+      "Naive Bayes"
+    ],
+    "node_type": "model",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_ensemble_learning",
+    "name": "集成学习",
+    "chapter_id": "ch04",
+    "difficulty": 3,
+    "estimated_minutes": 45,
+    "summary": "通过组合多个基学习器提升模型表现，典型思想包括 Bagging、Boosting 和 Stacking。",
+    "keywords": [
+      "集成学习",
+      "Bagging",
+      "Boosting",
+      "基学习器"
+    ],
+    "prerequisites": [
+      "ml_decision_tree",
+      "ml_bias_variance"
+    ],
+    "related": [
+      "ml_random_forest"
+    ],
+    "aliases": [
+      "集成方法",
+      "Ensemble Methods"
+    ],
+    "node_type": "method",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_random_forest",
+    "name": "随机森林",
+    "chapter_id": "ch04",
+    "difficulty": 3,
+    "estimated_minutes": 35,
+    "summary": "通过多棵决策树的随机采样和投票降低方差，是 Bagging 思想的典型应用。",
+    "keywords": [
+      "随机森林",
+      "决策树",
+      "Bagging",
+      "投票"
+    ],
+    "prerequisites": [
+      "ml_decision_tree",
+      "ml_ensemble_learning"
+    ],
+    "related": [
+      "ml_feature_selection"
+    ],
+    "aliases": [
+      "Random Forest",
+      "RF"
+    ],
+    "node_type": "model",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_clustering",
+    "name": "聚类",
+    "chapter_id": "ch05",
+    "difficulty": 2,
+    "estimated_minutes": 35,
+    "summary": "在无标签数据中发现样本之间的相似结构，是无监督学习的代表任务。",
+    "keywords": [
+      "聚类",
+      "无监督学习",
+      "相似度",
+      "簇"
+    ],
+    "prerequisites": [
+      "ml_supervised_unsupervised"
+    ],
+    "related": [
+      "ml_kmeans",
+      "ml_metric_learning"
+    ],
+    "aliases": [
+      "聚类分析",
+      "clustering"
+    ],
+    "node_type": "concept",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_kmeans",
+    "name": "K-Means",
+    "chapter_id": "ch05",
+    "difficulty": 3,
+    "estimated_minutes": 35,
+    "summary": "通过迭代更新簇中心和样本分配来完成划分式聚类。",
+    "keywords": [
+      "K-Means",
+      "簇中心",
+      "迭代",
+      "距离度量"
+    ],
+    "prerequisites": [
+      "ml_clustering",
+      "ml_metric_learning"
+    ],
+    "related": [
+      "ml_dimensionality_reduction"
+    ],
+    "aliases": [
+      "K-Means 聚类",
+      "kmeans"
+    ],
+    "node_type": "model",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "K-Means 怎么迭代",
+      "K 值怎么选",
+      "K-Means 为什么会局部最优"
+    ],
+    "common_misconceptions": [
+      "K-Means 一定能找到真实簇",
+      "K 值随便设都一样"
+    ],
+    "mastery_objectives": [
+      "能描述 K-Means 的迭代过程",
+      "能解释初始中心和 K 值对结果的影响"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_dimensionality_reduction",
+    "name": "降维",
+    "chapter_id": "ch05",
+    "difficulty": 3,
+    "estimated_minutes": 40,
+    "summary": "将高维数据映射到低维空间，以保留主要信息、降低计算复杂度或便于可视化。",
+    "keywords": [
+      "降维",
+      "PCA",
+      "投影",
+      "特征表示"
+    ],
+    "prerequisites": [
+      "ml_linear_algebra_basic"
+    ],
+    "related": [
+      "ml_linear_discriminant_analysis",
+      "ml_feature_selection"
+    ],
+    "aliases": [
+      "降维方法",
+      "PCA/降维"
+    ],
+    "node_type": "method",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_metric_learning",
+    "name": "度量学习",
+    "chapter_id": "ch05",
+    "difficulty": 4,
+    "estimated_minutes": 35,
+    "summary": "学习适合任务的数据距离或相似度度量，影响 KNN、聚类和检索等任务表现。",
+    "keywords": [
+      "度量学习",
+      "距离",
+      "相似度",
+      "表示学习"
+    ],
+    "prerequisites": [
+      "ml_linear_algebra_basic",
+      "ml_clustering"
+    ],
+    "related": [
+      "ml_kmeans",
+      "ml_svm"
+    ],
+    "aliases": [
+      "距离度量学习",
+      "metric learning"
+    ],
+    "node_type": "method",
+    "role_in_path": "advanced",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_feature_selection",
+    "name": "特征选择",
+    "chapter_id": "ch05",
+    "difficulty": 3,
+    "estimated_minutes": 35,
+    "summary": "从原始特征中选择对任务更有用的子集，以改善泛化性能和可解释性。",
+    "keywords": [
+      "特征选择",
+      "过滤式",
+      "包裹式",
+      "嵌入式"
+    ],
+    "prerequisites": [
+      "ml_overfitting_underfitting",
+      "ml_performance_metrics"
+    ],
+    "related": [
+      "ml_sparse_learning",
+      "ml_random_forest"
+    ],
+    "aliases": [
+      "特征筛选",
+      "feature selection"
+    ],
+    "node_type": "method",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_sparse_learning",
+    "name": "稀疏学习",
+    "chapter_id": "ch05",
+    "difficulty": 4,
+    "estimated_minutes": 35,
+    "summary": "通过稀疏约束或正则化让模型只依赖少量关键特征，提高解释性和鲁棒性。",
+    "keywords": [
+      "稀疏学习",
+      "L1 正则化",
+      "特征选择",
+      "正则化"
+    ],
+    "prerequisites": [
+      "ml_feature_selection",
+      "ml_regularization"
+    ],
+    "related": [
+      "ml_dimensionality_reduction"
+    ],
+    "aliases": [
+      "稀疏表示学习",
+      "sparse learning"
+    ],
+    "node_type": "method",
+    "role_in_path": "advanced",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_regularization",
+    "name": "正则化",
+    "chapter_id": "ch01",
+    "difficulty": 3,
+    "estimated_minutes": 35,
+    "summary": "通过惩罚模型复杂度或限制参数规模降低过拟合风险。",
+    "keywords": [
+      "正则化",
+      "L1",
+      "L2",
+      "模型复杂度"
+    ],
+    "prerequisites": [
+      "ml_overfitting_underfitting",
+      "ml_loss_function"
+    ],
+    "related": [
+      "ml_sparse_learning",
+      "ml_logistic_regression",
+      "ml_svm"
+    ],
+    "aliases": [
+      "正则项",
+      "L1/L2 正则化"
+    ],
+    "node_type": "training_technique",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "L1 和 L2 有什么区别",
+      "正则化为什么能防过拟合"
+    ],
+    "common_misconceptions": [
+      "正则化只会让模型变差",
+      "L1 和 L2 只是名字不同"
+    ],
+    "mastery_objectives": [
+      "能比较 L1 与 L2 的差异",
+      "能解释正则化如何影响模型复杂度"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_perceptron",
+    "name": "感知机",
+    "chapter_id": "ch06",
+    "difficulty": 2,
+    "estimated_minutes": 30,
+    "summary": "最早的线性神经元模型之一，是理解多层神经网络的入口。",
+    "keywords": [
+      "感知机",
+      "神经元",
+      "线性分类",
+      "权重"
+    ],
+    "prerequisites": [
+      "ml_linear_regression",
+      "ml_logistic_regression"
+    ],
+    "related": [
+      "ml_multilayer_neural_network",
+      "ml_activation_function"
+    ],
+    "aliases": [
+      "Perceptron",
+      "单层感知机"
+    ],
+    "node_type": "model",
+    "role_in_path": "entry",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_multilayer_neural_network",
+    "name": "多层神经网络",
+    "chapter_id": "ch06",
+    "difficulty": 3,
+    "estimated_minutes": 45,
+    "summary": "由多层神经元和非线性激活函数组成，可表示复杂非线性映射。",
+    "keywords": [
+      "多层神经网络",
+      "隐藏层",
+      "非线性",
+      "前向传播"
+    ],
+    "prerequisites": [
+      "ml_perceptron",
+      "ml_activation_function"
+    ],
+    "related": [
+      "ml_backpropagation",
+      "ml_dropout",
+      "ml_batchnorm"
+    ],
+    "aliases": [
+      "MLP",
+      "多层感知机"
+    ],
+    "node_type": "model",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_activation_function",
+    "name": "激活函数",
+    "chapter_id": "ch06",
+    "difficulty": 2,
+    "estimated_minutes": 30,
+    "summary": "为神经网络引入非线性，使多层网络能够表示复杂函数。",
+    "keywords": [
+      "激活函数",
+      "Sigmoid",
+      "ReLU",
+      "非线性"
+    ],
+    "prerequisites": [
+      "ml_perceptron"
+    ],
+    "related": [
+      "ml_multilayer_neural_network",
+      "ml_backpropagation"
+    ],
+    "aliases": [
+      "非线性激活函数",
+      "activation"
+    ],
+    "node_type": "training_technique",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_backpropagation",
+    "name": "反向传播",
+    "chapter_id": "ch06",
+    "difficulty": 4,
+    "estimated_minutes": 45,
+    "summary": "利用链式法则从输出层向前层传播梯度，是训练多层神经网络的核心算法。",
+    "keywords": [
+      "链式法则",
+      "梯度",
+      "神经网络",
+      "参数更新"
+    ],
+    "prerequisites": [
+      "ml_gradient_descent",
+      "ml_sgd_minibatch",
+      "ml_multilayer_neural_network"
+    ],
+    "related": [
+      "ml_cnn",
+      "ml_rnn",
+      "ml_transformer"
+    ],
+    "aliases": [
+      "BP",
+      "Backpropagation",
+      "反向传播算法"
+    ],
+    "node_type": "method",
+    "role_in_path": "core",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [
+      "反向传播怎么理解",
+      "反向传播和梯度下降是什么关系",
+      "BP 为什么能训练神经网络"
+    ],
+    "common_misconceptions": [
+      "反向传播就是梯度下降",
+      "反向传播只能用于很深的网络"
+    ],
+    "mastery_objectives": [
+      "能说明反向传播如何利用链式法则计算梯度",
+      "能解释反向传播与参数更新的关系"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_dropout",
+    "name": "Dropout",
+    "chapter_id": "ch06",
+    "difficulty": 3,
+    "estimated_minutes": 25,
+    "summary": "训练时随机丢弃部分神经元，以降低神经网络过拟合风险。",
+    "keywords": [
+      "Dropout",
+      "正则化",
+      "过拟合",
+      "神经网络"
+    ],
+    "prerequisites": [
+      "ml_multilayer_neural_network",
+      "ml_overfitting_underfitting"
+    ],
+    "related": [
+      "ml_regularization",
+      "ml_batchnorm"
+    ],
+    "aliases": [
+      "神经元随机失活",
+      "dropout regularization"
+    ],
+    "node_type": "training_technique",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [
+      "Dropout 在测试时也要随机丢弃神经元",
+      "Dropout 可以替代所有正则化方法"
+    ],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_batchnorm",
+    "name": "BatchNorm",
+    "chapter_id": "ch06",
+    "difficulty": 3,
+    "estimated_minutes": 30,
+    "summary": "通过批归一化稳定网络训练过程，并可能提升收敛速度。",
+    "keywords": [
+      "BatchNorm",
+      "归一化",
+      "深度学习",
+      "训练稳定性"
+    ],
+    "prerequisites": [
+      "ml_multilayer_neural_network",
+      "ml_sgd_minibatch"
+    ],
+    "related": [
+      "ml_dropout",
+      "ml_cnn"
+    ],
+    "aliases": [
+      "BN",
+      "Batch Normalization"
+    ],
+    "node_type": "training_technique",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [
+      "BatchNorm 就是正则化",
+      "BatchNorm 只在推理阶段起作用"
+    ],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_cnn",
+    "name": "CNN",
+    "chapter_id": "ch06",
+    "difficulty": 4,
+    "estimated_minutes": 45,
+    "summary": "卷积神经网络通过局部连接和参数共享有效处理图像等网格结构数据。",
+    "keywords": [
+      "CNN",
+      "卷积",
+      "池化",
+      "图像分类"
+    ],
+    "prerequisites": [
+      "ml_multilayer_neural_network",
+      "ml_backpropagation"
+    ],
+    "related": [
+      "ml_batchnorm"
+    ],
+    "aliases": [
+      "卷积神经网络",
+      "Convolutional Neural Network"
+    ],
+    "node_type": "model",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "卷积层在做什么",
+      "池化层为什么有用"
+    ],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_rnn",
+    "name": "RNN",
+    "chapter_id": "ch06",
+    "difficulty": 4,
+    "estimated_minutes": 40,
+    "summary": "循环神经网络通过隐藏状态处理序列数据，但容易遇到长程依赖和梯度问题。",
+    "keywords": [
+      "RNN",
+      "序列建模",
+      "隐藏状态",
+      "循环结构"
+    ],
+    "prerequisites": [
+      "ml_multilayer_neural_network",
+      "ml_backpropagation"
+    ],
+    "related": [
+      "ml_lstm",
+      "ml_attention_mechanism"
+    ],
+    "aliases": [
+      "循环神经网络",
+      "Recurrent Neural Network"
+    ],
+    "node_type": "model",
+    "role_in_path": "support",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "RNN 为什么适合序列",
+      "RNN 为什么梯度消失"
+    ],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_lstm",
+    "name": "LSTM",
+    "chapter_id": "ch06",
+    "difficulty": 4,
+    "estimated_minutes": 40,
+    "summary": "长短期记忆网络通过门控机制缓解普通 RNN 的长程依赖问题。",
+    "keywords": [
+      "LSTM",
+      "门控机制",
+      "长程依赖",
+      "序列模型"
+    ],
+    "prerequisites": [
+      "ml_rnn"
+    ],
+    "related": [
+      "ml_attention_mechanism"
+    ],
+    "aliases": [
+      "长短期记忆网络",
+      "Long Short-Term Memory"
+    ],
+    "node_type": "model",
+    "role_in_path": "advanced",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "LSTM 比 RNN 强在哪",
+      "门控机制怎么理解"
+    ],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_attention_mechanism",
+    "name": "注意力机制",
+    "chapter_id": "ch06",
+    "difficulty": 4,
+    "estimated_minutes": 45,
+    "summary": "通过为不同输入部分分配权重，让模型关注与当前任务最相关的信息。",
+    "keywords": [
+      "注意力机制",
+      "权重",
+      "Query",
+      "Key",
+      "Value"
+    ],
+    "prerequisites": [
+      "ml_linear_algebra_basic",
+      "ml_rnn"
+    ],
+    "related": [
+      "ml_transformer"
+    ],
+    "aliases": [
+      "Attention",
+      "注意力"
+    ],
+    "node_type": "method",
+    "role_in_path": "bridge",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [
+      "注意力机制是什么",
+      "QKV 是什么意思",
+      "为什么注意力比 RNN 更强"
+    ],
+    "common_misconceptions": [
+      "注意力机制不需要任何位置关系信息"
+    ],
+    "mastery_objectives": [
+      "能解释 Q、K、V 的基本作用",
+      "能说明注意力为何有助于长程依赖建模"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_transformer",
+    "name": "Transformer",
+    "chapter_id": "ch06",
+    "difficulty": 5,
+    "estimated_minutes": 60,
+    "summary": "基于自注意力机制的深度学习架构，是现代大模型的重要基础。",
+    "keywords": [
+      "Transformer",
+      "自注意力",
+      "位置编码",
+      "大模型"
+    ],
+    "prerequisites": [
+      "ml_attention_mechanism",
+      "ml_multilayer_neural_network"
+    ],
+    "related": [
+      "ml_lstm"
+    ],
+    "aliases": [
+      "自注意力模型",
+      "Transformer 架构"
+    ],
+    "node_type": "model",
+    "role_in_path": "advanced",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [
+      "Transformer 为什么这么重要",
+      "自注意力怎么工作",
+      "Transformer 和 RNN 有什么区别"
+    ],
+    "common_misconceptions": [
+      "Transformer 不需要训练数据就能工作",
+      "Transformer 一定比所有 RNN 更适合任何任务"
+    ],
+    "mastery_objectives": [
+      "能概述 Transformer 的核心组成部分",
+      "能说明自注意力和位置编码的作用"
+    ],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_pac_learning",
+    "name": "PAC 学习",
+    "chapter_id": "ch07",
+    "difficulty": 5,
+    "estimated_minutes": 40,
+    "summary": "从概率近似正确的角度刻画学习算法在有限样本下的可学习性。",
+    "keywords": [
+      "PAC",
+      "可学习性",
+      "样本复杂度",
+      "泛化误差"
+    ],
+    "prerequisites": [
+      "ml_generalization",
+      "ml_probability_statistics_basic"
+    ],
+    "related": [
+      "ml_vc_dimension"
+    ],
+    "aliases": [
+      "PAC",
+      "Probably Approximately Correct"
+    ],
+    "node_type": "theory",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_vc_dimension",
+    "name": "VC 维",
+    "chapter_id": "ch07",
+    "difficulty": 5,
+    "estimated_minutes": 40,
+    "summary": "衡量假设空间表达能力的理论指标，可用于分析模型复杂度和泛化界。",
+    "keywords": [
+      "VC 维",
+      "假设空间",
+      "泛化界",
+      "模型复杂度"
+    ],
+    "prerequisites": [
+      "ml_pac_learning"
+    ],
+    "related": [
+      "ml_bias_variance"
+    ],
+    "aliases": [
+      "VC 维度",
+      "VC dimension"
+    ],
+    "node_type": "theory",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_semi_supervised_learning",
+    "name": "半监督学习",
+    "chapter_id": "ch08",
+    "difficulty": 4,
+    "estimated_minutes": 35,
+    "summary": "同时利用少量有标签数据和大量无标签数据进行学习。",
+    "keywords": [
+      "半监督学习",
+      "有标签数据",
+      "无标签数据",
+      "图半监督"
+    ],
+    "prerequisites": [
+      "ml_supervised_unsupervised",
+      "ml_clustering"
+    ],
+    "related": [
+      "ml_bayesian_classifier"
+    ],
+    "aliases": [
+      "半监督方法",
+      "semi-supervised"
+    ],
+    "node_type": "method",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_bayesian_network",
+    "name": "贝叶斯网",
+    "chapter_id": "ch09",
+    "difficulty": 5,
+    "estimated_minutes": 45,
+    "summary": "用有向无环图表示随机变量之间的条件依赖关系。",
+    "keywords": [
+      "贝叶斯网",
+      "条件依赖",
+      "概率图模型",
+      "DAG"
+    ],
+    "prerequisites": [
+      "ml_probability_statistics_basic",
+      "ml_bayesian_classifier"
+    ],
+    "related": [
+      "ml_markov_network"
+    ],
+    "aliases": [
+      "Bayesian Network",
+      "贝叶斯网络"
+    ],
+    "node_type": "model",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_markov_network",
+    "name": "马尔可夫网",
+    "chapter_id": "ch09",
+    "difficulty": 5,
+    "estimated_minutes": 45,
+    "summary": "用无向图表示随机变量之间的依赖关系，是概率图模型的重要形式。",
+    "keywords": [
+      "马尔可夫网",
+      "无向图",
+      "概率图模型",
+      "势函数"
+    ],
+    "prerequisites": [
+      "ml_probability_statistics_basic"
+    ],
+    "related": [
+      "ml_bayesian_network"
+    ],
+    "aliases": [
+      "Markov Network",
+      "马尔可夫随机场"
+    ],
+    "node_type": "model",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_rule_learning",
+    "name": "规则学习",
+    "chapter_id": "ch10",
+    "difficulty": 4,
+    "estimated_minutes": 35,
+    "summary": "通过归纳规则表达数据中的规律，强调可解释性和逻辑形式。",
+    "keywords": [
+      "规则学习",
+      "可解释性",
+      "序贯覆盖",
+      "归纳逻辑"
+    ],
+    "prerequisites": [
+      "ml_basic_terms",
+      "ml_decision_tree"
+    ],
+    "related": [
+      "ml_feature_selection"
+    ],
+    "aliases": [
+      "基于规则学习",
+      "rule-based learning"
+    ],
+    "node_type": "method",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_reinforcement_learning",
+    "name": "强化学习",
+    "chapter_id": "ch11",
+    "difficulty": 4,
+    "estimated_minutes": 35,
+    "summary": "研究智能体如何通过与环境交互、依据奖励信号学习行为策略。",
+    "keywords": [
+      "强化学习",
+      "智能体",
+      "环境",
+      "奖励",
+      "策略"
+    ],
+    "prerequisites": [
+      "ml_basic_terms",
+      "ml_probability_statistics_basic"
+    ],
+    "related": [
+      "ml_mdp",
+      "ml_q_learning"
+    ],
+    "aliases": [
+      "RL",
+      "Reinforcement Learning"
+    ],
+    "node_type": "concept",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_mdp",
+    "name": "马尔可夫决策过程",
+    "chapter_id": "ch11",
+    "difficulty": 5,
+    "estimated_minutes": 45,
+    "summary": "用状态、动作、转移概率和奖励函数刻画强化学习中的序贯决策问题。",
+    "keywords": [
+      "MDP",
+      "状态",
+      "动作",
+      "转移概率",
+      "奖励"
+    ],
+    "prerequisites": [
+      "ml_reinforcement_learning",
+      "ml_probability_statistics_basic"
+    ],
+    "related": [
+      "ml_q_learning"
+    ],
+    "aliases": [
+      "Markov Decision Process",
+      "MDP"
+    ],
+    "node_type": "theory",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  },
+  {
+    "node_id": "ml_q_learning",
+    "name": "Q-learning",
+    "chapter_id": "ch11",
+    "difficulty": 5,
+    "estimated_minutes": 45,
+    "summary": "通过学习状态-动作价值函数来获得策略，是经典无模型强化学习算法。",
+    "keywords": [
+      "Q-learning",
+      "价值函数",
+      "策略",
+      "时序差分"
+    ],
+    "prerequisites": [
+      "ml_mdp"
+    ],
+    "related": [
+      "ml_reinforcement_learning"
+    ],
+    "aliases": [
+      "Q Learning",
+      "Q 值学习"
+    ],
+    "node_type": "method",
+    "role_in_path": "extension",
+    "recommended_resource_types": [
+      "document",
+      "diagram",
+      "exercise",
+      "code_case",
+      "video_script"
+    ],
+    "common_queries": [],
+    "common_misconceptions": [],
+    "mastery_objectives": [],
+    "doc_chunk_ids": [],
+    "exercise_ids": [],
+    "code_case_ids": []
+  }
+]

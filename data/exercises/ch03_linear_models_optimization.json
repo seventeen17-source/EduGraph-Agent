@@ -1,0 +1,751 @@
+{
+  "chapter_id": "ch03",
+  "chapter_title": "线性模型与梯度优化",
+  "exercise_schema_version": "v1",
+  "status": "drafted",
+  "target_count": 12,
+  "exercises": [
+    {
+      "exercise_id": "ex_ch03_gd_001",
+      "version": "v1",
+      "title": "学习率过大的影响",
+      "type": "choice",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_gradient_descent",
+      "assesses": ["ml_gradient_descent"],
+      "also_assesses": ["ml_loss_function"],
+      "prerequisite_node_ids": ["ml_loss_function", "ml_gradient_optimization_basic"],
+      "difficulty": 2,
+      "estimated_minutes": 3,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "梯度下降中学习率过大最可能导致什么？",
+      "options": [
+        {"label": "A", "text": "收敛更快且一定更稳定"},
+        {"label": "B", "text": "震荡或发散"},
+        {"label": "C", "text": "一定过拟合"},
+        {"label": "D", "text": "模型一定欠拟合"}
+      ],
+      "answer": {
+        "correct": "B",
+        "explanation": "学习率过大时，参数更新步长过大，可能反复跨过最优点，导致震荡甚至发散。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾学习率如何影响参数更新步长。",
+        "by_option": {
+          "A": "学习率变大不一定更稳定，过大的步长可能导致发散。",
+          "C": "过拟合通常与模型复杂度、数据规模和正则化有关，不是学习率过大的直接结果。",
+          "D": "欠拟合通常说明模型表达能力不足或训练不充分，和学习率过大导致的震荡不是同一问题。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_gradient_descent"],
+          "recommend_review_nodes": ["ml_loss_function", "ml_gradient_optimization_basic"]
+        }
+      },
+      "misconception_tags": ["learning_rate_bigger_is_always_better"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["gradient-descent", "learning-rate", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_gd_002",
+      "version": "v1",
+      "title": "为什么沿负梯度方向更新",
+      "type": "short_answer",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_gradient_descent",
+      "assesses": ["ml_gradient_descent", "ml_gradient_optimization_basic"],
+      "also_assesses": ["ml_loss_function"],
+      "prerequisite_node_ids": ["ml_calculus_optimization_basic", "ml_loss_function"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "calculation"],
+      "question": "请用自己的话解释：为什么梯度下降通常沿负梯度方向更新参数？学习率在这个过程中起什么作用？",
+      "options": [],
+      "answer": {
+        "reference_answer": "梯度方向表示函数值上升最快的局部方向，因此为了让损失函数下降，参数通常沿负梯度方向移动。学习率控制每次沿该方向移动的步长，过小会收敛慢，过大可能震荡或发散。",
+        "key_points": ["梯度方向表示局部上升方向", "负梯度方向用于降低损失", "学习率控制更新步长", "学习率过大可能震荡或发散"]
+      },
+      "rubric": [
+        {"criterion": "说明梯度方向与函数值上升有关", "score": 1},
+        {"criterion": "说明负梯度方向用于降低损失", "score": 1},
+        {"criterion": "说明学习率控制步长", "score": 1},
+        {"criterion": "能指出学习率过大或过小的影响", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请重点回顾梯度方向、负梯度方向和学习率三个概念之间的关系。",
+        "missing_key_point_feedback": {
+          "梯度方向表示局部上升方向": "需要说明梯度方向本身代表函数值增加最快的局部方向。",
+          "负梯度方向用于降低损失": "需要明确为什么要取负号，即为了让损失下降。",
+          "学习率控制更新步长": "需要说明学习率不是方向，而是控制每次移动的步长。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_gradient_descent", "ml_gradient_optimization_basic"],
+          "recommend_review_nodes": ["ml_calculus_optimization_basic", "ml_loss_function"]
+        }
+      },
+      "misconception_tags": ["gradient_direction_means_descent", "learning_rate_is_direction"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["gradient-descent", "negative-gradient", "learning-rate", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_gd_003",
+      "version": "v1",
+      "title": "补全梯度下降参数更新",
+      "type": "coding",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_gradient_descent",
+      "assesses": ["ml_gradient_descent"],
+      "also_assesses": ["ml_loss_function"],
+      "prerequisite_node_ids": ["ml_gradient_optimization_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `update_param` 函数，实现一维参数的梯度下降更新公式。",
+      "starter_code": "def update_param(w, grad, learning_rate):\n    # TODO: return updated parameter\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def update_param(w, grad, learning_rate):\n    return w - learning_rate * grad\n",
+        "explanation": "梯度下降的参数更新公式为 w = w - learning_rate * grad。"
+      },
+      "rubric": [
+        {"criterion": "使用负梯度方向更新参数", "score": 2},
+        {"criterion": "正确使用 learning_rate 控制步长", "score": 1},
+        {"criterion": "函数能返回更新后的参数值", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"w": 5.0, "grad": 2.0, "learning_rate": 0.1},
+          "expected": 4.8
+        },
+        {
+          "input": {"w": -1.0, "grad": -3.0, "learning_rate": 0.2},
+          "expected": -0.4
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查更新公式是否是 w - learning_rate * grad。",
+        "common_errors": {
+          "plus_gradient": "你可能写成了沿梯度方向更新，应改为沿负梯度方向更新。",
+          "missing_learning_rate": "你可能忘记使用学习率，学习率负责控制更新步长。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.1,
+          "confidence_delta": 0.05
+        },
+        "on_wrong": {
+          "mastery_delta": -0.08,
+          "add_weak_points": ["ml_gradient_descent"],
+          "recommend_review_nodes": ["ml_gradient_optimization_basic"]
+        }
+      },
+      "misconception_tags": ["gradient_direction_means_descent", "missing_learning_rate"],
+      "source_ids": ["book_hands_on_ml", "docs_sklearn_user_guide", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["gradient-descent", "coding", "parameter-update", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_lr_001",
+      "version": "v1",
+      "title": "线性回归适合预测什么",
+      "type": "choice",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_linear_regression",
+      "assesses": ["ml_linear_regression"],
+      "also_assesses": ["ml_supervised_unsupervised"],
+      "prerequisite_node_ids": ["ml_basic_terms"],
+      "difficulty": 1,
+      "estimated_minutes": 3,
+      "cognitive_level": "remember",
+      "assessment_focus": ["concept"],
+      "question": "以下哪类任务最适合用线性回归作为入门模型？",
+      "options": [
+        {"label": "A", "text": "预测房价这样的连续数值"},
+        {"label": "B", "text": "判断图片中是否有猫"},
+        {"label": "C", "text": "把样本自动分成若干簇"},
+        {"label": "D", "text": "在棋盘游戏中学习最优策略"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "线性回归主要用于预测连续目标变量，例如房价、温度、销量等。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾回归任务和分类、聚类、强化学习任务的区别。",
+        "by_option": {
+          "B": "判断是否有猫通常是分类任务，不是连续值回归任务。",
+          "C": "自动分簇属于无监督聚类任务。",
+          "D": "学习游戏策略更接近强化学习任务。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.04,
+          "confidence_delta": 0.02
+        },
+        "on_wrong": {
+          "mastery_delta": -0.04,
+          "add_weak_points": ["ml_linear_regression", "ml_supervised_unsupervised"],
+          "recommend_review_nodes": ["ml_basic_terms", "ml_supervised_unsupervised"]
+        }
+      },
+      "misconception_tags": ["confuse_regression_classification_clustering"],
+      "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["linear-regression", "regression-task", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_lr_002",
+      "version": "v1",
+      "title": "均方误差为什么常用于线性回归",
+      "type": "short_answer",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_linear_regression",
+      "assesses": ["ml_linear_regression", "ml_loss_function"],
+      "also_assesses": ["ml_gradient_descent"],
+      "prerequisite_node_ids": ["ml_loss_function"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "calculation"],
+      "question": "线性回归中为什么常用均方误差作为损失函数？请说明它衡量了什么，以及为什么适合连续值预测。",
+      "options": [],
+      "answer": {
+        "reference_answer": "均方误差衡量预测值与真实连续目标之间差值平方的平均水平。它能反映预测误差大小，形式简单、可导，便于和梯度下降等优化方法结合，因此常用于线性回归。",
+        "key_points": ["衡量预测值与真实值的误差", "使用平方误差并取平均", "适合连续值预测", "函数形式可导便于优化"]
+      },
+      "rubric": [
+        {"criterion": "说明均方误差衡量预测误差", "score": 1},
+        {"criterion": "说明平方和平均的含义", "score": 1},
+        {"criterion": "说明它适合连续值预测", "score": 1},
+        {"criterion": "说明可导或便于优化", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从误差含义、连续目标和可优化性三个角度回顾均方误差。",
+        "missing_key_point_feedback": {
+          "衡量预测值与真实值的误差": "需要说明损失函数是在衡量预测与真实目标之间的差距。",
+          "函数形式可导便于优化": "需要说明为什么这种形式适合和梯度下降配合。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.07,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_linear_regression", "ml_loss_function"],
+          "recommend_review_nodes": ["ml_loss_function", "ml_gradient_descent"]
+        }
+      },
+      "misconception_tags": ["loss_function_only_measures_accuracy", "mse_for_classification"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["linear-regression", "mse", "loss-function", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_lr_003",
+      "version": "v1",
+      "title": "实现一维线性模型预测",
+      "type": "coding",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_linear_regression",
+      "assesses": ["ml_linear_regression"],
+      "also_assesses": ["ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic"],
+      "difficulty": 2,
+      "estimated_minutes": 6,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `predict` 函数，实现一维线性模型 y = w * x + b。",
+      "starter_code": "def predict(x, w, b):\n    # TODO: return y = w * x + b\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def predict(x, w, b):\n    return w * x + b\n",
+        "explanation": "一维线性回归模型的预测形式为 y = w * x + b，其中 w 是权重，b 是偏置。"
+      },
+      "rubric": [
+        {"criterion": "正确使用 w * x", "score": 1},
+        {"criterion": "正确加上偏置 b", "score": 1},
+        {"criterion": "函数能返回预测值", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 3,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"x": 3.0, "w": 2.0, "b": 1.0},
+          "expected": 7.0
+        },
+        {
+          "input": {"x": -2.0, "w": 0.5, "b": 4.0},
+          "expected": 3.0
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查线性模型是否写成 w * x + b。",
+        "common_errors": {
+          "missing_bias": "你可能忘记了偏置项 b。",
+          "wrong_operator": "请确认使用的是乘法 w * x，而不是加法或其他运算。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.06,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_linear_regression"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic"]
+        }
+      },
+      "misconception_tags": ["missing_bias_term", "linear_model_formula_confusion"],
+      "source_ids": ["book_hands_on_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["linear-regression", "coding", "prediction", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_logreg_001",
+      "version": "v1",
+      "title": "逻辑回归输出的含义",
+      "type": "choice",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_logistic_regression",
+      "assesses": ["ml_logistic_regression"],
+      "also_assesses": ["ml_probability_statistics_basic"],
+      "prerequisite_node_ids": ["ml_probability_statistics_basic", "ml_linear_regression"],
+      "difficulty": 2,
+      "estimated_minutes": 3,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "二分类逻辑回归经过 Sigmoid 后的输出通常可以解释为什么？",
+      "options": [
+        {"label": "A", "text": "样本属于正类的概率估计"},
+        {"label": "B", "text": "样本与聚类中心的距离"},
+        {"label": "C", "text": "连续数值预测结果，不能用于分类"},
+        {"label": "D", "text": "模型参数的梯度"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "Sigmoid 将线性输出映射到 0 到 1 之间，因此可解释为样本属于正类的概率估计。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾 Sigmoid 的输出范围以及逻辑回归为何用于分类。",
+        "by_option": {
+          "B": "样本到聚类中心的距离更接近 K-Means 的概念。",
+          "C": "逻辑回归虽然名字里有回归，但常用于分类。",
+          "D": "梯度是优化时计算的量，不是模型最终概率输出。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_logistic_regression"],
+          "recommend_review_nodes": ["ml_probability_statistics_basic", "ml_linear_regression"]
+        }
+      },
+      "misconception_tags": ["logistic_regression_is_regression_only", "sigmoid_output_not_probability"],
+      "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["logistic-regression", "sigmoid", "classification", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_logreg_002",
+      "version": "v1",
+      "title": "逻辑回归为什么用于分类",
+      "type": "short_answer",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_logistic_regression",
+      "assesses": ["ml_logistic_regression"],
+      "also_assesses": ["ml_linear_regression", "ml_probability_statistics_basic"],
+      "prerequisite_node_ids": ["ml_linear_regression", "ml_probability_statistics_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "application"],
+      "question": "逻辑回归名字里有“回归”，为什么它通常用于分类任务？请结合线性输出、Sigmoid 和决策阈值说明。",
+      "options": [],
+      "answer": {
+        "reference_answer": "逻辑回归先计算线性输出，再通过 Sigmoid 将其映射为 0 到 1 之间的概率估计。对于二分类任务，可以根据概率是否超过某个阈值来决定类别，因此它常用于分类，而不是直接预测连续值。",
+        "key_points": ["先计算线性输出", "Sigmoid 映射到概率范围", "通过阈值决定类别", "常用于分类任务"]
+      },
+      "rubric": [
+        {"criterion": "说明逻辑回归包含线性模型部分", "score": 1},
+        {"criterion": "说明 Sigmoid 映射为概率", "score": 1},
+        {"criterion": "说明通过阈值做类别决策", "score": 1},
+        {"criterion": "能指出它通常用于分类任务", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请把逻辑回归拆成线性输出、概率映射和阈值分类三个步骤理解。",
+        "missing_key_point_feedback": {
+          "Sigmoid 映射为概率": "需要说明 Sigmoid 把线性输出压到 0 到 1 之间。",
+          "通过阈值做类别决策": "需要说明如何从概率变成具体类别。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_logistic_regression"],
+          "recommend_review_nodes": ["ml_linear_regression", "ml_probability_statistics_basic"]
+        }
+      },
+      "misconception_tags": ["logistic_regression_name_confusion", "probability_threshold_confusion"],
+      "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["logistic-regression", "classification", "sigmoid", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_logreg_003",
+      "version": "v1",
+      "title": "实现 Sigmoid 分类",
+      "type": "coding",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_logistic_regression",
+      "assesses": ["ml_logistic_regression"],
+      "also_assesses": ["ml_probability_statistics_basic"],
+      "prerequisite_node_ids": ["ml_linear_regression", "ml_probability_statistics_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 10,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "application"],
+      "question": "补全 `predict_label` 函数：先计算 sigmoid(z)，再用 0.5 作为阈值输出 0 或 1。",
+      "starter_code": "import math\n\ndef predict_label(z):\n    # TODO: compute sigmoid(z), then return 1 if probability >= 0.5 else 0\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "import math\n\ndef predict_label(z):\n    prob = 1 / (1 + math.exp(-z))\n    return 1 if prob >= 0.5 else 0\n",
+        "explanation": "Sigmoid 将 z 映射到概率范围，再根据阈值进行类别判断。"
+      },
+      "rubric": [
+        {"criterion": "正确计算 Sigmoid", "score": 2},
+        {"criterion": "使用 0.5 阈值判断类别", "score": 1},
+        {"criterion": "返回 0 或 1 标签", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"z": 0.0},
+          "expected": 1
+        },
+        {
+          "input": {"z": -2.0},
+          "expected": 0
+        },
+        {
+          "input": {"z": 3.0},
+          "expected": 1
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否先计算 Sigmoid，再用阈值输出类别。",
+        "common_errors": {
+          "return_probability_only": "你可能只返回了概率，但题目要求返回类别标签。",
+          "wrong_threshold": "请确认阈值是 0.5。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.1,
+          "confidence_delta": 0.05
+        },
+        "on_wrong": {
+          "mastery_delta": -0.08,
+          "add_weak_points": ["ml_logistic_regression"],
+          "recommend_review_nodes": ["ml_probability_statistics_basic"]
+        }
+      },
+      "misconception_tags": ["return_probability_instead_of_label", "sigmoid_formula_confusion"],
+      "source_ids": ["book_hands_on_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["logistic-regression", "sigmoid", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_sgd_001",
+      "version": "v1",
+      "title": "GD、SGD 与 Mini-batch 的区别",
+      "type": "choice",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_sgd_minibatch",
+      "assesses": ["ml_sgd_minibatch"],
+      "also_assesses": ["ml_gradient_descent"],
+      "prerequisite_node_ids": ["ml_gradient_descent"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "关于 Batch GD、SGD 和 Mini-batch SGD，下列说法哪项更准确？",
+      "options": [
+        {"label": "A", "text": "Batch GD 每次只用一个样本计算梯度"},
+        {"label": "B", "text": "SGD 每次通常用全部训练样本计算梯度"},
+        {"label": "C", "text": "Mini-batch SGD 每次使用一小批样本估计梯度"},
+        {"label": "D", "text": "三者没有任何区别"}
+      ],
+      "answer": {
+        "correct": "C",
+        "explanation": "Mini-batch SGD 每次使用一小批样本估计梯度，兼顾计算效率和梯度稳定性。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请对比每次计算梯度时使用的数据量：全量、单样本、小批量。",
+        "by_option": {
+          "A": "Batch GD 通常使用全部样本，而不是单个样本。",
+          "B": "SGD 通常使用单个样本或极小批量，而不是全部样本。",
+          "D": "三者的核心区别正是每次估计梯度所用的数据量。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_sgd_minibatch"],
+          "recommend_review_nodes": ["ml_gradient_descent"]
+        }
+      },
+      "misconception_tags": ["confuse_batch_sgd_minibatch"],
+      "source_ids": ["book_zhou_ml", "book_hands_on_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["sgd", "mini-batch", "gradient-descent", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_sgd_002",
+      "version": "v1",
+      "title": "如何选择 Mini-batch",
+      "type": "case_analysis",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_sgd_minibatch",
+      "assesses": ["ml_sgd_minibatch"],
+      "also_assesses": ["ml_gradient_descent"],
+      "prerequisite_node_ids": ["ml_gradient_descent"],
+      "difficulty": 3,
+      "estimated_minutes": 7,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["application"],
+      "question": "某模型使用全量梯度下降训练很慢；改用单样本 SGD 后损失曲线波动很大。你会建议尝试什么策略？为什么？",
+      "case_context": "训练数据量较大，模型可以接受一定随机性，但希望训练速度和收敛稳定性之间取得平衡。",
+      "options": [],
+      "answer": {
+        "reference_answer": "可以尝试 Mini-batch SGD。它每次使用一小批样本估计梯度，比全量梯度下降更快，又比单样本 SGD 的梯度估计更稳定，通常能在训练效率和收敛稳定性之间取得平衡。",
+        "key_points": ["建议 Mini-batch SGD", "说明比全量梯度下降更高效", "说明比单样本 SGD 更稳定", "说明效率和稳定性的折中"]
+      },
+      "rubric": [
+        {"criterion": "明确建议 Mini-batch SGD", "score": 1},
+        {"criterion": "说明相对全量梯度下降的效率优势", "score": 1},
+        {"criterion": "说明相对单样本 SGD 的稳定性优势", "score": 1},
+        {"criterion": "能结合案例说明折中思想", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从计算效率和梯度稳定性两个角度分析 Mini-batch 的作用。",
+        "missing_key_point_feedback": {
+          "建议 Mini-batch SGD": "需要明确给出策略，而不是只描述现象。",
+          "效率和稳定性的折中": "需要说明为什么 Mini-batch 位于 Batch GD 和 SGD 之间。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_sgd_minibatch"],
+          "recommend_review_nodes": ["ml_gradient_descent"]
+        }
+      },
+      "misconception_tags": ["minibatch_only_for_speed", "ignore_gradient_noise"],
+      "source_ids": ["book_hands_on_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["sgd", "mini-batch", "case-analysis", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch03_sgd_003",
+      "version": "v1",
+      "title": "计算 Mini-batch 平均梯度",
+      "type": "coding",
+      "chapter_id": "ch03",
+      "related_node_id": "ml_sgd_minibatch",
+      "assesses": ["ml_sgd_minibatch"],
+      "also_assesses": ["ml_gradient_descent"],
+      "prerequisite_node_ids": ["ml_gradient_descent"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `mean_gradient` 函数，返回一个 mini-batch 中多个样本梯度的平均值。",
+      "starter_code": "def mean_gradient(grads):\n    # grads is a list of numbers\n    # TODO: return average gradient\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def mean_gradient(grads):\n    return sum(grads) / len(grads)\n",
+        "explanation": "Mini-batch 常用一小批样本的平均梯度作为本次参数更新方向的估计。"
+      },
+      "rubric": [
+        {"criterion": "正确累加 batch 内梯度", "score": 1},
+        {"criterion": "正确除以样本数量", "score": 1},
+        {"criterion": "函数返回平均梯度", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 3,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"grads": [2.0, 4.0, 6.0]},
+          "expected": 4.0
+        },
+        {
+          "input": {"grads": [-1.0, 1.0, 3.0]},
+          "expected": 1.0
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否对 batch 内的梯度求平均，而不是只取其中一个或直接求和。",
+        "common_errors": {
+          "sum_only": "你可能只求和但没有除以样本数量。",
+          "first_only": "你可能只使用了第一个样本的梯度，这更接近单样本 SGD。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_sgd_minibatch"],
+          "recommend_review_nodes": ["ml_gradient_descent"]
+        }
+      },
+      "misconception_tags": ["minibatch_gradient_not_average", "sgd_minibatch_confusion"],
+      "source_ids": ["book_hands_on_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["sgd", "mini-batch", "coding", "p0"]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "course_id": "ml_course",
+  "name": "机器学习",
+  "description": "面向计算机相关专业本科生的机器学习课程知识库，用于 EduGraph-Agent 的知识图谱、GraphRAG、资源生成、学习路径规划和学习效果评估。",
+  "target_audience": "计算机相关专业本科生",
+  "difficulty_range": "1-5",
+  "chapters": 11,
+  "primary_language": "zh",
+  "source_policy": "教材和公开课用于理解、摘要和引用来源记录；知识库正文应使用自写表述，避免大段复制原文。"
+}

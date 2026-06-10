@@ -1,0 +1,505 @@
+{
+  "chapter_id": "ch02",
+  "chapter_title": "数学基础与优化基础",
+  "exercise_schema_version": "v1",
+  "status": "drafted",
+  "target_count": 8,
+  "exercises": [
+    {
+      "exercise_id": "ex_ch02_calc_001",
+      "version": "v1",
+      "title": "导数在优化中的含义",
+      "type": "choice",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_calculus_optimization_basic",
+      "assesses": ["ml_calculus_optimization_basic"],
+      "also_assesses": ["ml_gradient_optimization_basic"],
+      "prerequisite_node_ids": [],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "在一维函数优化中，导数的符号通常可以告诉我们什么？",
+      "options": [
+        {"label": "A", "text": "函数在当前位置附近增大或减小的趋势"},
+        {"label": "B", "text": "训练集一定有多少样本"},
+        {"label": "C", "text": "模型一定是否过拟合"},
+        {"label": "D", "text": "分类标签的具体名称"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "导数描述函数值随自变量变化的局部变化率，符号可以反映函数在当前位置附近的上升或下降趋势。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾导数表示局部变化率，而不是数据规模或类别名称。",
+        "by_option": {
+          "B": "样本数量属于数据集属性，不由导数符号决定。",
+          "C": "过拟合需要结合训练和验证表现判断，不是导数符号直接给出。",
+          "D": "分类标签名称与导数没有直接关系。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_calculus_optimization_basic"],
+          "recommend_review_nodes": ["ml_basic_terms"]
+        }
+      },
+      "misconception_tags": ["derivative_not_local_trend", "optimization_math_disconnected"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["calculus", "derivative", "optimization", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch02_calc_002",
+      "version": "v1",
+      "title": "计算简单二次函数的导数",
+      "type": "coding",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_calculus_optimization_basic",
+      "assesses": ["ml_calculus_optimization_basic"],
+      "also_assesses": ["ml_gradient_optimization_basic"],
+      "prerequisite_node_ids": [],
+      "difficulty": 2,
+      "estimated_minutes": 6,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `quadratic_grad` 函数，返回函数 f(w) = (w - target)^2 对 w 的导数。",
+      "starter_code": "def quadratic_grad(w, target):\n    # TODO: derivative of (w - target) ** 2\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def quadratic_grad(w, target):\n    return 2 * (w - target)\n",
+        "explanation": "f(w) = (w - target)^2，对 w 求导得到 2 * (w - target)。"
+      },
+      "rubric": [
+        {"criterion": "正确写出二次函数导数", "score": 2},
+        {"criterion": "正确使用 target", "score": 1},
+        {"criterion": "函数返回数值结果", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"w": 5.0, "target": 3.0},
+          "expected": 4.0
+        },
+        {
+          "input": {"w": -1.0, "target": 2.0},
+          "expected": -6.0
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否对 (w - target)^2 正确求导。",
+        "common_errors": {
+          "missing_factor_2": "二次函数求导后需要有系数 2。",
+          "wrong_sign": "请注意导数是 2 * (w - target)，不是 2 * (target - w)。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_calculus_optimization_basic"],
+          "recommend_review_nodes": ["ml_gradient_optimization_basic"]
+        }
+      },
+      "misconception_tags": ["quadratic_derivative_confusion", "gradient_sign_confusion"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["calculus", "derivative", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch02_loss_001",
+      "version": "v1",
+      "title": "损失函数和评估指标的区别",
+      "type": "choice",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_loss_function",
+      "assesses": ["ml_loss_function"],
+      "also_assesses": ["ml_performance_metrics"],
+      "prerequisite_node_ids": ["ml_basic_terms"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "关于损失函数和评估指标，下列说法哪项更准确？",
+      "options": [
+        {"label": "A", "text": "损失函数通常用于训练优化，评估指标用于衡量模型效果，二者可以不同"},
+        {"label": "B", "text": "损失函数和评估指标必须完全相同"},
+        {"label": "C", "text": "评估指标只能用于更新参数"},
+        {"label": "D", "text": "损失函数不需要和预测结果有关"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "损失函数通常作为可优化目标用于训练，评估指标用于解释模型表现；实际项目中二者常相关但不一定相同。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请区分训练时优化的目标和最终报告/比较模型时看的指标。",
+        "by_option": {
+          "B": "二者可以不同，例如训练用交叉熵，评估时还看准确率、F1 等。",
+          "C": "参数更新通常依赖损失函数的梯度，而不是直接依赖所有评估指标。",
+          "D": "损失函数通常衡量预测和真实结果之间的差异。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_loss_function"],
+          "recommend_review_nodes": ["ml_basic_terms", "ml_performance_metrics"]
+        }
+      },
+      "misconception_tags": ["loss_metric_same", "metric_updates_parameters"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["loss-function", "metrics", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch02_loss_002",
+      "version": "v1",
+      "title": "计算均方误差",
+      "type": "coding",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_loss_function",
+      "assesses": ["ml_loss_function"],
+      "also_assesses": ["ml_linear_regression"],
+      "prerequisite_node_ids": ["ml_basic_terms"],
+      "difficulty": 2,
+      "estimated_minutes": 7,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `mean_squared_error` 函数，返回预测值和真实值之间的均方误差。",
+      "starter_code": "def mean_squared_error(y_pred, y_true):\n    # y_pred and y_true are lists of numbers with the same length\n    # TODO: return average squared error\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def mean_squared_error(y_pred, y_true):\n    return sum((p - t) ** 2 for p, t in zip(y_pred, y_true)) / len(y_true)\n",
+        "explanation": "均方误差是预测值与真实值差值平方的平均值。"
+      },
+      "rubric": [
+        {"criterion": "正确计算预测与真实值差值", "score": 1},
+        {"criterion": "正确平方误差", "score": 1},
+        {"criterion": "正确求平均", "score": 1},
+        {"criterion": "返回数值结果", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"y_pred": [2, 3, 4], "y_true": [1, 3, 5]},
+          "expected": 0.6666666667
+        },
+        {
+          "input": {"y_pred": [1, 1], "y_true": [1, 1]},
+          "expected": 0.0
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否对误差平方后再取平均。",
+        "common_errors": {
+          "absolute_error": "你可能计算了绝对误差，均方误差需要平方。",
+          "missing_average": "你可能只求和但没有除以样本数量。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_loss_function"],
+          "recommend_review_nodes": ["ml_basic_terms"]
+        }
+      },
+      "misconception_tags": ["mse_formula_confusion", "missing_average"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["loss-function", "mse", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch02_loss_003",
+      "version": "v1",
+      "title": "选择合适的损失函数",
+      "type": "case_analysis",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_loss_function",
+      "assesses": ["ml_loss_function"],
+      "also_assesses": ["ml_linear_regression", "ml_logistic_regression"],
+      "prerequisite_node_ids": ["ml_basic_terms"],
+      "difficulty": 3,
+      "estimated_minutes": 7,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["application"],
+      "question": "一个任务要预测房价这样的连续数值，另一个任务要判断邮件是否垃圾邮件。你会分别倾向选择哪类损失函数？为什么？",
+      "case_context": "第一个任务是回归任务，第二个任务是二分类任务。这里只需要说明直觉层面的选择，不要求推导公式。",
+      "options": [],
+      "answer": {
+        "reference_answer": "房价预测属于连续值回归，常用均方误差等回归损失来衡量预测值与真实值的差距；垃圾邮件判断属于二分类任务，常用交叉熵或对数损失来衡量预测概率与真实类别之间的差距。",
+        "key_points": ["房价预测是回归任务", "回归常用均方误差等损失", "垃圾邮件判断是二分类任务", "分类常用交叉熵或对数损失"]
+      },
+      "rubric": [
+        {"criterion": "识别房价预测为回归任务", "score": 1},
+        {"criterion": "为回归任务选择均方误差等损失", "score": 1},
+        {"criterion": "识别垃圾邮件判断为分类任务", "score": 1},
+        {"criterion": "为分类任务选择交叉熵或对数损失", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请先区分任务类型，再选择与输出形式匹配的损失函数。",
+        "missing_key_point_feedback": {
+          "回归常用均方误差等损失": "连续值预测通常关注预测数值和真实数值的差距。",
+          "分类常用交叉熵或对数损失": "分类任务通常建模类别概率，常用交叉熵类损失。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_loss_function"],
+          "recommend_review_nodes": ["ml_basic_terms", "ml_linear_regression", "ml_logistic_regression"]
+        }
+      },
+      "misconception_tags": ["same_loss_for_all_tasks", "regression_classification_confusion"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229", "course_andrew_ng_ml_specialization"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["loss-function", "regression", "classification", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch02_grad_001",
+      "version": "v1",
+      "title": "为什么优化要关注梯度",
+      "type": "short_answer",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_gradient_optimization_basic",
+      "assesses": ["ml_gradient_optimization_basic"],
+      "also_assesses": ["ml_calculus_optimization_basic", "ml_loss_function"],
+      "prerequisite_node_ids": ["ml_calculus_optimization_basic", "ml_loss_function"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "calculation"],
+      "question": "在模型训练中，为什么我们常常关注损失函数对参数的梯度？它能帮助我们做什么？",
+      "options": [],
+      "answer": {
+        "reference_answer": "梯度描述损失函数对参数变化的局部敏感程度和上升方向。训练时可以利用梯度判断如何调整参数，使损失下降，例如沿负梯度方向更新参数。",
+        "key_points": ["梯度描述损失对参数变化的局部敏感性", "梯度方向表示局部上升方向", "可用负梯度方向降低损失", "梯度用于指导参数更新"]
+      },
+      "rubric": [
+        {"criterion": "说明梯度反映局部变化或敏感性", "score": 1},
+        {"criterion": "说明梯度方向与损失上升有关", "score": 1},
+        {"criterion": "说明负梯度方向有助于降低损失", "score": 1},
+        {"criterion": "说明梯度指导参数更新", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请把梯度和“参数往哪里调才能让损失变小”联系起来。",
+        "missing_key_point_feedback": {
+          "可用负梯度方向降低损失": "需要说明为什么训练时常沿负梯度方向更新。",
+          "梯度用于指导参数更新": "需要说明梯度不是最终目标，而是优化过程的方向信息。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_gradient_optimization_basic"],
+          "recommend_review_nodes": ["ml_calculus_optimization_basic", "ml_loss_function"]
+        }
+      },
+      "misconception_tags": ["gradient_direction_means_descent", "gradient_not_parameter_update"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["gradient", "optimization", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch02_grad_002",
+      "version": "v1",
+      "title": "判断参数更新方向",
+      "type": "choice",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_gradient_optimization_basic",
+      "assesses": ["ml_gradient_optimization_basic"],
+      "also_assesses": ["ml_gradient_descent"],
+      "prerequisite_node_ids": ["ml_calculus_optimization_basic", "ml_loss_function"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "apply",
+      "assessment_focus": ["concept", "calculation"],
+      "question": "如果某个参数 w 的当前梯度 grad = 3，学习率为正，为了降低损失，梯度下降通常会如何更新 w？",
+      "options": [
+        {"label": "A", "text": "让 w 减小一些"},
+        {"label": "B", "text": "让 w 增大一些"},
+        {"label": "C", "text": "让 w 保持不变"},
+        {"label": "D", "text": "直接把 w 设置成 3"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "梯度为正表示沿 w 增大方向损失局部上升，因此梯度下降会沿负梯度方向更新，让 w 减小。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾梯度下降更新：w = w - learning_rate * grad。",
+        "by_option": {
+          "B": "梯度为正时，沿正方向会让损失局部上升，梯度下降应反向走。",
+          "C": "只要学习率为正且梯度不为 0，参数通常会更新。",
+          "D": "梯度不是要直接赋给参数的值。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_gradient_optimization_basic"],
+          "recommend_review_nodes": ["ml_calculus_optimization_basic", "ml_loss_function"]
+        }
+      },
+      "misconception_tags": ["gradient_direction_means_descent", "assign_gradient_to_parameter"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["gradient", "parameter-update", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch02_grad_003",
+      "version": "v1",
+      "title": "实现一维梯度优化步骤",
+      "type": "coding",
+      "chapter_id": "ch02",
+      "related_node_id": "ml_gradient_optimization_basic",
+      "assesses": ["ml_gradient_optimization_basic"],
+      "also_assesses": ["ml_calculus_optimization_basic"],
+      "prerequisite_node_ids": ["ml_calculus_optimization_basic", "ml_loss_function"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `optimize_step` 函数：给定当前参数 `w`、梯度 `grad` 和学习率 `lr`，返回一次沿负梯度方向更新后的参数。",
+      "starter_code": "def optimize_step(w, grad, lr):\n    # TODO: return updated parameter\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def optimize_step(w, grad, lr):\n    return w - lr * grad\n",
+        "explanation": "基于梯度的一步参数更新通常写作 w_new = w - lr * grad。"
+      },
+      "rubric": [
+        {"criterion": "使用负梯度方向", "score": 2},
+        {"criterion": "正确使用学习率", "score": 1},
+        {"criterion": "返回更新后的参数", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"w": 10.0, "grad": 4.0, "lr": 0.1},
+          "expected": 9.6
+        },
+        {
+          "input": {"w": -2.0, "grad": -1.5, "lr": 0.2},
+          "expected": -1.7
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查公式是否为 w - lr * grad。",
+        "common_errors": {
+          "plus_gradient": "你可能沿梯度方向更新了，应改为负梯度方向。",
+          "missing_lr": "你可能忘记乘以学习率。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.1,
+          "confidence_delta": 0.05
+        },
+        "on_wrong": {
+          "mastery_delta": -0.08,
+          "add_weak_points": ["ml_gradient_optimization_basic"],
+          "recommend_review_nodes": ["ml_calculus_optimization_basic", "ml_loss_function"]
+        }
+      },
+      "misconception_tags": ["gradient_direction_means_descent", "missing_learning_rate"],
+      "source_ids": ["book_zhou_ml", "course_stanford_cs229"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "main_flow",
+      "tags": ["gradient", "optimization", "coding", "p0"]
+    }
+  ]
+}

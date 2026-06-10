@@ -1,0 +1,374 @@
+{
+  "chapter_id": "ch05",
+  "chapter_title": "无监督学习与特征表示",
+  "exercise_schema_version": "v1",
+  "status": "drafted",
+  "target_count": 6,
+  "exercises": [
+    {
+      "exercise_id": "ex_ch05_cluster_001",
+      "version": "v1",
+      "title": "聚类任务和分类任务的区别",
+      "type": "choice",
+      "chapter_id": "ch05",
+      "related_node_id": "ml_clustering",
+      "assesses": ["ml_clustering"],
+      "also_assesses": ["ml_supervised_unsupervised"],
+      "prerequisite_node_ids": ["ml_supervised_unsupervised"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "关于聚类任务，下列说法哪项更准确？",
+      "options": [
+        {"label": "A", "text": "聚类通常在无标签数据中发现样本的相似结构"},
+        {"label": "B", "text": "聚类必须先知道每个样本的真实类别标签"},
+        {"label": "C", "text": "聚类只能用于预测连续数值"},
+        {"label": "D", "text": "聚类结果一定等同于人工标注类别"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "聚类是无监督学习的代表任务，通常用于在无标签数据中发现相似样本形成的簇。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请回顾监督学习和无监督学习的核心区别：是否依赖标签。",
+        "by_option": {
+          "B": "需要真实标签的是监督分类任务，聚类通常不依赖标签。",
+          "C": "预测连续数值通常是回归任务。",
+          "D": "聚类发现的是数据结构，不一定等同于人工类别。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_clustering"],
+          "recommend_review_nodes": ["ml_supervised_unsupervised"]
+        }
+      },
+      "misconception_tags": ["clustering_needs_labels", "clustering_equals_classification"],
+      "source_ids": ["book_zhou_ml", "book_prml_bishop"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["clustering", "unsupervised-learning", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch05_kmeans_001",
+      "version": "v1",
+      "title": "K-Means 的迭代过程",
+      "type": "short_answer",
+      "chapter_id": "ch05",
+      "related_node_id": "ml_kmeans",
+      "assesses": ["ml_kmeans"],
+      "also_assesses": ["ml_clustering", "ml_metric_learning"],
+      "prerequisite_node_ids": ["ml_clustering", "ml_metric_learning"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept"],
+      "question": "请简要说明 K-Means 的两个核心迭代步骤，以及它们分别在做什么。",
+      "options": [],
+      "answer": {
+        "reference_answer": "K-Means 通常反复执行两个步骤：先根据样本到各簇中心的距离，把样本分配给最近的簇中心；再根据每个簇中的样本重新计算簇中心。这个过程不断迭代，直到分配或中心变化很小。",
+        "key_points": ["根据距离分配样本到最近簇中心", "根据簇内样本重新计算簇中心", "两个步骤交替迭代", "直到收敛或变化很小"]
+      },
+      "rubric": [
+        {"criterion": "说明样本分配步骤", "score": 1},
+        {"criterion": "说明更新簇中心步骤", "score": 1},
+        {"criterion": "说明两个步骤交替迭代", "score": 1},
+        {"criterion": "说明停止条件或收敛直觉", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请围绕“分配样本”和“更新中心”两个动作回答。",
+        "missing_key_point_feedback": {
+          "根据距离分配样本到最近簇中心": "需要说明分配步骤依赖样本到簇中心的距离。",
+          "根据簇内样本重新计算簇中心": "需要说明中心会根据当前簇内样本重新计算。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_kmeans"],
+          "recommend_review_nodes": ["ml_clustering", "ml_metric_learning"]
+        }
+      },
+      "misconception_tags": ["kmeans_single_step", "ignore_cluster_center_update"],
+      "source_ids": ["book_zhou_ml", "book_prml_bishop", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["kmeans", "clustering", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch05_kmeans_002",
+      "version": "v1",
+      "title": "计算一维 K-Means 簇中心",
+      "type": "coding",
+      "chapter_id": "ch05",
+      "related_node_id": "ml_kmeans",
+      "assesses": ["ml_kmeans"],
+      "also_assesses": ["ml_clustering", "ml_metric_learning"],
+      "prerequisite_node_ids": ["ml_clustering", "ml_metric_learning"],
+      "difficulty": 3,
+      "estimated_minutes": 8,
+      "cognitive_level": "apply",
+      "assessment_focus": ["coding", "calculation"],
+      "question": "补全 `cluster_center_1d` 函数，给定一维样本列表，返回该簇的新中心。",
+      "starter_code": "def cluster_center_1d(points):\n    # points is a list of numbers\n    # TODO: return mean value as new center\n    pass\n",
+      "options": [],
+      "answer": {
+        "reference_code": "def cluster_center_1d(points):\n    return sum(points) / len(points) if points else 0\n",
+        "explanation": "K-Means 更新簇中心时，通常将簇内样本的均值作为新的中心。"
+      },
+      "rubric": [
+        {"criterion": "正确累加簇内样本", "score": 1},
+        {"criterion": "正确除以样本数量", "score": 1},
+        {"criterion": "返回均值作为中心", "score": 1},
+        {"criterion": "处理空列表情况", "score": 1}
+      ],
+      "grading": {
+        "method": "unit_test",
+        "max_score": 4,
+        "auto_gradable": true
+      },
+      "test_cases": [
+        {
+          "input": {"points": [1, 2, 4]},
+          "expected": 2.3333333333
+        },
+        {
+          "input": {"points": [5, 7]},
+          "expected": 6.0
+        },
+        {
+          "input": {"points": []},
+          "expected": 0
+        }
+      ],
+      "adaptive_feedback": {
+        "default": "请检查是否用簇内样本的平均值更新中心。",
+        "common_errors": {
+          "sum_only": "你可能只求和但没有除以样本数量。",
+          "use_first_point": "簇中心不是简单取第一个样本，而是取簇内样本均值。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_kmeans"],
+          "recommend_review_nodes": ["ml_clustering", "ml_metric_learning"]
+        }
+      },
+      "misconception_tags": ["kmeans_center_not_mean", "missing_average"],
+      "source_ids": ["book_zhou_ml", "book_prml_bishop", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["kmeans", "cluster-center", "coding", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch05_dimred_001",
+      "version": "v1",
+      "title": "降维的主要用途",
+      "type": "choice",
+      "chapter_id": "ch05",
+      "related_node_id": "ml_dimensionality_reduction",
+      "assesses": ["ml_dimensionality_reduction"],
+      "also_assesses": ["ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic"],
+      "difficulty": 2,
+      "estimated_minutes": 4,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "application"],
+      "question": "关于降维，下列说法哪项更准确？",
+      "options": [
+        {"label": "A", "text": "降维可以把高维数据映射到低维空间，以便保留主要信息、可视化或降低计算成本"},
+        {"label": "B", "text": "降维一定会完整保留原始数据中的所有信息"},
+        {"label": "C", "text": "降维只能用于有标签分类任务"},
+        {"label": "D", "text": "降维的目标是让样本数量变少"}
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "降维关注的是特征维度或表示空间的压缩，常用于保留主要信息、可视化和降低计算复杂度。"
+      },
+      "rubric": [],
+      "grading": {
+        "method": "rule",
+        "max_score": 1,
+        "auto_gradable": true
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请区分特征维度变少和样本数量变少。",
+        "by_option": {
+          "B": "降维通常会牺牲部分信息，目标是尽量保留主要信息。",
+          "C": "降维既可用于有监督场景，也可用于无监督表示和可视化。",
+          "D": "降维减少的是特征维度或表示维度，不是样本数量。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.05,
+          "confidence_delta": 0.03
+        },
+        "on_wrong": {
+          "mastery_delta": -0.05,
+          "add_weak_points": ["ml_dimensionality_reduction"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic"]
+        }
+      },
+      "misconception_tags": ["dimred_keeps_all_information", "dimred_reduces_samples"],
+      "source_ids": ["book_zhou_ml", "book_prml_bishop", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["dimensionality-reduction", "representation", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch05_dimred_002",
+      "version": "v1",
+      "title": "选择降维还是特征选择",
+      "type": "case_analysis",
+      "chapter_id": "ch05",
+      "related_node_id": "ml_dimensionality_reduction",
+      "assesses": ["ml_dimensionality_reduction"],
+      "also_assesses": ["ml_feature_selection", "ml_linear_algebra_basic"],
+      "prerequisite_node_ids": ["ml_linear_algebra_basic"],
+      "difficulty": 3,
+      "estimated_minutes": 7,
+      "cognitive_level": "analyze",
+      "assessment_focus": ["application"],
+      "question": "某数据集有 1000 个连续特征，团队希望把样本可视化到二维空间，观察是否存在自然分组。你会优先考虑降维还是特征选择？为什么？",
+      "case_context": "目标不是保留原始特征名称，而是把高维样本投影到低维空间进行观察。",
+      "options": [],
+      "answer": {
+        "reference_answer": "可以优先考虑降维，例如 PCA、t-SNE 或 UMAP 一类方法。因为目标是把高维样本映射到二维空间进行可视化，关注低维表示和主要结构，而不是从 1000 个原始特征中挑选少量原特征。",
+        "key_points": ["优先考虑降维", "目标是二维可视化", "降维将高维表示映射到低维空间", "特征选择更偏向保留原始特征子集"]
+      },
+      "rubric": [
+        {"criterion": "明确优先考虑降维", "score": 1},
+        {"criterion": "说明目标是二维可视化", "score": 1},
+        {"criterion": "说明降维适合高维到低维表示映射", "score": 1},
+        {"criterion": "能与特征选择做基本区分", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从任务目标出发：是要低维表示，还是要挑选原始特征？",
+        "missing_key_point_feedback": {
+          "目标是二维可视化": "需要说明为什么二维可视化天然指向降维。",
+          "特征选择更偏向保留原始特征子集": "需要区分降维和特征选择的输出形式。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_dimensionality_reduction"],
+          "recommend_review_nodes": ["ml_linear_algebra_basic", "ml_feature_selection"]
+        }
+      },
+      "misconception_tags": ["dimred_feature_selection_confusion", "ignore_visualization_goal"],
+      "source_ids": ["book_zhou_ml", "book_prml_bishop", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["dimensionality-reduction", "feature-selection", "case-analysis", "p0"]
+    },
+    {
+      "exercise_id": "ex_ch05_feat_001",
+      "version": "v1",
+      "title": "特征选择的作用",
+      "type": "short_answer",
+      "chapter_id": "ch05",
+      "related_node_id": "ml_feature_selection",
+      "assesses": ["ml_feature_selection"],
+      "also_assesses": ["ml_overfitting_underfitting", "ml_performance_metrics"],
+      "prerequisite_node_ids": ["ml_overfitting_underfitting", "ml_performance_metrics"],
+      "difficulty": 3,
+      "estimated_minutes": 6,
+      "cognitive_level": "understand",
+      "assessment_focus": ["concept", "application"],
+      "question": "为什么在高维数据中进行特征选择可能有助于提升模型效果或可解释性？",
+      "options": [],
+      "answer": {
+        "reference_answer": "特征选择可以去掉无关、冗余或噪声特征，让模型更关注有用信息，可能降低过拟合风险、减少计算成本，并保留更容易解释的原始特征子集。",
+        "key_points": ["去掉无关或冗余特征", "降低过拟合风险", "减少计算成本", "保留可解释的原始特征子集"]
+      },
+      "rubric": [
+        {"criterion": "说明可去掉无关或冗余特征", "score": 1},
+        {"criterion": "说明可能降低过拟合风险", "score": 1},
+        {"criterion": "说明减少计算成本", "score": 1},
+        {"criterion": "说明有助于可解释性", "score": 1}
+      ],
+      "grading": {
+        "method": "rubric",
+        "max_score": 4,
+        "auto_gradable": false
+      },
+      "test_cases": [],
+      "adaptive_feedback": {
+        "default": "请从泛化、计算成本和解释性三个角度组织回答。",
+        "missing_key_point_feedback": {
+          "降低过拟合风险": "高维无关特征可能让模型记住噪声，特征选择有助于缓解。",
+          "保留可解释的原始特征子集": "特征选择通常保留原始特征的一部分，因此更易解释。"
+        }
+      },
+      "profile_update_policy": {
+        "on_correct": {
+          "mastery_delta": 0.08,
+          "confidence_delta": 0.04
+        },
+        "on_wrong": {
+          "mastery_delta": -0.06,
+          "add_weak_points": ["ml_feature_selection"],
+          "recommend_review_nodes": ["ml_overfitting_underfitting", "ml_performance_metrics"]
+        }
+      },
+      "misconception_tags": ["feature_selection_always_hurts", "feature_selection_dimred_confusion"],
+      "source_ids": ["book_zhou_ml", "docs_sklearn_user_guide"],
+      "created_by": "human",
+      "review_status": "draft",
+      "quality_score": null,
+      "demo_usage": "support",
+      "tags": ["feature-selection", "overfitting", "p0"]
+    }
+  ]
+}
