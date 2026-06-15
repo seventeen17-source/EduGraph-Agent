@@ -1,6 +1,6 @@
 # EduGraph-Agent 项目进度台账
 
-最后更新：2026-06-07
+最后更新：2026-06-14
 
 本文档用于记录 EduGraph-Agent 项目的已完成事项、待做事项和下一步优先级。后续每完成一个任务，都需要同步更新本文档。
 
@@ -18,7 +18,7 @@
 
 | 模块 | 状态 | 当前结果 | 下一步 |
 | --- | --- | --- | --- |
-| 项目需求与赛题理解 | DONE | 已形成 A3 初步开发文档和开发时间表 | 后续按功能变化持续修订 |
+| 项目需求与赛题理解 | DONE | 已形成 A3 初步开发文档、开发时间表和面向队友的需求分析说明书 | 后续按功能变化持续修订 |
 | 项目专属 Skill | DONE | Codex 与 Claude 均有 `edugraph-agent` skill | 每次新增关键规则时同步两边 |
 | 文档目录整理 | DONE | 项目文档已迁入 `docs/project`，知识库文档已迁入 `docs/knowledge-base` | 维护 `docs/README.md` 索引 |
 | 参考教材整理 | DONE | 10 本参考教材 PDF 已放在 `参考教材/`，并在 `data/sources/sources.json` 中登记本地路径 | 不直接放入知识库正文，只作为参考来源 |
@@ -50,6 +50,7 @@
 
 - DONE：形成 [A3_initial_development_doc.md](A3_initial_development_doc.md)。
 - DONE：形成 [A3_development_schedule.md](A3_development_schedule.md)。
+- DONE：形成 [需求分析说明书.md](需求分析说明书.md)，用于给首次接触项目的队友快速理解项目目标、功能需求、数据需求、接口需求和验收标准。
 - DONE：形成 [PROJECT_PROGRESS.md](PROJECT_PROGRESS.md)，用于持续记录已做事项、待做事项、优先级和后续更新规则。
 - DONE：明确技术栈：Vue 3 + FastAPI + LangChain + LangGraph。
 - DONE：明确知识库首选课程为机器学习。
