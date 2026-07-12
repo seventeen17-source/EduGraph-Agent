@@ -171,7 +171,7 @@ class LangChainLLMResolverClient:
             model_kwargs["base_url"] = self.settings.llm_base_url
 
         llm = ChatOpenAI(**model_kwargs)
-        structured_method = "json_mode" if self.settings.llm_provider == "deepseek" else "function_calling"
+        structured_method = "json_mode" if self.settings.llm_provider in ("deepseek", "qwen", "anthropic") else "function_calling"
         structured_llm = llm.with_structured_output(QueryUnderstanding, method=structured_method)
         prompt = ChatPromptTemplate.from_messages(
             [

@@ -17,12 +17,16 @@ node_modules/
 dist/
 build/
 .vite/
+*.tsbuildinfo
 
 # Local reference materials and generated indexes
 参考教材/
 data/indexes/
 chroma/
 *.faiss
+*.db
+*.sqlite
+*.sqlite3
 
 # Temporary files
 tmp_*

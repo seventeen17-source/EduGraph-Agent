@@ -33,7 +33,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_001_ml_basic_terms"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -75,7 +77,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_002_ml_supervised_unsupervised"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -117,7 +121,9 @@
     ],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_003_ml_dataset_split"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -155,7 +161,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_004_ml_generalization"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -204,7 +212,9 @@
       "能根据训练/验证表现判断过拟合或欠拟合",
       "能提出至少两种缓解过拟合的方法"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_005_ml_overfitting_underfitting"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -243,7 +253,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_006_ml_evaluation_methods"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -290,7 +302,9 @@
       "能根据任务选择合适指标",
       "能解释准确率、召回率、F1 和 AUC 的区别"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_007_ml_performance_metrics"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -329,7 +343,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_008_ml_bias_variance"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -365,7 +381,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch02_math_optimization_001_ml_linear_algebra_basic"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -402,7 +420,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch02_math_optimization_002_ml_probability_statistics_basic"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -438,7 +458,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch02_math_optimization_003_ml_calculus_optimization_basic"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -485,7 +507,9 @@
       "能区分损失函数与评估指标",
       "能解释为什么训练过程要最小化损失"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch02_math_optimization_004_ml_loss_function"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -526,7 +550,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch02_math_optimization_005_ml_gradient_optimization_basic"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -566,7 +592,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch03_linear_models_optimization_001_ml_linear_regression"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -618,7 +646,9 @@
       "能说明 Sigmoid/Softmax 与概率输出的关系",
       "能判断逻辑回归适合的任务类型"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch03_linear_models_optimization_004_ml_logistic_regression"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -658,7 +688,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch03_linear_models_optimization_005_ml_linear_discriminant_analysis"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -712,7 +744,9 @@
       "能比较 GD、SGD 和 Mini-batch 的差异",
       "能通过代码观察学习率对收敛过程的影响"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch03_linear_models_optimization_002_ml_gradient_descent"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -752,7 +786,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch03_linear_models_optimization_003_ml_sgd_minibatch"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -792,7 +828,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch04_supervised_algorithms_001_ml_decision_tree"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -838,7 +876,9 @@
       "支持向量机只适合小数据集"
     ],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch04_supervised_algorithms_002_ml_svm"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -877,7 +917,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch04_supervised_algorithms_003_ml_bayesian_classifier"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -917,7 +959,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch04_supervised_algorithms_004_ml_ensemble_learning"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -956,7 +1000,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch04_supervised_algorithms_005_ml_random_forest"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -995,7 +1041,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch05_unsupervised_representation_001_ml_clustering"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1044,7 +1092,9 @@
       "能描述 K-Means 的迭代过程",
       "能解释初始中心和 K 值对结果的影响"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch05_unsupervised_representation_002_ml_kmeans"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1084,7 +1134,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch05_unsupervised_representation_003_ml_dimensionality_reduction"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1125,7 +1177,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch05_unsupervised_representation_004_ml_metric_learning"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1166,7 +1220,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch05_unsupervised_representation_005_ml_feature_selection"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1206,7 +1262,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch05_unsupervised_representation_006_ml_sparse_learning"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1256,7 +1314,9 @@
       "能比较 L1 与 L2 的差异",
       "能解释正则化如何影响模型复杂度"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch01_intro_evaluation_009_ml_regularization"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1296,7 +1356,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_001_ml_perceptron"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1337,7 +1399,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_002_ml_multilayer_neural_network"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1376,7 +1440,9 @@
     "common_queries": [],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_003_ml_activation_function"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1430,7 +1496,9 @@
       "能说明反向传播如何利用链式法则计算梯度",
       "能解释反向传播与参数更新的关系"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_004_ml_backpropagation"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1473,7 +1541,9 @@
       "Dropout 可以替代所有正则化方法"
     ],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_005_ml_dropout"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1516,7 +1586,9 @@
       "BatchNorm 只在推理阶段起作用"
     ],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_006_ml_batchnorm"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1558,7 +1630,9 @@
     ],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_007_ml_cnn"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1601,7 +1675,9 @@
     ],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_008_ml_rnn"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1642,7 +1718,9 @@
     ],
     "common_misconceptions": [],
     "mastery_objectives": [],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_009_ml_lstm"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1692,7 +1770,9 @@
       "能解释 Q、K、V 的基本作用",
       "能说明注意力为何有助于长程依赖建模"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_010_ml_attention_mechanism"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },
@@ -1741,7 +1821,9 @@
       "能概述 Transformer 的核心组成部分",
       "能说明自注意力和位置编码的作用"
     ],
-    "doc_chunk_ids": [],
+    "doc_chunk_ids": [
+      "chunk_ch06_neural_deep_learning_011_ml_transformer"
+    ],
     "exercise_ids": [],
     "code_case_ids": []
   },

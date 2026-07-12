@@ -162,7 +162,7 @@
 - `prerequisites`
 - `related_nodes`
 - `exercises`
-- `document_chunks`
+- `document_chunks` ⚠️ 注意：文档内容通过此字段返回，**不是** `documents`
 - `code_cases`
 - `misconceptions`
 - `graph_paths`
@@ -171,6 +171,21 @@
 - `student_profile_adaptation`
 - `uncertainty`
 - `missing_evidence`
+
+### 质量字段（已实现，必须包含）
+
+- `coverage_stats`: 各类型证据的数量统计
+  - `exercises_count`, `document_chunks_count`, `code_cases_count`, `misconceptions_count`
+  - `prerequisites_count`, `related_nodes_count`, `sources_count`
+- `evidence_completeness`: 证据完整性评估
+  - `has_document`, `has_code_case`, `has_exercises`, `has_misconceptions`
+  - `completeness_score` (0-1), `missing_categories`
+- `resource_diversity`: 资源多样性评分 (0-1)
+- `relevance_score`: 与查询的相关性评分 (0-1)
+- `evidence_score`: 证据包质量评分 (0-1)
+- `query_type`: 查询类型 (concept_explanation / exercise_help / path_plan / assessment_review / general)
+- `relation_summary`: 关键关系摘要列表
+- `recommended_next_actions`: 推荐的下一步学习动作
 
 要求：
 - 必须可解释

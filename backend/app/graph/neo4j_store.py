@@ -54,6 +54,19 @@ class Neo4jGraphStore:
         rows = await self._run("MATCH (n:Entity {uid: $uid}) RETURN n LIMIT 1", uid=uid)
         return _node_from_neo4j(rows[0]["n"]) if rows else None
 
+    async def get_all_nodes(self, limit: int = 200) -> list[GraphNode]:
+        """Return all knowledge point nodes with basic properties for full-graph overview."""
+        rows = await self._run(
+            """
+            MATCH (k:KnowledgePoint)
+            RETURN k
+            ORDER BY coalesce(k.chapter, k.uid)
+            LIMIT $limit
+            """,
+            limit=limit,
+        )
+        return [_node_from_neo4j(row["k"]) for row in rows]
+
     async def search_knowledge_points(self, keyword: str, limit: int = 10) -> list[GraphNode]:
         like = keyword.lower()
         rows = await self._run(
@@ -88,6 +101,55 @@ class Neo4jGraphStore:
         paths.extend(await self._fallback_property_paths(uid, "prerequisites", "PREREQUISITE", limit))
         return self._dedupe_paths(paths)[:limit]
 
+    async def get_prerequisite_tree(
+        self,
+        uid: str,
+        max_depth: int = 3,
+        limit_per_level: int = 8,
+    ) -> list[GraphPath]:
+        """获取多跳前置依赖树。
+
+        逐层查询，每层使用精确跳数匹配：
+        - depth=1: 1-hop 直接前置
+        - depth=2: 2-hop 传递前置
+        - depth=3: 3-hop 更上游
+
+        返回所有路径，按 depth 升序排列。
+        """
+        max_depth = max(1, min(max_depth, self.settings.max_graph_depth + 1))
+        all_paths: list[GraphPath] = []
+        seen_pairs: set[tuple[str, str]] = set()
+
+        for d in range(1, max_depth + 1):
+            rows = await self._run(
+                f"""
+                MATCH p = (pre:KnowledgePoint)-[:PREREQUISITE*{d}]->(:KnowledgePoint {{uid: $uid}})
+                RETURN p
+                LIMIT $limit
+                """,
+                uid=uid,
+                limit=limit_per_level,
+            )
+            for row in rows:
+                path = _path_from_neo4j(row["p"])
+                if path.nodes:
+                    pair = (path.nodes[0].uid, path.nodes[-1].uid)
+                    if pair not in seen_pairs:
+                        seen_pairs.add(pair)
+                        all_paths.append(path)
+
+        # Fallback: property-based prerequisites (depth=1 only)
+        if max_depth >= 1:
+            fallback = await self._fallback_property_paths(uid, "prerequisites", "PREREQUISITE", limit_per_level)
+            for path in fallback:
+                if path.nodes:
+                    pair = (path.nodes[0].uid, path.nodes[-1].uid)
+                    if pair not in seen_pairs:
+                        seen_pairs.add(pair)
+                        all_paths.append(path)
+
+        return self._dedupe_paths(all_paths)
+
     async def get_related_nodes(self, uid: str, limit: int = 8) -> list[GraphPath]:
         rows = await self._run(
             """
@@ -119,7 +181,7 @@ class Neo4jGraphStore:
     async def get_document_chunks_for_node(self, uid: str, limit: int = 6) -> list[GraphNode]:
         rows = await self._run(
             """
-            MATCH (chunk:DocumentChunk)-[:SUPPORTS]->(:KnowledgePoint {uid: $uid})
+            MATCH (chunk:DocumentChunk)-[:SUPPORTS]->(k:KnowledgePoint {uid: $uid})
             RETURN DISTINCT chunk
             LIMIT $limit
             """,
@@ -187,18 +249,26 @@ class Neo4jGraphStore:
             limit=limit,
         )
         paths = [_path_from_neo4j(row["p"]) for row in rows]
+        if "PREREQUISITE" in rel_types:
+            paths.extend(await self._fallback_property_paths(uid, "prerequisites", "PREREQUISITE", limit))
+        if "RELATED" in rel_types:
+            paths.extend(await self._fallback_property_paths(uid, "related", "RELATED", limit))
         nodes_by_uid: dict[str, GraphNode] = {}
         rels_by_key: dict[tuple[str, str, str], GraphRelationship] = {}
-        for path in paths:
+        for path in self._dedupe_paths(paths):
             for node in path.nodes:
                 nodes_by_uid[node.uid] = node
             for rel in path.relationships:
                 rels_by_key[(rel.source_uid, rel.type, rel.target_uid)] = rel
+        if uid not in nodes_by_uid:
+            center_node = await self.get_node(uid)
+            if center_node is not None:
+                nodes_by_uid[uid] = center_node
         return SubgraphResult(
             center_uid=uid,
             nodes=list(nodes_by_uid.values()),
             relationships=list(rels_by_key.values()),
-            paths=paths,
+            paths=self._dedupe_paths(paths),
         )
 
     async def _fallback_property_paths(

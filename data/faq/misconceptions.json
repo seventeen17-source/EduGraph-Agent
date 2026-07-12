@@ -1,10 +1,1313 @@
 [
   {
+    "faq_id": "faq_bp_001",
+    "related_node_id": "ml_backpropagation",
+    "question": "反向传播和梯度下降是什么关系？",
+    "answer": "反向传播（Backpropagation，BP）是用于计算梯度的算法，利用链式法则从输出层向前逐层计算每个参数的偏导数。梯度下降（Gradient Descent）是使用这些梯度来更新参数的优化方法。BP 负责「算梯度」，GD 负责「用梯度更新」。两者是训练神经网络的不同步骤，不能互换。",
+    "misconception": "认为反向传播就是梯度下降，或者认为两者是同一个东西。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_bp_002",
+    "related_node_id": "ml_backpropagation",
+    "question": "反向传播只能用于很深的网络吗？",
+    "answer": "反向传播的核心是链式法则，适用于任何可微分函数组成的有向计算图，与网络深度无关。即使是单层感知机，也可以用反向传播计算梯度（实际上就是感知机学习规则的推广）。层数越深，链式法则的链条越长，计算量越大，但原理完全相同。",
+    "misconception": "认为反向传播是「深度学习特有」的技术，单层模型不需要反向传播。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_bp_003",
+    "related_node_id": "ml_backpropagation",
+    "question": "神经网络训练时梯度消失是怎么回事？",
+    "answer": "梯度消失是指在反向传播过程中，靠近输入层的参数梯度变得非常小（接近零），导致这些层的参数几乎无法更新。主要原因包括：激活函数导数小于1（如 Sigmoid 导数最大为0.25）、网络过深导致链式乘积累积衰减、权重初始化过小。解决方案包括使用 ReLU 激活函数、残差连接（ResNet）、批归一化（BatchNorm）和适当的权重初始化方法。",
+    "misconception": "认为梯度消失只是因为网络太深，与激活函数和初始化无关。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_km_001",
+    "related_node_id": "ml_kmeans",
+    "question": "K-Means 一定会找到真实的簇吗？",
+    "answer": "不一定。K-Means 假设簇是凸形（球状）、大小相近、密度均匀。当数据的真实簇形状不规则、大小差异大或严重重叠时，K-Means 往往表现不佳。例如，月牙形、环形数据用 K-Means 会把同一环上的样本分到不同的簇。遇到这类数据时应考虑 DBSCAN、谱聚类或高斯混合模型（GMM）。",
+    "misconception": "认为 K-Means 能自动发现任意形状的簇。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_km_002",
+    "related_node_id": "ml_kmeans",
+    "question": "K 值随便设都一样吗？",
+    "answer": "完全不一样。K 值直接决定聚类结果，过大或过小都会导致问题：K 过小会把多个真实簇合并，K 过大则会把同一簇拆散。常用选择方法有：肘部法则（观察 SSE 随 K 的变化曲线，选择拐点处）、轮廓系数（轮廓系数越高越好）、Gap 统计量，以及业务先验知识（如分成3类客户）。",
+    "misconception": "认为 K-Means 对 K 值不敏感，随便选一个都能用。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_km_003",
+    "related_node_id": "ml_kmeans",
+    "question": "K-Means 初始中心点对结果影响大吗？",
+    "answer": "影响非常大。K-Means 对初始中心敏感，不同初始化可能收敛到完全不同的局部最优解。例如，若两个初始中心恰好落在同一个真实簇里，另一个簇就没有中心，会导致严重错误的聚类。缓解方法包括：K-Means++ 初始化（优先选择距离已有中心较远的点）、多次随机初始化取最优结果（Scikit-learn 默认方式）。",
+    "misconception": "认为 K-Means 的随机初始化无关紧要。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_lr_001",
+    "related_node_id": "ml_logistic_regression",
+    "question": "为什么逻辑回归名字里有「回归」但实际在做分类？",
+    "answer": "「回归」在历史上有「返回到一个值」的意思。逻辑回归的输出是样本属于正类的概率（0到1之间的连续值），这个概率值的拟合过程确实用了回归的思想（最小化损失函数）。但我们最终用阈值（通常0.5）把这个连续概率转换成离散的类别标签来做分类。所以逻辑回归本质是「用回归方法解决分类问题」，是命名历史遗留，不是命名错误。",
+    "misconception": "认为「回归」说明它只能做回归任务。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_lr_002",
+    "related_node_id": "ml_logistic_regression",
+    "question": "逻辑回归的决策边界一定是线性的吗？",
+    "answer": "是的。逻辑回归的决策边界是线性的（由 Sigmoid 输入 z = w·x + b = 0 定义）。这既是优点（可解释性强）也是局限。当数据不是线性可分时，逻辑回归效果会变差，此时需要：特征工程（加入多项式特征）、核逻辑回归、或者换用 SVM、决策树、神经网络等非线性模型。",
+    "misconception": "认为逻辑回归通过 Sigmoid 可以处理非线性可分数据。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_lr_003",
+    "related_node_id": "ml_logistic_regression",
+    "question": "逻辑回归必须使用线性可分数据吗？",
+    "answer": "不是。线性可分数据能让逻辑回归训练更稳定、效果更好，但不是必须的。逻辑回归通过最大似然估计找到最优参数，即使数据不是完全线性可分，也能找到「尽可能正确分类」的超平面。对于完全线性不可分的数据，逻辑回归会收敛但效果较差，此时应考虑特征工程或非线性模型。",
+    "misconception": "认为线性不可分数据完全不能用逻辑回归。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_perc_001",
+    "related_node_id": "ml_perceptron",
+    "question": "感知机只能处理线性可分数据吗？",
+    "answer": "是的，这是感知机的根本性质。如果数据集线性可分，感知机学习算法（PLA）会在有限步内收敛并找到一个完美分类的超平面。但如果数据不是线性可分，PLA 永远不会停止（会一直振荡）。这种情况下可以使用口袋算法（Pocket PLA），在无法完美分类时找到错误最少的一个假设。",
+    "misconception": "认为感知机可以处理任意数据，或者不能收敛是因为实现有 bug。",
+    "source_ids": ["book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_perc_002",
+    "related_node_id": "ml_perceptron",
+    "question": "感知机和逻辑回归有什么区别？",
+    "answer": "感知机使用符号函数（sign）作为激活函数，输出是 ±1 的类别标签，学习规则是朴素的权重更新（错分样本才更新）。逻辑回归使用 Sigmoid 激活函数，输出是概率值（0到1），使用交叉熵损失函数和梯度下降优化。从生物神经元类比角度，感知机类似「有或无」的开关，逻辑回归类似「激活强度」的平滑信号。从统计角度，感知机是线性判别分析的变种，逻辑回归是概率生成模型。",
+    "misconception": "认为感知机是逻辑回归的简化版本，两者在本质上是同一类模型。",
+    "source_ids": ["book_mml_deisenroth", "book_pumpkin_ml"]
+  },
+  {
     "faq_id": "faq_gd_001",
     "related_node_id": "ml_gradient_descent",
-    "question": "梯度下降为什么沿负梯度方向更新？",
-    "answer": "梯度方向表示函数值上升最快的方向，因此沿负梯度方向移动通常可以让损失函数下降。",
-    "misconception": "把梯度方向误认为损失下降最快的方向。",
-    "source_ids": ["book_zhou_ml", "book_mml_deisenroth", "book_pumpkin_ml"]
+    "question": "学习率越大收敛越快吗？",
+    "answer": "不一定。学习率过大会导致震荡（每次更新幅度太大，在最优点附近来回跳跃），甚至导致发散（损失值不降反升）。学习率过小会让收敛极慢，需要大量迭代。合适的学习率应该在两者之间，理想值取决于具体任务、损失曲面形状和数据规模。实践中常用学习率衰减、Adam 等自适应方法、或通过验证集搜索最优学习率。",
+    "misconception": "认为学习率越大，梯度下降「跑得越快」，自然收敛越快。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_gd_002",
+    "related_node_id": "ml_gradient_descent",
+    "question": "梯度下降总能找到全局最优吗？",
+    "answer": "不是。梯度下降只能保证沿梯度反方向移动使当前点损失降低，但对于非凸函数（神经网络、复杂机器学习模型的损失函数都是非凸的），梯度下降只能保证收敛到某个局部最小值，不一定是全局最优。最终收敛到哪个局部最优取决于初始点和学习率等因素。这是机器学习中的 fundamental trade-off：表达能力强的模型（能拟合复杂数据）往往损失曲面非凸，优化困难。",
+    "misconception": "认为梯度下降通过「下山」一定能到达全局最低点。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_gd_003",
+    "related_node_id": "ml_gradient_descent",
+    "question": "为什么梯度下降要求函数可导？",
+    "answer": "梯度是偏导数组成的向量，梯度的方向指向函数值上升最快的方向。因此只有函数可导（偏导数存在且连续），才能计算梯度，才能确定参数更新的方向。如果函数不可导（如 ReLU 在0点不可导、L1范数不可导），梯度下降不适用，需要用次梯度（subgradient）或近端梯度等替代方法。在 ReLU 激活函数中，虽然0点数学上不可导，但实践中约定用0或子梯度替代，不影响训练。",
+    "misconception": "认为梯度下降对任何函数都能工作，只是效果可能不好。",
+    "source_ids": ["book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_dropout_001",
+    "related_node_id": "ml_dropout",
+    "question": "Dropout 在测试时也要随机丢弃神经元吗？",
+    "answer": "不需要。测试时使用全部神经元才能得到稳定的预测。训练时丢弃神经元是为了让每个神经元不过分依赖其他神经元（因为随时可能被关掉），相当于一种集成学习——每次训练的是「不同结构的子网络」。为了让训练和测试时的期望输出一致，测试时会将每个神经元的输出乘以保留概率（keep_prob），补偿训练时被丢弃的部分。",
+    "misconception": "认为 Dropout 在训练和测试时都应该随机丢弃神经元。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_dropout_002",
+    "related_node_id": "ml_dropout",
+    "question": "Dropout 可以替代所有正则化方法吗？",
+    "answer": "不能。Dropout 主要解决神经网络因参数量大而产生的过拟合，但它不是万能的。实践中 Dropout 通常和其他正则化技术配合使用效果最好：L2 正则化（直接约束权重规模）、数据增强（增加训练样本多样性）、批归一化（稳定训练过程）、早停（在验证集性能下降时停止训练）。不同方法解决不同类型的过拟合，联合使用才能全面防护。",
+    "misconception": "认为加了 Dropout 就不需要其他正则化手段了。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_bn_001",
+    "related_node_id": "ml_batchnorm",
+    "question": "BatchNorm 就是一种正则化方法吗？",
+    "answer": "不是。BatchNorm 的核心目标是减少内部协变量偏移（Internal Covariate Shift），通过将每层输入规范化到均值为0、方差为1的分布，使网络各层输入分布稳定，从而加速训练并提高稳定性。虽然它确实有轻微的正则化效果（因为每个 batch 的均值/方差有随机波动，相当于噪声），但这并不是 BatchNorm 的主要设计目标，不能把它当作正则化手段使用。",
+    "misconception": "认为 BatchNorm 就是正则化，和 Dropout、L2 正则化是同一类东西。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_bn_002",
+    "related_node_id": "ml_batchnorm",
+    "question": "BatchNorm 只在推理阶段起作用吗？",
+    "answer": "不是。BatchNorm 在训练和推理阶段的行为完全不同。训练时：使用当前 batch 的均值和方差做规范化（ batch 统计量），同时持续更新全局均值和方差的滑动平均（running mean/variance）。推理时：使用训练阶段积累的 running 统计量做规范化，而不是当前输入的 batch 统计量。很多人误以为 BatchNorm「只在推理时工作」，是因为推理时用的是预计算好的全局统计量，但规范化操作本身在两个阶段都会执行。",
+    "misconception": "认为 BatchNorm 在训练时做规范化，推理时不需要做任何处理。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_ovf_001",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "过拟合只和数据量少有关吗？",
+    "answer": "不完全是。过拟合的本质是模型过于复杂，以至于在训练数据上学习到了真实的模式加上噪声。导致过拟合的因素包括：模型参数量过大（相对训练数据）、训练时间过长（epoch 过多）、正则化不足、数据噪声高。增加数据量可以缓解过拟合，但即使数据量足够，如果模型过于复杂或没有正则化，仍然会过拟合。",
+    "misconception": "认为只要数据量够大，就永远不会过拟合。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_ovf_002",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "欠拟合只和数据量少有关吗？",
+    "answer": "不是。欠拟合的根本原因是模型过于简单，无法捕捉数据中的真实模式。即使数据量再大，简单模型也无法提升表现。其他导致欠拟合的原因包括：训练迭代次数不足（还没学完）、特征表示不充分（输入特征没有包含预测目标所需的信息）、模型选择不当（如用线性模型拟合二次关系）。解决欠拟合通常需要增加模型复杂度、延长训练时间或改进特征工程。",
+    "misconception": "认为欠拟合意味着训练数据不够，需要收集更多数据。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_cnn_001",
+    "related_node_id": "ml_cnn",
+    "question": "卷积层提取的特征是人工设计的吗？",
+    "answer": "不是。卷积层的滤波器（filter/kernel）是自动从数据中学习得到的，而不是人工设计的特征。在传统图像处理中，需要用 Sobel、Laplacian 等人工设计的算子提取边缘等特征。而在 CNN 中，第一层卷积核会自己学习出类似边缘检测器的权重（实验中观察到的现象），更深层的卷积核会学习更抽象的特征表示。这就是 CNN 相比传统方法的核心优势——特征表示也是可学习的。",
+    "misconception": "认为 CNN 的卷积核是专家手工设计的，如 Sobel 算子。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_rnn_001",
+    "related_node_id": "ml_rnn",
+    "question": "RNN 为什么梯度消失？",
+    "answer": "RNN 的梯度消失源于时间步之间的权重共享和链式法则的累积效应。在反向传播通过时间（BPTT）过程中，损失对早期时间步的梯度需要经过多次矩阵乘法和激活函数导数的连乘。如果隐藏状态权重矩阵的最大特征值小于1，这些连乘项会指数级衰减，导致早期时间步的梯度趋近于零（梯度消失）；如果大于1，则会指数级爆炸（梯度爆炸）。LSTM 和 GRU 通过门控机制引入「捷径」，让梯度可以直接传递，有效缓解了这个问题。",
+    "misconception": "认为梯度消失是深度神经网络特有的问题，和循环结构无关。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_svm_001",
+    "related_node_id": "ml_svm",
+    "question": "核函数越复杂越好吗？",
+    "answer": "不是。核函数的选择需要与数据特性匹配，不是越复杂越好。线性核适合特征维数高、样本多且线性可分的数据（如文本分类）；RBF（高斯）核是通用选择，但参数 γ 敏感——γ 过大导致每个样本影响范围小，模型复杂易过拟合；γ 过小则模型过于简单。多项式核需要指定 degree，过高同样容易过拟合。实践中通常用验证集比较不同核函数的表现，选择最优的核和参数组合。",
+    "misconception": "认为核函数只是数学上的选择，越「高级」（如 RBF）效果一定越好。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_svm_002",
+    "related_node_id": "ml_svm",
+    "question": "支持向量机只适合小数据集吗？",
+    "answer": "不完全是。SVM 的训练复杂度在 O(n²) 到 O(n³) 之间（取决于具体实现），对于超大规模数据确实训练困难。但在中等规模数据（几千到几万样本）上，SVM 表现优异且训练可控。对于真正的大规模数据，有专门的优化方法：坐标下降法（LIBSVM 的实现方式）、随机梯度下降近似（SGD-SVM）、以及使用线性核的 liblinear 库。SVM 不是只能处理小数据，而是需要根据数据规模选择合适的求解方法。",
+    "misconception": "认为 SVM 只适合几百个样本的小数据集。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+
+  {
+    "faq_id": "faq_terms_001",
+    "related_node_id": "ml_basic_terms",
+    "question": "样本、特征、标签在机器学习中分别指什么？",
+    "answer": "样本（Sample）是数据集中的每一条记录，通常对应现实中的一个观测或事件。特征（Feature）是描述样本的观测属性，用数值或类别表示，例如房价预测中的面积、房间数。标签（Label）是样本的「答案」或「目标值」，监督学习中使用标签来训练模型。样本是行，特征是列，标签是需要预测的列（有监督学习中才有）。",
+    "misconception": "混淆样本和特征，把样本理解为特征的一部分，或者认为标签也是特征。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+  {
+    "faq_id": "faq_terms_002",
+    "related_node_id": "ml_basic_terms",
+    "question": "模型训练和模型预测有什么区别？",
+    "answer": "训练是用有标签的历史数据让模型学习输入到输出的映射规则，训练完成后模型参数就固定了。预测是用训练好的模型对新的、未见过的数据进行推断，输出预测结果。训练是一个优化过程（参数会变化），预测是一个前向计算过程（参数不变）。类比：训练是学生学习课本知识，预测是学生参加考试。",
+    "misconception": "认为训练和预测是同一个过程，或者认为预测时模型还在「学习」。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_terms_003",
+    "related_node_id": "ml_basic_terms",
+    "question": "分类和回归任务有什么区别？",
+    "answer": "分类任务的输出是离散的类别标签（如判断邮件是垃圾还是正常），回归任务的输出是连续的数值（如预测房价）。两者本质都是建立输入到输出的映射，区别在于输出的类型：分类输出有限集合，回归输出实数空间。常见的分类算法包括逻辑回归、决策树、SVM；回归算法包括线性回归、多项式回归。",
+    "misconception": "认为分类和回归可以随意互换使用，或者认为回归只能处理连续数据不能处理分类。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+  {
+    "faq_id": "faq_terms_004",
+    "related_node_id": "ml_basic_terms",
+    "question": "超参数和模型参数有什么区别？",
+    "answer": "模型参数是算法从数据中自动学习得到的（如线性回归的权重、神经网络的权重矩阵），它们的值由训练过程决定。超参数是人为设定的控制模型行为的配置（如学习率、K-Means 的 K 值、决策树的深度），超参数不能从数据中直接学习，需要通过验证集或搜索来选择。类比：模型参数是大脑学会的知识，超参数是学习方法的设置。",
+    "misconception": "混淆超参数和模型参数，认为所有参数都通过训练学习得到。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_terms_005",
+    "related_node_id": "ml_basic_terms",
+    "question": "机器学习中的「假设空间」是什么意思？",
+    "answer": "假设空间是模型能够表示的所有可能函数的集合。例如线性回归的假设空间是所有线性函数，决策树的假设空间是所有可能的树结构划分。模型从假设空间中搜索最优解（最优假设）。假设空间越大，模型的表达能力越强，但同时搜索难度和过拟合风险也越大。学习的过程就是在假设空间中寻找最匹配训练数据的那一个假设。",
+    "misconception": "认为假设空间是无限的或固定的，忽视假设空间大小对学习效果的影响。",
+    "source_ids": ["book_zhou_ml", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_terms_006",
+    "related_node_id": "ml_basic_terms",
+    "question": "「没有免费午餐定理」对机器学习实践有什么启示？",
+    "answer": "没有免费午餐定理（NFL）指出：在所有可能的问题分布上，所有算法的期望性能相同。这意味着不存在万能的最优算法——任何算法在某些问题上表现好，必然在另一些问题 上表现差。因此机器学习的核心是理解具体任务的特性（数据分布、任务目标），选择或设计与之匹配的算法。NFL 告诉我们要关注问题本身，而不是盲目追求「最强大」的算法。",
+    "misconception": "认为既然没有免费午餐定理，就无法比较算法优劣，或者错误地认为某个算法在所有任务上都优于另一个。",
+    "source_ids": ["book_zhou_ml"]
+  },
+
+  {
+    "faq_id": "faq_super_001",
+    "related_node_id": "ml_supervised_unsupervised",
+    "question": "监督学习和无监督学习的最根本区别是什么？",
+    "answer": "根本区别在于是否有标签数据。监督学习使用有标签的数据训练模型（每个样本都有对应的正确答案），目标是让模型学会从输入预测对应的标签。无监督学习使用无标签的数据，目标是发现数据中的内在结构（如聚类、降维、异常检测）。监督学习解决的是「已知答案，教会模型」的问题；无监督学习解决的是「未知答案，发现规律」的问题。",
+    "misconception": "认为监督学习和无监督学习的区别在于算法的复杂度或模型结构，而非是否有标签。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+  {
+    "faq_id": "faq_super_002",
+    "related_node_id": "ml_supervised_unsupervised",
+    "question": "半监督学习是监督学习还是无监督学习？",
+    "answer": "半监督学习介于两者之间，同时利用大量无标签数据和少量有标签数据来训练模型。在实际场景中有标签数据往往昂贵（需要人工标注），而无标签数据大量存在。半监督学习的核心假设是：无标签数据的分布能帮助模型更好地理解数据结构。典型方法包括自训练（用模型预测无标签数据的伪标签再加入训练）和标签传播。",
+    "misconception": "把半监督学习简单归类为监督学习或无监督学习，忽视它同时利用两种数据的特性。",
+    "source_ids": ["book_zhou_ml", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_super_003",
+    "related_node_id": "ml_supervised_unsupervised",
+    "question": "聚类和分类听起来差不多，它们有什么区别？",
+    "answer": "分类是监督学习，需要标签数据，目标是让模型学习已知类别的边界，输出是预定义的类别。聚类是无监督学习，不需要标签，目标是根据数据的相似性自动将样本分组，输出是算法发现的「簇」，簇的含义需要人为解释。分类的类别是事先确定的（如猫狗分类），聚类的簇是数据驱动的（如把客户分成3组再分析每组特征）。",
+    "misconception": "认为聚类输出的簇和分类的类别是同一回事，聚类不需要人工解释簇的含义。",
+    "source_ids": ["book_zhou_ml", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_super_004",
+    "related_node_id": "ml_supervised_unsupervised",
+    "question": "回归和分类都能预测，它们本质上有何不同？",
+    "answer": "两者本质都是建立从输入到输出的映射，核心区别在于输出的空间：回归输出连续实数值，分类输出离散类别标签。这个区别带来算法设计上的差异：回归通常用均方误差等连续损失函数，优化目标是减少数值偏差；分类通常用交叉熵等损失函数，优化目标是提高分类正确率。",
+    "misconception": "认为回归和分类只是名称不同，预测结果可以直接互换使用。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_super_005",
+    "related_node_id": "ml_supervised_unsupervised",
+    "question": "无监督学习的结果怎么验证好坏？",
+    "answer": "无监督学习没有标签作为标准答案，但仍有验证方法。聚类常用轮廓系数（轮廓系数越高簇内越紧密、簇间越分离）、调整兰德指数（与随机划分比较）、Calinski-Harabasz 指数。降维常用重构误差（压缩后再解压的误差）或下游任务性能。总体上无监督的评估更依赖业务解释和人的判断，不像监督学习有明确的准确率指标。",
+    "misconception": "认为无监督学习因为没有标签所以无法评估，或者盲目使用监督学习的评估指标。",
+    "source_ids": ["book_zhou_ml", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_super_006",
+    "related_node_id": "ml_supervised_unsupervised",
+    "question": "强化学习和监督学习有什么本质区别？",
+    "answer": "监督学习从「给定正确答案」的数据中学习，强化学习从「与环境的交互反馈」中学习。强化学习中智能体通过试错获得奖励或惩罚信号，而非从标注好的输入-输出对中学习。强化学习的目标是最大化长期累积奖励，需要在探索（尝试新动作）和利用（使用已知好动作）之间权衡。典型应用包括游戏 AI、机器人控制和推荐系统。",
+    "misconception": "把强化学习当作监督学习的一种，把奖励信号等同于标签。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+
+  {
+    "faq_id": "faq_split_001",
+    "related_node_id": "ml_dataset_split",
+    "question": "训练集和测试集为什么要分开？",
+    "answer": "分开是为了模拟模型在未见数据上的真实表现。如果用训练数据测试，模型可能只是记住了答案（过拟合），而不是真正学到了泛化能力。测试集模拟的是模型部署后遇到的新数据，其评估结果能反映模型的实际价值。测试集必须是模型从未见过的数据，且不能用于任何模型选择或调参（否则测试集信息泄露，评估结果不再可信）。",
+    "misconception": "认为测试集只是用来「走流程」的，可以随意使用多次，或者用测试集调参后再汇报测试结果。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+  {
+    "faq_id": "faq_split_002",
+    "related_node_id": "ml_dataset_split",
+    "question": "验证集和测试集有什么区别？",
+    "answer": "验证集用于模型选择和超参数调优（如选择最佳学习率或模型层数），测试集用于最终性能评估。验证集可以多次使用来比较不同模型配置，测试集只能在最终模型确定后才能使用一次（否则信息泄露）。常见误区是把测试集当验证集用——在测试集上调参后再汇报测试集性能，这会严重高估模型真实表现。",
+    "misconception": "将验证集和测试集混用，认为两者功能相同。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+  {
+    "faq_id": "faq_split_003",
+    "related_node_id": "ml_dataset_split",
+    "question": "数据量小时怎么合理划分数据集？",
+    "answer": "小数据场景常用留出法（按比例如 8:2 划分）和 K 折交叉验证。K 折交叉验证将数据分成 K 份，轮流用 K-1 份训练、1 份验证，最后取 K 次结果的平均，能更稳定地估计模型性能（因为每个样本都被验证过一次）。数据量小时 K 折（常用 5 或 10）比简单留出法更可靠，因为每次训练用了更多数据。",
+    "misconception": "数据量小时仍然按大数据的比例划分，导致训练数据不足或测试集太小而不具代表性。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+  {
+    "faq_id": "faq_split_004",
+    "related_node_id": "ml_dataset_split",
+    "question": "分层抽样在数据集划分中重要吗？",
+    "answer": "当数据类别分布不均衡时非常重要。如果随机划分，训练集和测试集的类别比例可能差异很大，导致评估结果不稳定。分层抽样保证每个子集中各类的比例与整体一致。例如在二分类任务中正样本占 10%，分层划分后训练集和测试集的正样本比例也约为 10%。sklearn 的 train_test_split 默认不分层，需要设置 stratify 参数。",
+    "misconception": "忽视类别不平衡时的分层抽样，导致测试集中某个类别的样本极少或极多，评估结果不能反映真实性能。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_split_005",
+    "related_node_id": "ml_dataset_split",
+    "question": "可以用同一份测试集反复评估模型吗？",
+    "answer": "不能。测试集本质上代表的是模型部署后面对的新数据分布，重复用同一测试集评估会间接让模型「记住」测试集上的表现。即使不直接用测试集训练，频繁比较不同模型在测试集上的结果也会导致过拟合测试集（测试集信息泄露）。正确做法是用验证集做模型选择，测试集只在最终报告时使用一次。",
+    "misconception": "认为测试集可以无限次使用来比较模型，只要不直接用它训练就行。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_split_006",
+    "related_node_id": "ml_dataset_split",
+    "question": "时间序列数据也能随机划分训练集和测试集吗？",
+    "answer": "不能。随机划分会破坏时间依赖性，导致用「未来数据」预测「过去」，这是数据泄露。对于时间序列数据，必须用时间顺序划分：训练集是早期数据，测试集是后期数据。例如预测股票价格，不能用明天的数据来预测今天。常用滚动窗口或前向验证（每次用更长的历史预测下一步）。",
+    "misconception": "对时间序列数据使用随机划分，忽视数据的时间依赖性。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "course_stanford_cs229"]
+  },
+
+  {
+    "faq_id": "faq_gen_001",
+    "related_node_id": "ml_generalization",
+    "question": "什么是泛化能力？为什么它最重要？",
+    "answer": "泛化能力是指模型对从未见过的数据的预测能力。机器学习的终极目标不是让模型在训练数据上表现好，而是让它在新数据上也能表现好。模型如果在训练数据上表现好但在新数据上表现差，就是泛化能力差（过拟合）。比赛或项目中，真正的考验是模型在真实未知数据上的表现，而非训练集上的指标。",
+    "misconception": "把训练集上的准确率当作模型真实性能，不关心模型在新数据上的表现。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_gen_002",
+    "related_node_id": "ml_generalization",
+    "question": "训练误差和测试误差一定不同吗？",
+    "answer": "几乎一定不同。训练误差是模型在训练数据上的误差，测试误差是模型在新数据上的误差。两者之差反映了模型的泛化误差。理想情况下两者接近且都低。如果训练误差远低于测试误差，说明模型过拟合了；如果两者都很高，说明模型欠拟合了。测试误差是评估泛化能力的唯一可靠指标。",
+    "misconception": "认为训练误差和测试误差应该相同，或者认为测试误差低就一定没问题。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_gen_003",
+    "related_node_id": "ml_generalization",
+    "question": "泛化误差的来源是什么？",
+    "answer": "泛化误差来源于三个方面：偏差（Bias）——模型假设与真实规律的偏差，偏差大意味着模型太简单（欠拟合）；方差（Variance）——模型对训练数据波动的敏感程度，方差大意味着模型太复杂（过拟合）；以及不可避免的噪声（Noise）。偏差和方差往往存在权衡：降低一方可能增大另一方，这叫偏差-方差困境。",
+    "misconception": "只关注降低误差或方差，忽视两者之间的权衡关系。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_gen_004",
+    "related_node_id": "ml_generalization",
+    "question": "如何判断模型是否具有良好的泛化能力？",
+    "answer": "核心判断标准是：训练误差和测试误差都较低，且两者差距不大。具体操作是：观察验证集或交叉验证的性能指标，如果训练指标很好但验证指标明显差，说明过拟合；如果两者都差，说明欠拟合。此外，绘制学习曲线（训练/验证指标随训练样本数的变化）可以直观判断模型的泛化潜力。",
+    "misconception": "仅凭训练准确率判断模型好坏，或认为测试准确率高就一定泛化能力强。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_gen_005",
+    "related_node_id": "ml_generalization",
+    "question": "数据量增加一定能提升泛化能力吗？",
+    "answer": "不一定。数据量增加有助于泛化，但提升效果取决于数据质量和模型复杂度。如果模型过于复杂（参数量远大于数据量），即使数据量增加，模型仍然可能过拟合。此外，如果新增数据与测试分布不一致（数据偏差），增加数据反而可能降低泛化能力。足够大的高质量数据配合合适复杂度的模型才能有效提升泛化。",
+    "misconception": "认为只要收集更多数据就一定能解决所有泛化问题。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_gen_006",
+    "related_node_id": "ml_generalization",
+    "question": "奥卡姆剃刀原则在机器学习中怎么理解？",
+    "answer": "奥卡姆剃刀原则指出「如无必要，勿增实体」，在机器学习中意味着：在性能相近的模型中，优先选择更简单的模型。更简单的模型通常有更好的泛化能力，因为它不容易过拟合训练数据中的噪声。这个原则是正则化和模型选择的重要理论依据。但它不是说越简单越好——过于简单的模型会欠拟合。目标是找到复杂度和性能的最佳平衡点。",
+    "misconception": "机械地认为越简单的模型越好，或者忽视简单模型的表达能力限制。",
+    "source_ids": ["book_zhou_ml"]
+  },
+
+  {
+    "faq_id": "faq_eval_001",
+    "related_node_id": "ml_evaluation_methods",
+    "question": "准确率能衡量所有分类模型的性能吗？",
+    "answer": "不能。准确率在类别严重不平衡时具有欺骗性。例如癌症检测中，正类（癌症）只占 1%，一个全部预测为负类的模型准确率高达 99%，却完全无法检测癌症。这种情况下需要看精确率、召回率、F1 等指标。高准确率不等于好模型，必须结合数据分布和业务需求来选择评估指标。",
+    "misconception": "用准确率作为衡量分类模型的唯一指标，忽视类别不平衡问题。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_eval_002",
+    "related_node_id": "ml_evaluation_methods",
+    "question": "交叉验证为什么比单次留出更可靠？",
+    "answer": "单次留出法的结果依赖于这一次划分的随机性，可能偏高或偏低。K 折交叉验证将数据分成 K 份，用 K 次不同的训练/验证划分得到 K 个性能评估，再取平均值，能更稳定地估计模型的真实性能（减少了划分随机性的影响）。K 越大估计越稳定，但计算成本也越高。常用 K=5 或 K=10。",
+    "misconception": "认为交叉验证只是「多训练几次」，不关心 K 值选择和数据划分的影响。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+  {
+    "faq_id": "faq_eval_003",
+    "related_node_id": "ml_evaluation_methods",
+    "question": "留一法交叉验证（LOOCV）有什么优缺点？",
+    "answer": "留一法（Leave-One-Out）每次用 n-1 个样本训练、1 个样本验证，循环 n 次。优点：最大限度地利用训练数据（每次用 n-1 个样本），是数据集非常小时的最佳选择。缺点：计算成本极高（需要训练 n 次），且评估结果方差较大（因为训练集高度重叠）。实践中 LOOCV 常用于数据稀缺场景（如医学诊断）。",
+    "misconception": "在小数据集上盲目使用 LOOCV，忽视其高计算成本。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_eval_004",
+    "related_node_id": "ml_evaluation_methods",
+    "question": "混淆矩阵能告诉我们什么？",
+    "answer": "混淆矩阵是分类评估的基础工具，展示了模型预测结果和真实标签的全部组合：真正例（TP）、真负例（TN）、假正例（FP）、假负例（FN）。通过这四个数字可以计算精确率（Precision = TP/(TP+FP)）、召回率（Recall = TP/(TP+FN)）、F1 分数和准确率。从混淆矩阵可以直观看出模型在哪些类别上容易出错，以及错误的方向（容易漏报还是容易误报）。",
+    "misconception": "只关注混淆矩阵的对角线（正确分类），忽视非对角线元素反映的分类错误模式。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_eval_005",
+    "related_node_id": "ml_evaluation_methods",
+    "question": "训练集上效果很好但验证集效果差是什么原因？",
+    "answer": "这是典型的过拟合现象。主要原因包括：模型过于复杂（参数量相对于训练样本过多）、训练时间过长（神经网络 epoch 过多）、训练数据不足或噪声过多。解决方向：增加训练数据、数据增强、使用正则化（L1/L2/Dropout）、减少模型复杂度、使用早停。验证集效果差但训练效果好的差距越大，过拟合程度越严重。",
+    "misconception": "认为验证集效果差是因为验证集「有问题」或「不公平」，而不是模型过拟合。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_eval_006",
+    "related_node_id": "ml_evaluation_methods",
+    "question": "如何正确使用验证集进行超参数调优？",
+    "answer": "正确流程是：用训练集训练不同超参数的多个模型 → 用验证集比较这些模型的性能 → 选择验证集上最好的超参数 → 最后在测试集上评估该超参数下模型的真实性能。注意：验证集用来选超参数，测试集仅用于最终评估且只用一次。不能在验证集上多次调参后继续用同一个验证集评估（那样验证集就变成了测试集）。",
+    "misconception": "在验证集上调参后反复使用同一验证集评估，或者直接用测试集调参。",
+    "source_ids": ["book_zhou_ml"]
+  },
+
+  {
+    "faq_id": "faq_ovf_003",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "过拟合和欠拟合在训练曲线上的表现有什么区别？",
+    "answer": "过拟合时，训练误差持续下降并趋于很低，但验证误差先降后升（出现拐点）。欠拟合时，训练误差和验证误差都较高，且两者差距不大（模型还没有充分学习训练数据的模式）。观察学习曲线可以直观判断：曲线间距大且训练曲线很低 → 过拟合；两条曲线都高位收敛 → 欠拟合。",
+    "misconception": "只看训练曲线或只看验证曲线，无法区分过拟合和欠拟合。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_ovf_004",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "增加训练数据一定能解决过拟合吗？",
+    "answer": "在很多情况下有效，但不是万能药。如果过拟合的根本原因是模型过于复杂（参数量远超数据量），增加数据可以让模型更好地学习真实模式。但如果模型复杂度不降低，数据量增加到一定程度后收益会递减。而且如果新增数据的分布与测试分布不同，数据增加甚至可能引入新的偏差。增加数据需要配合降低模型复杂度或其他正则化手段一起使用。",
+    "misconception": "把「加数据」当作解决过拟合的唯一方法，不考虑其他因素。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_ovf_005",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "如何判断模型是过拟合还是欠拟合？",
+    "answer": "核心判断依据是训练误差和验证误差的对比。欠拟合：训练误差和验证误差都高，且随着训练进行两者都不再下降。过拟合：训练误差很低但验证误差明显更高，两者的差距大。如果两者都低且差距小，说明泛化良好。实践中可以用交叉验证获得更稳定的结果，同时观察学习曲线。",
+    "misconception": "仅凭训练准确率高就判断为过拟合，或者认为测试准确率低一定是欠拟合。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_ovf_006",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "过拟合一定是模型复杂造成的吗？",
+    "answer": "不一定。过拟合的核心是模型拟合了训练数据中的噪声，而不仅仅是复杂度的直接结果。导致过拟合的因素包括：模型复杂度过高、数据噪声高、训练数据不足、特征选择不当引入了与标签虚假相关的特征。即使是简单模型（如线性回归），在特征工程引入过多噪声特征时也会过拟合。",
+    "misconception": "把过拟合简单归因为模型太复杂，不关注数据质量和特征工程。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_ovf_007",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "早停（Early Stopping）防止过拟合的原理是什么？",
+    "answer": "在训练过程中，随着迭代次数增加，模型先学习数据中的真实模式（验证误差下降），然后开始记忆噪声（验证误差上升）。早停在验证误差开始上升时就停止训练，保留验证误差最低点的模型参数。它本质上是通过限制训练时间来控制模型复杂度，相当于隐式正则化。但早停不能替代显式正则化（如 L2 正则化），两者通常配合使用。",
+    "misconception": "把早停当作万能的防过拟合手段，忽视它只是众多正则化技术中的一种。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_ovf_008",
+    "related_node_id": "ml_overfitting_underfitting",
+    "question": "如何在前置知识「泛化能力」和「数据集划分」的基础上理解过拟合？",
+    "answer": "过拟合的本质是模型在训练集上获得的泛化能力无法推广到测试集。理解这个关系需要两步：第一步知道什么是泛化能力（模型在新数据上的表现）；第二步知道训练集和测试集分开的重要性（测试集模拟新数据）。过拟合就是模型在训练集上学到的「规则」包含了太多训练集特有的噪声，这些噪声在测试集上不存在，导致测试误差远大于训练误差。",
+    "misconception": "孤立理解过拟合，不联系泛化能力和数据集划分等前置概念。",
+    "source_ids": ["book_zhou_ml"]
+  },
+
+  {
+    "faq_id": "faq_bv_001",
+    "related_node_id": "ml_bias_variance",
+    "question": "偏差和方差的直观含义是什么？",
+    "answer": "偏差是多次训练中模型预测的平均值与真实值的差距——衡量模型的系统性错误。方差是多次训练中模型预测值的变化程度——衡量模型对训练数据的敏感程度。偏差大意味着模型太简单，总是犯同样的错；方差大意味着模型太复杂，训练数据稍微变化结果就大不一样。好的模型需要同时降低偏差和方差。",
+    "misconception": "把偏差理解为单次预测的错误，把方差理解为数据本身的噪声。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_bv_002",
+    "related_node_id": "ml_bias_variance",
+    "question": "偏差-方差分解为什么重要？",
+    "answer": "偏差-方差分解把泛化误差拆成偏差平方 + 方差 + 噪声三部分，帮助我们理解模型错误的来源，从而选择正确的改进方向。如果错误主要来自偏差，应该增加模型复杂度（如增加多项式特征、用更深的网络）；如果主要来自方差，应该降低复杂度、加正则化或增加数据。这个分解是模型诊断和调优的理论基础。",
+    "misconception": "不加区分地尝试所有改进方法，不根据偏差-方差诊断结果来定向优化。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_bv_003",
+    "related_node_id": "ml_bias_variance",
+    "question": "如何用偏差-方差视角诊断模型？",
+    "answer": "训练一个模型时，观察训练误差和验证误差：两者都高 → 高偏差（欠拟合）；训练低但验证高 → 高方差（过拟合）；两者都低且接近 → 理想状态。用不同复杂度的模型做实验，绘制偏差-方差曲线，可以直观看到随着复杂度增加，偏差下降但方差上升，两者之和（总泛化误差）在中间某个点达到最优。",
+    "misconception": "仅凭准确率高低判断偏差和方差，不结合训练/验证对比和模型复杂度来分析。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_bv_004",
+    "related_node_id": "ml_bias_variance",
+    "question": "集成学习主要降低偏差还是方差？",
+    "answer": "不同集成方法侧重点不同。Bagging（如随机森林）主要降低方差——通过Bootstrap采样训练多个独立模型再平均，抵消模型对训练数据的波动。Boosting（如 AdaBoost、GBDT）主要降低偏差——通过逐步修正前一个模型的错误，每个新模型关注更难分类的样本，最终集成能同时降低偏差和方差，但计算成本更高。",
+    "misconception": "认为所有集成学习方法都是同一回事，或者认为集成学习只降低误差而不区分偏差和方差。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_bv_005",
+    "related_node_id": "ml_bias_variance",
+    "question": "正则化同时影响偏差和方差吗？",
+    "answer": "是的。正则化通过在损失函数中加入参数惩罚项（如 L2 范数），限制模型参数的大小。适度的正则化会略微增加偏差（因为约束了模型的拟合能力），但能大幅降低方差（因为参数更稳定、对训练数据的小波动不敏感）。正则化的艺术在于找到偏差增加和方差降低之间的最优平衡点，这通过验证集选择正则化强度参数来实现。",
+    "misconception": "认为正则化只降低方差，不影响偏差；或者认为正则化总是有益的，越强越好。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_bv_006",
+    "related_node_id": "ml_bias_variance",
+    "question": "偏差-方差困境和奥卡姆剃刀有什么关系？",
+    "answer": "两者都指向模型复杂度与性能的关系。奥卡姆剃刀说「如无必要，勿增实体」，偏好简单模型。偏差-方差困境揭示了其中的数学原理：增加模型复杂度会降低偏差但增加方差，降低复杂度会降低方差但增加偏差。总泛化误差在某个中间复杂度处最优——这正是奥卡姆剃刀所描述的「适度简单」背后的量化依据。",
+    "misconception": "机械使用奥卡姆剃刀而忽视复杂度-性能的权衡关系。",
+    "source_ids": ["book_zhou_ml"]
+  },
+
+  {
+    "faq_id": "faq_metric_001",
+    "related_node_id": "ml_performance_metrics",
+    "question": "精确率和召回率哪个更重要？",
+    "answer": "取决于业务需求，没有绝对的答案。精确率衡量「预测为正的样本中真正是正的比例」（宁缺毋滥），召回率衡量「所有正样本中被正确预测的比例」（尽量找全）。例如癌症筛查：漏检可能致命，应优先高召回率；垃圾邮件过滤：误杀正常邮件很烦人，应优先高精确率。F1 分数是两者的调和平均，是两者权衡时的常用指标。",
+    "misconception": "认为某个指标天然比其他指标重要，不考虑具体业务场景。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_metric_002",
+    "related_node_id": "ml_performance_metrics",
+    "question": "ROC 曲线和 AUC 是什么？有什么优势？",
+    "answer": "ROC 曲线以假阳性率（FPR）为横轴、真阳性率（TPR=召回率）为纵轴，展示模型在不同阈值下的表现。AUC 是 ROC 曲线下的面积，取值 0-1，越接近 1 越好。AUC 的优势是不受阈值选择的影响，能综合评估模型的排序能力（正样本排在负样本前面的概率），在类别不平衡时比准确率更可靠。",
+    "misconception": "只看 ROC 曲线的形状，不理解 AUC 的含义，或者用 AUC 替代所有评估指标。",
+    "source_ids": ["book_zzhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_metric_003",
+    "related_node_id": "ml_performance_metrics",
+    "question": "均方误差（MSE）和平均绝对误差（MAE）哪个更适合回归任务？",
+    "answer": "MSE 对大误差更敏感（平方放大效应），但对异常值敏感；MAE 对所有误差一视同仁，更稳健。当数据中异常值较少且需要惩罚大误差时用 MSE；当数据有较多噪声或异常值时用 MAE。实践中两者可以结合使用（Huber 损失）。如果业务上对大误差的惩罚力度大，选 MSE；否则选 MAE。",
+    "misconception": "不加区分地使用 MSE 或 MAE，认为两者效果差不多。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_metric_004",
+    "related_node_id": "ml_performance_metrics",
+    "question": "为什么多分类任务通常用宏平均和微平均？",
+    "answer": "多分类场景下不同类别的样本数量可能差异很大，需要用不同方式汇总各类的指标。微平均将所有类别的 TP/FP/FN 加总后计算，不受类别频率影响，适合关注整体性能的平衡数据。宏平均先在每个类别上计算指标再取平均，不受样本数影响，适合关注小类别的性能。两者差异大时说明类别不平衡，需要特别关注小类。",
+    "misconception": "在多分类任务中只看准确率或只看某一个平均指标，忽视类别间的性能差异。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_metric_005",
+    "related_node_id": "ml_performance_metrics",
+    "question": "R² 分数（决定系数）能衡量回归模型的性能吗？",
+    "answer": "R² 表示模型解释的方差占总方差的比例，取值通常 0-1（可以为负当模型比均值还差时）。R²=0.8 意味着模型解释了 80% 的目标变量变异。优点是量纲无关、易于理解；缺点是对异常值敏感，且不能直接用于比较不同数据集上的模型。选择 R² 还是 MSE/MAE 取决于具体分析需求。",
+    "misconception": "把 R² 误当作「准确率」来使用，或者认为 R² 越高模型越好，忽视其为负的情况。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_metric_006",
+    "related_node_id": "ml_performance_metrics",
+    "question": "多标签分类用什么评估指标？",
+    "answer": "多标签分类中每个样本可以属于多个标签，需要用专门的评估方式。常用方法：基于样本的评估（预测标签集合与真实标签集合的交集/并集比），基于标签的评估（各标签的二分类指标再做平均），以及排序指标（如 AUC）。常用的是子集准确率（所有标签都预测正确才算正确）和 Hamming 损失（标签级别的错误比例）。",
+    "misconception": "把多标签分类当作多个独立的二分类问题，用单一指标评估。",
+    "source_ids": ["book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_metric_007",
+    "related_node_id": "ml_performance_metrics",
+    "question": "在理解了混淆矩阵和精确率/召回率之后，如何选择分类评估指标？",
+    "answer": "选择指标需要结合具体任务。如果所有类别同等重要且数据平衡，用准确率即可。如果类别不平衡，先看精确率和召回率的权衡（F1）；如果关心正类的识别率用召回率，如果关心预测正类的可靠性用精确率。如果需要评估模型的排序能力（而非硬分类阈值），用 AUC。在选择指标前，务必理解混淆矩阵中各类别的样本数量和业务含义。",
+    "misconception": "直接套用准确率或 F1，不分析任务特性和数据分布。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_metric_008",
+    "related_node_id": "ml_performance_metrics",
+    "question": "如何根据评估指标来设计练习和资源推荐？",
+    "answer": "评估指标反映的能力短板可以用来定向推荐学习资源。如果精确率低（误报多），说明概念边界不清楚，推荐对比辨析类练习（如逻辑回归和 SVM 的决策边界对比）；如果召回率低（漏报多），说明核心原理理解不到位，推荐基础讲解文档和代码案例；如果 F1 分数低，说明综合能力不足，推荐综合应用练习和项目实战。同时可以根据 AUC 了解模型的整体排序能力差距。",
+    "misconception": "把评估指标只当作评分工具，不利用它来诊断学习薄弱点并推荐相应资源。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+
+  {
+    "faq_id": "faq_reg_001",
+    "related_node_id": "ml_regularization",
+    "question": "正则化和奥卡姆剃刀有什么关系？",
+    "answer": "正则化是奥卡姆剃刀原则的算法实现。正则化通过在损失函数中加入惩罚项，约束模型的复杂度，使得在拟合训练数据的同时保持模型简单。奥卡姆剃刀说「优先选择更简单的模型」，正则化在数学上量化了这个偏好——在损失函数中用系数 λ 控制简单性和拟合优度之间的权衡。λ 越大，模型越简单（偏向奥卡姆剃刀），λ 越小，越偏向拟合数据。",
+    "misconception": "把正则化当作纯粹的技术技巧，不理解它与「简单优于复杂」这一基本原则的内在联系。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_reg_002",
+    "related_node_id": "ml_regularization",
+    "question": "L1 和 L2 正则化哪个更好？",
+    "answer": "各有优势，适用于不同场景。L2 正则化（权重衰减）让权重趋向小值但不为零，所有参数都受到惩罚，模型更平滑，适合特征都相对重要的情况。L1 正则化让权重趋向稀疏（很多权重变为零），具有特征选择作用，适合高维数据和知道大部分特征不相关的情况。Elastic Net 结合了两者优点。先验上认为参数服从拉普拉斯分布用 L1，正态分布用 L2。",
+    "misconception": "不加选择地认为 L1 或 L2 一定更好，或者同时使用两者却不理解各自的作用机制。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_reg_003",
+    "related_node_id": "ml_regularization",
+    "question": "正则化参数 λ 怎么选？",
+    "answer": "λ 控制正则化强度，太小（接近 0）等于没加正则化（过拟合风险大），太大会过度惩罚导致欠拟合。常用方法是：设置一组候选值（如 [0.001, 0.01, 0.1, 1, 10, 100]），用验证集或交叉验证评估每个 λ 对应的性能，选择验证性能最好的那个。λ 的选择没有固定规律，必须通过实验确定。",
+    "misconception": "认为正则化参数可以随意设定或只用一个固定值，不做验证集调优。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_reg_004",
+    "related_node_id": "ml_regularization",
+    "question": "Dropout 和 L1/L2 正则化有什么相同和不同？",
+    "answer": "相同点：都是防止过拟合的技术，都会限制模型的拟合能力。不同点：L1/L2 是向损失函数加惩罚项，数学形式优雅但只惩罚权重；Dropout 是在训练时随机丢弃神经元，模拟集成学习（每次训练不同的子网络），对模型的约束更直接也更有效（尤其对深度神经网络）。实践中两者可以同时使用。",
+    "misconception": "认为 Dropout 可以完全替代 L1/L2，或者认为两者是同一类东西。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_reg_005",
+    "related_node_id": "ml_regularization",
+    "question": "为什么正则化能防止过拟合？",
+    "answer": "正则化通过限制模型参数的大小来降低模型的复杂度。以 L2 为例，惩罚项使得大权重只有在能显著降低损失时才被保留，否则被拉向零。这相当于对模型的「任性」加了代价，迫使模型不仅拟合数据中的真实模式，也要注意不要「用力过猛」从而连噪声也拟合进去。结果是模型在未见数据上的泛化能力提升。",
+    "misconception": "把正则化当作改变模型结构的手段，不理解它通过约束参数来控制复杂度的机制。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_reg_006",
+    "related_node_id": "ml_regularization",
+    "question": "数据增强和正则化有什么关系？",
+    "answer": "数据增强是一种隐式正则化——通过在训练时对数据进行随机变换（旋转、裁剪、翻转等），人为增加训练样本的多样性。模型看到更多变体后，对数据的特定噪声不那么敏感，自然降低了过拟合风险。数据增强和显式正则化（L1/L2/Dropout）作用机制不同但目的一样——提升泛化能力。两者配合使用效果通常更好。",
+    "misconception": "认为数据增强是「造假数据」，或者把数据增强和正则化完全割裂。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_reg_007",
+    "related_node_id": "ml_regularization",
+    "question": "在学习了过拟合/欠拟合和偏差方差之后，正则化如何作用于这些概念？",
+    "answer": "正则化的核心效果是降低方差（减少模型对训练数据的敏感程度），代价是略微增加偏差（限制模型的拟合能力）。正则化在偏差-方差分解中的价值是：适当增加一点偏差，换取更大的方差降低，从而降低总泛化误差。同时正则化也是对抗过拟合的直接手段——它通过惩罚复杂模型，使训练误差和测试误差的差距缩小。",
+    "misconception": "学完过拟合/偏差方差后，仍不理解正则化在其中的具体作用位置。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_reg_008",
+    "related_node_id": "ml_regularization",
+    "question": "在学习路径中，正则化应该放在什么阶段学习？",
+    "answer": "正则化是进阶内容，需要先建立前置概念：理解过拟合是什么（欠拟合/过拟合）、理解泛化能力的意义、理解偏差-方差权衡。建议学习顺序：先掌握过拟合/欠拟合的概念和诊断方法 → 理解泛化能力 → 理解偏差-方差困境 → 学习正则化作为对抗过拟合和平衡偏差-方差的方法。有了这个基础后，正则化的动机和效果就非常自然了。",
+    "misconception": "在学习初期就深入正则化的数学细节，而不理解它解决的是什么问题。",
+    "source_ids": ["book_zhou_ml", "course_andrew_ng_ml_specialization"]
+  },
+
+  {
+    "faq_id": "faq_la_001",
+    "related_node_id": "ml_linear_algebra_basic",
+    "question": "向量和矩阵在机器学习中分别代表什么？",
+    "answer": "向量是有方向和大小的量，在机器学习中通常表示一个样本的特征（特征向量，如 [面积, 房间数, 距离]）或模型的参数。矩阵是二维数组，在机器学习中表示数据集（每行是一个样本，每列是一个特征，即 n×d 的矩阵），也用于表示权重参数（input_dim × output_dim）。理解向量和矩阵的维度是阅读机器学习公式的基础。",
+    "misconception": "混淆向量和矩阵的维度，或者不理解矩阵乘法在特征变换中的作用。",
+    "source_ids": ["book_mml_deisenroth", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_la_002",
+    "related_node_id": "ml_linear_algebra_basic",
+    "question": "矩阵乘法在机器学习中对应什么操作？",
+    "answer": "矩阵乘法 X @ W 在机器学习中对应线性变换：输入特征向量通过权重矩阵 W 变换为输出向量，本质是特征的线性组合。例如神经网络的每一层就是 y = activation(X @ W + b)。理解矩阵乘法才能理解前向传播、梯度计算等核心操作。还要注意矩阵乘法的维度匹配：X (n×d) @ W (d×m) = (n×m)。",
+    "misconception": "不检查矩阵维度匹配就进行计算，或者不理解矩阵乘法对应的是特征空间的线性变换。",
+    "source_ids": ["book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_la_003",
+    "related_node_id": "ml_linear_algebra_basic",
+    "question": "什么是范数？L1 和 L2 范数有什么区别？",
+    "answer": "范数是向量的「长度」或「大小」的度量。L1 范数（曼哈顿范数）是向量元素绝对值之和，对应 L1 正则化，会导致稀疏解（很多元素为 0）。L2 范数（欧几里得范数）是向量元素的平方和开根号，对应 L2 正则化，会让所有元素变小但不等于零。选择哪种范数取决于你是否希望得到稀疏解（用 L1）还是平滑解（用 L2）。",
+    "misconception": "混淆 L1 和 L2 范数的计算方式和正则化效果。",
+    "source_ids": ["book_mml_deisenroth", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_la_004",
+    "related_node_id": "ml_linear_algebra_basic",
+    "question": "特征值和特征向量在机器学习中有什么用？",
+    "answer": "特征值和特征向量揭示了矩阵的核心性质，在机器学习中有广泛应用：PCA（主成分分析）利用特征值分解找出数据中方差最大的方向（主成分）；SVM 的核矩阵分析利用特征值理解数据分布；神经网络中权重矩阵的特征值影响梯度稳定性（梯度爆炸/消失问题与特征值大小密切相关）。",
+    "misconception": "认为特征值只是纯数学概念，在机器学习中没有实际应用。",
+    "source_ids": ["book_mml_deisenroth", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_la_005",
+    "related_node_id": "ml_linear_algebra_basic",
+    "question": "奇异值分解（SVD）和特征值分解有什么关系？",
+    "answer": "SVD 是特征值分解的推广，适用于所有矩阵（而不只是方阵）。对任意 m×n 矩阵 A，SVD 分解为 A = U Σ V^T，其中 U 和 V 是正交矩阵，Σ 是对角奇异值。SVD 用于降维（截取最大奇异值对应的方向）、推荐系统（矩阵分解）、数据压缩等。PCA 可以看作 SVD 在特定条件下的等价计算。",
+    "misconception": "混淆 SVD 和特征值分解，认为两者完全相同或可以互换使用。",
+    "source_ids": ["book_mml_deisenroth", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_la_006",
+    "related_node_id": "ml_linear_algebra_basic",
+    "question": "梯度、导数、偏导数在机器学习中各自扮演什么角色？",
+    "answer": "导数描述一元函数的变化率。偏导数描述多元函数对其中一个变量的变化率。梯度是偏导数组成的向量，指向函数值上升最快的方向。在机器学习中，梯度告诉参数应该如何调整——沿梯度反方向移动使损失函数值下降，这就是梯度下降的核心。神经网络的反向传播本质上就是高效计算每个参数偏导数的链式法则过程。",
+    "misconception": "混淆导数、偏导数和梯度的概念，或者不理解梯度方向与函数上升方向的关系。",
+    "source_ids": ["book_mml_deisenroth", "book_zhou_ml"]
+  },
+
+  {
+    "faq_id": "faq_prob_001",
+    "related_node_id": "ml_probability_statistics_basic",
+    "question": "概率和统计在机器学习中有什么区别？",
+    "answer": "概率从已知的模型出发计算各种结果出现的可能性（如已知硬币正面概率 0.5，问抛 10 次出现 6 次正面的概率）。统计从已观察到的数据推断未知模型的参数（如从 10 次抛硬币结果推断正面概率）。机器学习中的监督学习本质上就是统计推断：给定训练数据（观测），推断模型参数（概率分布）。概率提供理论基础，统计提供推断方法。",
+    "misconception": "混淆概率和统计的概念，或者认为两者在机器学习中没有本质区别。",
+    "source_ids": ["book_mml_deisenroth", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_prob_002",
+    "related_node_id": "ml_probability_statistics_basic",
+    "question": "贝叶斯定理在机器学习中为什么重要？",
+    "answer": "贝叶斯定理 P(A|B) = P(B|A)·P(A)/P(B) 是许多机器学习算法的核心。朴素贝叶斯分类器直接应用贝叶斯定理；贝叶斯网络用有向图描述变量间的条件依赖关系；高斯过程回归利用贝叶斯推断在函数空间中做非参数回归；甚至神经网络中的 Dropout 也可以从贝叶斯角度理解。贝叶斯思维强调先验知识（Prior）和后验推断（Posterior），在数据稀缺时尤其有价值。",
+    "misconception": "认为贝叶斯定理只是考试题目，与实际机器学习关系不大。",
+    "source_ids": ["book_mml_deisenroth", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_prob_003",
+    "related_node_id": "ml_probability_statistics_basic",
+    "question": "什么是最大似然估计（MLE）？",
+    "answer": "最大似然估计的核心思想是：真实参数应该让观测到的数据出现的概率最大。例如抛硬币 10 次出现 6 次正面，似然函数 L(p) = C(10,6)·p^6·(1-p)^4，MLE 就是找使 L(p) 最大的 p 值。逻辑回归和线性回归（最小二乘法）都可以从 MLE 的角度理解。MLE 是频率派统计的核心方法，在机器学习中应用极为广泛。",
+    "misconception": "把 MLE 当作纯理论概念，不理解它就是许多机器学习算法「学习」参数的底层逻辑。",
+    "source_ids": ["book_mml_deisenroth", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_prob_004",
+    "related_node_id": "ml_probability_statistics_basic",
+    "question": "期望和均值有什么区别？",
+    "answer": "均值是样本的平均值，是对期望的估计。期望是大数定律下样本均值的极限值（理论值），均值是期望的具体实现。掷骰子的期望是 3.5（理论值），掷 100 次的均值是这次实验的平均值（如 3.42）。样本量越大，均值越接近期望。在机器学习中，训练集上的经验风险最小化（ERM）就是在用样本均值逼近期望风险。",
+    "misconception": "混淆期望和均值的概念，或者认为两者是同一个东西。",
+    "source_ids": ["book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_prob_005",
+    "related_node_id": "ml_probability_statistics_basic",
+    "question": "什么是条件独立性？它在朴素贝叶斯中怎么用？",
+    "answer": "条件独立性是指在已知类别 C 的情况下，特征 X1 和 X2 的条件概率满足 P(X1, X2|C) = P(X1|C)·P(X2|C)，即特征之间相互独立。朴素贝叶斯分类器正是利用这个假设简化了后验概率的计算——即使特征之间不独立，朴素贝叶斯在很多实际任务中仍然有效。这个假设之所以叫「朴素」，正是因为它很少在现实中严格成立。",
+    "misconception": "认为朴素贝叶斯的条件独立性假设在实际中总是成立的。",
+    "source_ids": ["book_zhou_ml", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_prob_006",
+    "related_node_id": "ml_probability_statistics_basic",
+    "question": "分布的正态性假设在机器学习中重要吗？",
+    "answer": "非常重要。正态分布（高斯分布）在机器学习中无处不在：高斯混合模型、线性回归的噪声假设、神经网络的权重初始化、Dropout 的近似推断、高斯过程等都以正态性为基础。中心极限定理告诉我们：大量独立随机变量的和趋近正态分布，这为正态假设提供了理论依据。但也要注意：在实际数据明显偏离正态分布时，需要用非参数方法或变换（如对数变换）来处理。",
+    "misconception": "认为正态分布只是教科书上的理想化假设，与实际机器学习关系不大。",
+    "source_ids": ["book_mml_deisenroth", "book_prml_bishop"]
+  },
+
+  {
+    "faq_id": "faq_calc_001",
+    "related_node_id": "ml_calculus_optimization_basic",
+    "question": "导数、偏导数和梯度之间有什么区别和联系？",
+    "answer": "导数用于一元函数，表示函数在某一点的变化率。偏导数用于多元函数，表示函数对其中一个变量求导（其他变量视为常数）。梯度是多元函数所有偏导数组成的向量，指向函数值上升最快的方向。三者的联系是：在一元情况下梯度就是导数本身；多元情况下梯度包含所有偏导数。理解梯度方向是理解梯度下降的基础——沿梯度反方向走，函数值下降最快。",
+    "misconception": "混淆三者的概念，或者认为梯度是一个数而不是一个向量。",
+    "source_ids": ["book_mml_deisenroth", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_calc_002",
+    "related_node_id": "ml_calculus_optimization_basic",
+    "question": "链式法则是如何用在神经网络反向传播中的？",
+    "answer": "反向传播（Backpropagation）就是链式法则的工程实现。神经网络是多层嵌套函数的组合：y = f3(f2(f1(x)))。损失函数对某个权重 w 的梯度，需要从输出层到输入层逐层「反向」应用链式法则——先算损失对输出层激活的导数，再乘上该层激活对权重的导数，层层回传。这使得我们可以高效地同时计算所有参数的梯度，而不是分别做数值微分。",
+    "misconception": "认为反向传播是某种特殊的优化算法，而不是链式法则的具体计算过程。",
+    "source_ids": ["book_deep_learning_ai", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_calc_003",
+    "related_node_id": "ml_calculus_optimization_basic",
+    "question": "什么是最优化问题？它在机器学习中扮演什么角色？",
+    "answer": "最优化问题是在满足约束条件下寻找最优解。机器学习本质上就是最优化问题——在假设空间中寻找使损失函数最小（或使似然函数最大）的模型参数。不同的优化算法（梯度下降、牛顿法、Adam 等）解决的是「如何高效找到最优解」的问题。即使算法名称不同，它们的核心都是在参数空间中搜索最优解。",
+    "misconception": "把机器学习中的优化当作黑箱工具，不理解「搜索最优参数」这一核心目标。",
+    "source_ids": ["book_mml_deisenroth", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_calc_004",
+    "related_node_id": "ml_calculus_optimization_basic",
+    "question": "二阶导数（ Hessian 矩阵）在机器学习优化中有什么用？",
+    "answer": "一阶导数（梯度）告诉函数上升最快的方向，二阶导数告诉这个方向变化的快慢。Hessian 矩阵包含所有二阶偏导数，可用于：判断临界点是极大、极小还是鞍点；在牛顿法中用 Hessian 近似损失曲面，实现更快的收敛（如二阶优化方法）。但精确计算 Hessian 的成本是 O(n²)，对于大参数模型不可行，所以出现了拟牛顿法（如 L-BFGS）近似 Hessian。",
+    "misconception": "认为 Hessian 只是数学概念，在机器学习实践中没有用处。",
+    "source_ids": ["book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_calc_005",
+    "related_node_id": "ml_calculus_optimization_basic",
+    "question": "凸函数和非凸函数在优化中有什么区别？",
+    "answer": "凸函数的图像向上弯曲，任何局部最优都是全局最优，所以梯度下降一定能找到最优解。非凸函数的图像有多个山谷和山峰，存在多个局部最优，梯度下降可能停在不好的局部最优。对于线性回归、逻辑回归（使用交叉熵损失）这样的凸优化问题，梯度下降保证收敛到全局最优；对于神经网络，非凸优化没有理论保证，初始点和学习率对最终结果影响很大。",
+    "misconception": "把神经网络的训练当作凸优化问题，认为梯度下降一定能找到最优解。",
+    "source_ids": ["book_mml_deisenroth", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_calc_006",
+    "related_node_id": "ml_calculus_optimization_basic",
+    "question": "梯度为零的点一定是最优点吗？",
+    "answer": "不一定。梯度为零（临界点）可能是极小值、极大值或鞍点。在一维：f''(x) > 0 为极小，f''(x) < 0 为极大，f''(x) = 0 需要更高阶判断。在多维：Hessian 正定（所有特征值 > 0）为极小，负定为极大，不正定也不负定为鞍点。神经网络的损失曲面有大量鞍点，这是训练困难的原因之一。",
+    "misconception": "认为只要梯度为零就找到了最优解，不理解鞍点的存在。",
+    "source_ids": ["book_mml_deisenroth", "book_deep_learning_ai"]
+  },
+
+  {
+    "faq_id": "faq_loss_001",
+    "related_node_id": "ml_loss_function",
+    "question": "损失函数和评估指标有什么区别？",
+    "answer": "损失函数用于训练过程中指导模型优化——它的值直接参与梯度计算，模型通过最小化损失来学习参数（如交叉熵损失驱动梯度下降）。评估指标用于训练后衡量模型性能——它不参与训练，只反映模型在测试数据上的表现（如用 AUC 评估分类模型）。一个好的损失函数应该是可微的（能算梯度），而评估指标可以不可微、可以复杂。两者有时相同（如逻辑回归用交叉熵同时作为损失和评估），但经常不同（如用 F1 做评估但用交叉熵做训练）。",
+    "misconception": "混淆损失函数和评估指标，认为它们是同一个东西。",
+    "source_ids": ["book_zhou_ml", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_loss_002",
+    "related_node_id": "ml_loss_function",
+    "question": "均方误差（MSE）和交叉熵损失分别适合什么任务？",
+    "answer": "MSE 适合回归任务（输出连续值），对大误差惩罚更重（平方效应），但对异常值敏感且梯度在小误差处较小。交叉熵适合分类任务（尤其是概率输出），有更好的梯度特性——当预测错误时梯度大（学习快），当预测接近正确时梯度小（学习慢）。实践中，回归用 MSE（或 MAE），分类用交叉熵（逻辑回归、神经网络分类）。",
+    "misconception": "在分类任务中使用 MSE 作为损失函数，或者认为两者可以互换。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_loss_003",
+    "related_node_id": "ml_loss_function",
+    "question": "为什么逻辑回归用交叉熵而不是 MSE？",
+    "answer": "从梯度特性来看：使用 MSE 时，输出层激活函数是 Sigmoid，梯度包含 σ'(z)·(σ(z)-y)，其中 σ'(z) 在 z 很大或很小时趋近于 0，导致梯度消失，学习变慢。使用交叉熵时，梯度简化为 σ(z)-y，不存在梯度消失问题，模型学习速度更快。因此交叉熵是逻辑回归和神经网络分类的标准损失函数。",
+    "misconception": "认为损失函数的选择不影响训练效果，或者在分类任务中随意使用 MSE。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_loss_004",
+    "related_node_id": "ml_loss_function",
+    "question": "Hinge Loss 是什么？它和 0-1 损失有什么关系？",
+    "answer": "Hinge Loss 是 SVM 使用的损失函数：L = max(0, 1 - y·f(x))，其中 y 是真实标签（±1），f(x) 是模型预测的函数值。当分类正确且置信度高（y·f(x) > 1）时损失为 0；分类错误或置信度低时产生线性惩罚。Hinge Loss 是 0-1 损失（错分为1，正确为0）的凸上界，用凸损失替代非凸的 0-1 损失，使得优化可行。",
+    "misconception": "混淆 Hinge Loss 和 0-1 损失，认为 SVM 直接优化分类错误数。",
+    "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning"]
+  },
+  {
+    "faq_id": "faq_loss_005",
+    "related_node_id": "ml_loss_function",
+    "question": "L1 损失和 L2 损失各有什么优缺点？",
+    "answer": "L1 损失（绝对误差）对所有误差一视同仁，更鲁棒（对异常值不敏感），但函数不可导（零点处），优化困难。L2 损失（平方误差）对大误差惩罚更大（平方效应），函数平滑可导，但严重受异常值影响。Huber 损失结合两者优点：误差小时用 L2，误差大时切换为 L1，兼具可导性和鲁棒性。",
+    "misconception": "默认使用 L2 损失，不考虑异常值和数据分布的影响。",
+    "source_ids": ["book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_loss_006",
+    "related_node_id": "ml_loss_function",
+    "question": "对比损失（Contrastive Loss）和三元组损失是什么？",
+    "answer": "对比损失和三元组损失是度量学习和表示学习中的损失函数。对比损失：同类别样本的嵌入距离小，不同类别的嵌入距离大（通过 margin 参数控制）。三元组损失：给定锚点、正例和负例，最小化锚点到正例的距离同时最大化到负例的距离，常用于人脸识别和检索任务。两者都是为了学习有意义的嵌入空间，使得相似样本距离近、不相似样本距离远。",
+    "misconception": "把这些度量学习损失与标准分类损失混淆，不理解它们的作用是学习嵌入空间而非分类边界。",
+    "source_ids": ["book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_loss_007",
+    "related_node_id": "ml_loss_function",
+    "question": "为什么理解了梯度下降才能真正理解损失函数的作用？",
+    "answer": "损失函数是梯度下降的「指引」——梯度下降沿损失函数梯度的反方向更新参数，损失函数的形状决定了参数更新的轨迹。平坦的区域梯度小，更新慢；陡峭的区域梯度大，更新快；局部最优处梯度为零。因此，选择合适的损失函数不仅是定义「优化目标」，还直接决定了训练过程的动态特性（收敛速度、是否容易陷入局部最优等）。",
+    "misconception": "把损失函数只当作一个「分数」，不理解它对训练过程动态特性的影响。",
+    "source_ids": ["book_deep_learning_ai", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_loss_008",
+    "related_node_id": "ml_loss_function",
+    "question": "在选择损失函数时，应该如何结合评估指标和任务目标？",
+    "answer": "选择损失函数需要考虑三点：1）可微性（能梯度下降）；2）与任务目标一致（分类用交叉熵而非 MSE）；3）梯度特性（避免梯度消失）。评估指标可以与损失函数不同——例如训练时用交叉熵（可导、梯度好），评估时用 F1 或 AUC（更符合业务需求）。如果评估指标不可微，可以用代理损失（如用交叉熵代理 F1）或用强化学习方法。",
+    "misconception": "认为损失函数和评估指标必须相同，或者认为选择哪个损失函数无所谓。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+
+  {
+    "faq_id": "faq_grad_001",
+    "related_node_id": "ml_gradient_optimization_basic",
+    "question": "负梯度方向为什么是函数值下降最快的方向？",
+    "answer": "从微积分角度：方向导数表示函数沿任意方向的变化率，取梯度方向时方向导数等于梯度的模（最大）；取梯度反方向时方向导数等于负的梯度模（最小）。从泰勒展开角度：f(x + αd) ≈ f(x) + α·∇f·d，对于任意方向 d，当 d 与 ∇f 反向时，一阶项为负，函数值下降最多。因此梯度下降法沿 ∇f 的反方向搜索。",
+    "misconception": "不理解为什么一定要「沿负梯度方向」，认为任何下降方向都可以。",
+    "source_ids": ["book_mml_deisenroth", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_grad_002",
+    "related_node_id": "ml_gradient_optimization_basic",
+    "question": "学习率（步长）在梯度优化中起什么作用？",
+    "answer": "学习率控制沿梯度方向前进的步长：α 过大会导致震荡或发散（在最优点附近来回跳跃），α 过小会让收敛极慢。学习率是最重要的超参数之一，需要通过实验来调节。好的学习率应该在训练初期较大（快速接近最优区域），训练后期较小（精细调整）。这叫学习率衰减（learning rate decay），常用策略包括：按步衰减、指数衰减、余弦退火等。",
+    "misconception": "认为学习率设为一个固定值后就不需要调整，或者认为学习率越大越好。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_grad_003",
+    "related_node_id": "ml_gradient_optimization_basic",
+    "question": "什么是动量（Momentum）？它为什么能加速收敛？",
+    "answer": "动量模拟物理中的惯性概念：在参数更新时不仅考虑当前梯度，还累积之前的更新方向。如果梯度方向一致，动量会加速；如果梯度方向变化，动量会抑制震荡。动量项 v = β·v + (1-β)·∇L，更新为 θ = θ - α·v。这相当于在梯度方向一致的方向上积累速度，使收敛更快，同时在曲率高或噪声大的方向上减少震荡。β 通常取 0.9。",
+    "misconception": "认为动量只是让优化更稳定，不理解它加速收敛的物理直觉和数学原理。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_grad_004",
+    "related_node_id": "ml_gradient_optimization_basic",
+    "question": "自适应学习率方法（如 Adam）和标准梯度下降有什么区别？",
+    "answer": "标准梯度下降对所有参数使用相同的学习率。自适应方法（如 Adam、RMSprop、Adagrad）为每个参数维护独立的学习率：根据历史梯度的模自动调整——梯度大的参数降低学习率，梯度小的参数提高学习率。Adam 结合了动量（累积梯度方向）和自适应学习率（累积梯度平方），对超参数选择相对鲁棒，是目前深度学习训练的首选优化器。",
+    "misconception": "认为 Adam 是万能的，在所有场景下都比 SGD 好，或者认为不需要理解自适应学习率的原理。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_grad_005",
+    "related_node_id": "ml_gradient_optimization_basic",
+    "question": "如何判断梯度下降是否收敛？",
+    "answer": "常用判断方法：1）观察损失曲线——如果曲线趋于平坦且不再下降，说明接近收敛；2）设置收敛阈值——当两次迭代的损失差小于阈值时停止；3）监控验证集性能——当验证性能停止提升时停止（早停）。注意：损失不下降不一定是因为找到了最优解，也可能是陷入了局部最优、鞍点或学习率设置不当。",
+    "misconception": "认为损失曲线下降就一定收敛到最优解，不检查是否陷入局部最优或鞍点。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_grad_006",
+    "related_node_id": "ml_gradient_optimization_basic",
+    "question": "梯度爆炸和梯度消失分别是什么原因导致的？",
+    "answer": "梯度爆炸：深层网络或循环网络中，链式法则导致梯度连乘，如果权重初始值大于1，梯度指数级增大，使参数更新过大、训练不稳定。梯度消失：与爆炸相反，如果权重初始值小于1 或激活函数导数小于1，梯度连乘后趋近于零，导致浅层参数几乎不更新。解决方案：梯度裁剪（防止爆炸）、BatchNorm（稳定激活分布）、残差连接（提供梯度高速公路）、适当的权重初始化（Xavier/He）。",
+    "misconception": "混淆梯度爆炸和梯度消失，认为两者是同一类问题。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_grad_007",
+    "related_node_id": "ml_gradient_optimization_basic",
+    "question": "理解了损失函数之后，梯度优化如何「使用」损失函数的梯度来更新参数？",
+    "answer": "流程是：1）计算损失函数对所有参数的梯度（∇L）；2）选择优化算法（标准 GD/SGD/Adam）计算参数更新量；3）沿梯度反方向用学习率缩放更新量后更新参数：θ_new = θ_old - α·∇L(θ)。损失函数的梯度告诉每个参数应该朝什么方向调整，梯度的大小决定调整幅度。不同的优化器在这个基本框架上加入了动量、自适应学习率等改进。",
+    "misconception": "不理解梯度优化和损失函数之间的数据流关系。",
+    "source_ids": ["book_deep_learning_ai", "course_stanford_cs229"]
+  },
+  {
+    "faq_id": "faq_bp_004",
+    "related_node_id": "ml_backpropagation",
+    "question": "反向传播的时间复杂度是多少？",
+    "answer": "反向传播的时间复杂度为 O(n)，其中 n 是网络中参数的总数。在一次前向传播和一次反向传播中，每个参数恰好参与一次乘加运算（线性层）或卷积运算（卷积层）。具体来说：对于全连接层，参数量 = 输入维数 × 输出维数；对于卷积层，参数量 = 卷积核尺寸 × 输入通道数 × 输出通道数。网络越深、越宽，参数量越大，反向传播的计算成本越高。这也是为什么现代深度学习模型需要 GPU 加速的原因之一。",
+    "misconception": "认为反向传播的计算量与训练轮数成正比，而不理解单次前向/反向传播的复杂度。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_bp_005",
+    "related_node_id": "ml_backpropagation",
+    "question": "反向传播和自动微分有什么关系？",
+    "answer": "反向传播是自动微分（Automatic Differentiation，简称 Autodiff）在神经网络中的特化实现。自动微分有三种模式：前向模式（沿输入到输出方向）、反向模式（沿输出到输入方向）、符号微分。神经网络通常输出是单个损失值，需要对所有参数求梯度，反向模式的计算效率最高（只需一次反向遍历）。主流深度学习框架（PyTorch、TensorFlow）都基于反向模式自动微分实现反向传播，区别在于它们用计算图来追踪操作并自动求导。",
+    "misconception": "认为反向传播就是自动微分本身，不理解它是自动微分的一种高效实现方式。",
+    "source_ids": ["book_deep_learning_ai", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_bp_006",
+    "related_node_id": "ml_backpropagation",
+    "question": "为什么反向传播要求激活函数可导？",
+    "answer": "反向传播的核心是链式法则，需要计算每一层的梯度 ∂L/∂a * ∂a/∂z，其中 a 是激活值，z 是线性组合结果。如果激活函数在某个点不可导（如 ReLU 在 0 点），该点的梯度就无法直接计算。实践中通常用次梯度（subgradient）来处理：ReLU 在 0 点约定梯度为 0 或 1（SmoothReLU），这不影响整体训练效果。不可导的激活函数仍然可以使用，只是需要特殊处理。",
+    "misconception": "认为所有激活函数都必须处处可导，或者认为 ReLU 不可导就不能用反向传播。",
+    "source_ids": ["book_deep_learning_ai", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_bp_007",
+    "related_node_id": "ml_backpropagation",
+    "question": "批量梯度下降和小批量梯度下降在反向传播中有什么区别？",
+    "answer": "批量梯度下降（Batch GD）使用全部样本计算梯度后更新一次参数，梯度估计准确但计算量大、训练慢。小批量梯度下降（Mini-batch GD）每次用一小批样本（如 32/64/128 个）估算梯度后更新参数，梯度估计有噪声但可以更快迭代。现代深度学习几乎都用 Mini-batch SGD。噪声的梯度实际上有正则化效果（类似模拟退火），能帮助跳出局部最优。但 batch size 过大（接近全量）会失去噪声带来的好处，batch size 过小则梯度估计不稳定、收敛慢。",
+    "misconception": "认为 batch size 越大梯度估计越准确就越好，忽视了大 batch 的计算成本和潜在过拟合风险。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_bp_008",
+    "related_node_id": "ml_backpropagation",
+    "question": "反向传播中权重共享如何处理梯度？",
+    "answer": "在 RNN 和 CNN 等有权重共享的网络中，相同参数出现在多个位置，反向传播时需要将所有位置的梯度累加起来。以 RNN 为止，如果同一个权重矩阵 W 在 t 个时间步被使用，则最终对 W 的梯度是各时间步梯度的和：∂L/∂W = Σ(∂L_t/∂W)。这是因为 W 对最终损失的贡献是各时间步贡献之和。CNN 中也是同理，同一个卷积核在每个空间位置产生一个梯度，最终取平均或求和。",
+    "misconception": "不理解权重共享情况下梯度是累加的，以为反向传播只会返回单一位置的梯度。",
+    "source_ids": ["book_deep_learning_ai", "book_mml_deisenroth"]
+  },
+
+  {
+    "faq_id": "faq_km_004",
+    "related_node_id": "ml_kmeans",
+    "question": "K-Means 的时间复杂度是多少？",
+    "answer": "K-Means 的时间复杂度为 O(t·k·n·d)，其中 t 是迭代次数，k 是簇数，n 是样本数，d 是特征维度。每次迭代需要计算每个样本到每个中心的距离（O(k·n·d)），然后更新中心（O(n·d)）。实际中 t 通常不超过 20，k 通常远小于 n，因此总体复杂度接近 O(n)，是线性可扩展的。相比层次聚类（O(n² log n)）和 DBSCAN（O(n²)），K-Means 在大数据集上效率优势明显。",
+    "misconception": "认为 K-Means 时间复杂度与样本数的平方成正比，不理解其线性复杂度优势。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_km_005",
+    "related_node_id": "ml_kmeans",
+    "question": "K-Means 能否处理分类特征？",
+    "answer": "标准 K-Means 使用欧氏距离，要求特征是连续的数值型。对于分类特征（如性别、颜色、城市），直接用 K-Means 不合适，因为类别之间的「距离」没有明确定义。解决方案包括：1）将分类特征转换为独热编码（但维度爆炸）；2）使用 K-Modes（专门处理分类数据的 K-Means 变种）；3）使用 Gower 距离替代欧氏距离；4）先对分类特征做嵌入，再用 K-Means。scikit-learn 的 KMeans 默认只接受数值输入。",
+    "misconception": "认为 K-Means 可以直接处理分类特征，不理解欧氏距离对分类数据的不适用性。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_km_006",
+    "related_node_id": "ml_kmeans",
+    "question": "K-Means 和层次聚类各适合什么场景？",
+    "answer": "K-Means 适合：数据量大、需要快速得到结果、簇呈球状且大小相近的场景。优点是线性时间复杂度、可扩展性强。层次聚类适合：需要发现任意形状的簇、需要可视化成树状图（Dendrogram）、需要多次尝试不同粒度的场景。缺点是时间复杂度高（O(n² log n)），不适合大数据集。实践中可以先用层次聚类在小样本上探索簇结构，再用 K-Means 在全量数据上做最终聚类。",
+    "misconception": "认为层次聚类总是比 K-Means 好，或者不加区分地随意选择。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_prml_bishop"]
+  },
+  {
+    "faq_id": "faq_km_007",
+    "related_node_id": "ml_kmeans",
+    "question": "如何评估 K-Means 的聚类效果？",
+    "answer": "K-Means 聚类评估分为内部指标和外部指标。内部指标（不需要真实标签）：轮廓系数（-1到1，越高越好，衡量簇内紧密度和簇间分离度）；Calinski-Harabasz 指数（越高越好）；Davies-Bouldin 指数（越低越好）。外部指标（需要真实标签）：调整兰德指数（ARI）、归一化互信息（NMI）。实践中常用轮廓系数快速评估不同 k 值的效果，结合业务可解释性选择最优 k。",
+    "misconception": "只用 Inertia（SSE）评估 K-Means，忽视它随 k 单调下降、无法真正衡量聚类质量的问题。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_km_008",
+    "related_node_id": "ml_kmeans",
+    "question": "K-Means 为什么需要多次运行取最优？",
+    "answer": "由于 K-Means 的随机初始化和 E-M 算法的收敛特性，每次运行可能收敛到不同的局部最优解。初始中心点选择不同，会导致完全不同的聚类结果。K-Means++ 初始化通过概率选择初始中心（距离已有中心越远的点被选中的概率越高），大幅改善了初始化问题，但仍不能保证全局最优。scikit-learn 的 KMeans 默认运行 n_init=10 次（Mini-Batch K-Means 默认 n_init=3），取 SSE 最小的结果。",
+    "misconception": "认为 K-Means 只运行一次就足够，不理解随机初始化对结果的潜在影响。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_mml_deisenroth"]
+  },
+
+  {
+    "faq_id": "faq_lr_004",
+    "related_node_id": "ml_logistic_regression",
+    "question": "逻辑回归输出的是概率吗？如何理解阈值？",
+    "answer": "是的，逻辑回归的 Sigmoid 输出可以解释为概率 P(Y=1|X)，表示给定输入 x 条件下属于正类的概率。默认阈值是 0.5：当 P(Y=1|X) > 0.5 预测为正类，否则预测为负类。但阈值可以根据业务需求调整：癌症检测需要高召回率，可以把阈值降低到 0.3（更敏感）；垃圾邮件过滤需要高精确率，可以把阈值提高到 0.8（更保守）。调整阈值会同时影响精确率和召回率，需要在两者之间权衡。",
+    "misconception": "认为逻辑回归的阈值必须是 0.5，不理解阈值可以根据业务需求调整。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_lr_005",
+    "related_node_id": "ml_logistic_regression",
+    "question": "逻辑回归和线性回归的核心区别是什么？",
+    "answer": "核心区别在于：1）任务类型：线性回归做回归（连续值输出），逻辑回归做分类（概率输出）；2）损失函数：线性回归用 MSE，逻辑回归用交叉熵；3）输出范围：线性回归输出可以是任意实数，逻辑回归输出在 (0,1) 之间；4）优化目标：线性回归最小化预测值与真实值的平方差，逻辑回归最大化似然（等价于最小化交叉熵）。两者都是线性模型，但应用于不同任务。",
+    "misconception": "认为逻辑回归是回归算法，不能用于分类任务，或者认为两者只是名字不同。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_lr_006",
+    "related_node_id": "ml_logistic_regression",
+    "question": "逻辑回归如何处理多分类问题？",
+    "answer": "逻辑回归原生是二分类算法，处理多分类有两种策略：1）一对多（One-vs-Rest，OvR）：训练 k 个二分类器（k 是类别数），每个分类器区分「当前类 vs 其他所有类」，最终选择置信度最高的那个类。简单高效，但可能存在类别不平衡问题。2）多项逻辑回归（Softmax 回归）：直接建模 P(Y=k|X)，输出 k 个类别的概率分布，损失函数是交叉熵的推广。sklearn 的 LogisticRegression 默认使用 OvR，多分类参数 multi_class='multinomial' 时使用 Softmax。",
+    "misconception": "认为逻辑回归只能做二分类，不理解 Softmax 是多分类的自然扩展。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_lr_007",
+    "related_node_id": "ml_logistic_regression",
+    "question": "逻辑回归中正则化的作用是什么？",
+    "answer": "逻辑回归中 L2 正则化（默认）通过惩罚权重向量的二范数，防止模型过度拟合训练数据。目标函数变为：L(w) = -Σ[y_i log σ(w·x_i+b) + (1-y_i) log(1-σ(w·x_i+b))] + λ||w||²。λ 控制正则化强度：λ 过大导致欠拟合（所有权重趋近于零），λ 过小等于没加正则化。L1 正则化可以产生稀疏权重矩阵，用于特征选择。sklearn 默认使用 L2，参数 C 是正则化强度的倒数（C=1/λ）。",
+    "misconception": "认为逻辑回归不需要正则化，或者不理解正则化参数 C 与 λ 的倒数关系。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_lr_008",
+    "related_node_id": "ml_logistic_regression",
+    "question": "逻辑回归的特征工程有哪些注意事项？",
+    "answer": "逻辑回归对特征尺度敏感，因为权重直接与特征相乘。特征尺度差异大时，大尺度特征主导模型，小尺度特征被忽略。注意事项：1）必须做特征标准化（均值归一化或 Z-score 标准化）；2）类别特征需要独热编码（不能直接输入字符串类别）；3）多项式特征可以捕捉非线性关系，但增加过拟合风险；4）特征交叉需要谨慎，可能导致维度爆炸。良好的特征工程可以让简单的逻辑回归达到接近复杂模型的效果。",
+    "misconception": "认为逻辑回归可以直接使用原始特征，不做尺度处理。",
+    "source_ids": ["book_hands_on_ml_3e_zh"]
+  },
+
+  {
+    "faq_id": "faq_perc_003",
+    "related_node_id": "ml_perceptron",
+    "question": "感知机和线性支持向量机有什么区别？",
+    "answer": "感知机和线性 SVM 都解决线性分类问题，但核心区别在于优化目标和解的性质：1）感知机使用误分类驱动更新，目标是找到能把数据分开的超平面（不唯一），SVM 目标是找到最大间隔超平面（唯一且最优）；2）感知机不保证泛化能力，SVM 通过最大化间隔有更好的泛化理论保证；3）感知机对噪声敏感，SVM 通过间隔最大化减少噪声影响；4）感知机学习规则简单（错分才更新），SVM 需要求解二次规划。SVM 可以看作感知机的正则化版本。",
+    "misconception": "认为感知机和 SVM 是同一类算法，不理解两者在优化目标和解的唯一性上的本质区别。",
+    "source_ids": ["book_zhou_ml", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_perc_004",
+    "related_node_id": "ml_perceptron",
+    "question": "感知机的学习率会影响最终结果吗？",
+    "answer": "对于线性可分数据，感知机学习率不影响最终是否能收敛（PLA 保证有限步收敛），但会影响收敛速度和解的表示。对于线性不可分数据，学习率影响震荡的路径和频率。需要注意的是：感知机的解不唯一，与初始点和学习率都有关。如果数据线性可分，不同学习率可能收敛到不同的分类超平面，这些超平面都能正确分类，但泛化能力可能不同。在实际应用中，学习率通常设为 1（不需要调节）。",
+    "misconception": "认为感知机需要仔细调节学习率，或者认为学习率影响最终分类结果的正确性。",
+    "source_ids": ["book_zhou_ml", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_perc_005",
+    "related_node_id": "ml_perceptron",
+    "question": "多层感知机（MLP）和单层感知机有什么关系？",
+    "answer": "多层感知机（Multi-Layer Perceptron，MLP）是由多个感知机层堆叠而成的神经网络。单层感知机只能解决线性可分问题，MLP 通过引入隐藏层和非线性激活函数，可以解决非线性可分问题（如 XOR）。MLP 的每一层都是一组感知机（神经元），输出是输入的线性组合再经过激活函数。MLP 的训练需要反向传播算法，单层感知机只需要简单的梯度下降。MLP 是深度学习的基石，几乎所有现代神经网络都可以看作 MLP 的扩展。",
+    "misconception": "混淆「感知机」（单层）和「多层感知机」（神经网络）的概念，认为它们是同一回事。",
+    "source_ids": ["book_zhou_ml", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_perc_006",
+    "related_node_id": "ml_perceptron",
+    "question": "为什么 XOR 问题对感知机如此重要？",
+    "answer": "XOR（异或）问题展示了感知机的根本局限性：对于输入 (0,0) 和 (1,1) 输出 0，(0,1) 和 (1,0) 输出 1，不存在一条直线能把正负样本分开。这在 1969 年被 Minsky 证明后，一度导致神经网络研究陷入低谷（称为「AI 冬天」）。XOR 问题的解决之道是引入隐藏层：单隐层 MLP 可以解决 XOR，因为隐藏层神经元将输入空间变换到新的特征空间，在那个空间里数据线性可分。XOR 问题让人们认识到非线性激活函数和隐藏层的必要性。",
+    "misconception": "认为感知机可以解决所有二分类问题，不理解 XOR 问题揭示的线性可分性限制。",
+    "source_ids": ["book_zhou_ml", "book_deep_learning_ai"]
+  },
+
+  {
+    "faq_id": "faq_dropout_003",
+    "related_node_id": "ml_dropout",
+    "question": "Dropout 的 keep_prob 可以设置为任意值吗？",
+    "answer": "keep_prob 控制保留神经元的概率，通常在 0.5 到 0.9 之间。常见经验值：输入层 keep_prob 可以设低一些（如 0.8），隐藏层通常设 0.5 到 0.8。更激进的 Dropout（keep_prob=0.5）提供更强的正则化，但可能欠拟合；更保守的 Dropout（keep_prob=0.9）正则化弱，可能过拟合。实践中可以针对不同层设置不同的 keep_prob：层越宽、越容易过拟合的层，keep_prob 设得越低。",
+    "misconception": "认为 keep_prob 越低越好，或者不理解不同层需要不同 Dropout 强度的原因。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_dropout_004",
+    "related_node_id": "ml_dropout",
+    "question": "Dropout 在测试时为什么要乘以 keep_prob？",
+    "answer": "训练时每个神经元有 keep_prob 的概率保留，这使得网络的期望输出变为原始输出的 keep_prob 倍（因为被丢弃的神经元输出为 0）。如果测试时也使用 Dropout，每个样本得到的是随机子网络的输出，不同样本的输出不稳定。测试时不 Dropout，用全部神经元，则输出是完整网络的输出，其期望应该是训练时期望的 1/keep_prob 倍。因此需要将测试输出乘以 keep_prob 来保持期望一致。这个操作叫做「inverted dropout」，是现代框架的标准做法。",
+    "misconception": "不理解测试时乘以 keep_prob 的动机，认为这是多余的步骤。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_dropout_005",
+    "related_node_id": "ml_dropout",
+    "question": "Dropout 和随机森林有什么相似之处？",
+    "answer": "Dropout 本质上是一种集成学习，类似于随机森林的 Bagging 思想。Dropout 训练时每次随机丢弃不同神经元，相当于训练了指数级数量的「子网络」。每个子网络在不同随机 dropout 模式下学习，测试时用全部权重做预测，相当于对这些子网络做平均。随机森林通过 Bootstrap 采样训练多棵决策树再集成；Dropout 通过随机丢弃神经元训练多个子网络再集成。两者的核心思想都是「通过随机性引入多样性，通过集成提升泛化」。",
+    "misconception": "认为 Dropout 只是随机「关掉」神经元，不理解其集成学习的本质。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_dropout_006",
+    "related_node_id": "ml_dropout",
+    "question": "什么情况下 Dropout 效果不好？",
+    "answer": "Dropout 在以下情况下可能效果不好：1）数据集太小——Dropout 的正则化效果需要足够的数据来发挥，过小的数据可能连基础模型都训练不好；2）网络太宽——宽网络本身正则化需求低，Dropout 的边际收益小；3）与 BatchNorm 一起使用——BatchNorm 也有正则化效果，两者同时使用可能过度正则化；4）序列模型（RNN/LSTM）——标准 Dropout 对 RNN 不友好，需要使用变种如变分 Dropout 或 ZoneOut。",
+    "misconception": "认为 Dropout 是万能的正则化方法，在任何情况下都能提升效果。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+
+  {
+    "faq_id": "faq_bn_003",
+    "related_node_id": "ml_batchnorm",
+    "question": "BatchNorm 可以应用于所有网络层吗？",
+    "answer": "BatchNorm 主要应用于全连接层和卷积层的输出（即激活函数之前）。不适用于：循环神经网络（RNN/LSTM）的循环连接——因为序列长度不同，BatchNorm 无法跨时间步工作；小 batch 场景——batch size 太小（如 1 或 2）时，batch 统计量不稳定；推理阶段输入是单个样本时（需要用训练时累积的 running 统计量）。对于 RNN，通常使用 Layer Normalization 或 Recurrent BatchNorm。",
+    "misconception": "认为 BatchNorm 可以不加区分地应用于任何层，不理解其对 batch size 和网络结构的依赖。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_bn_004",
+    "related_node_id": "ml_batchnorm",
+    "question": "BatchNorm 的 γ 和 β 参数的作用是什么？",
+    "answer": "BatchNorm 的 γ（scale）和 β（shift）参数让模型学习是否需要标准化以及标准化后的分布。标准 BatchNorm 将激活值标准化为均值 0、方差 1，但这可能不适合所有任务（例如 Sigmoid 激活在 0 附近几乎是线性的）。γ 和 β 允许网络学习：γ=σ_running, β=μ_running 时等价于不做标准化（恢复原始分布）；γ>0, β≠0 时允许网络学习适合自己的分布。如果网络发现标准化有帮助，会自动学会使用它。",
+    "misconception": "认为 BatchNorm 只是简单的标准化，不理解 γ 和 β 提供了恢复原始分布的能力。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_bn_005",
+    "related_node_id": "ml_batchnorm",
+    "question": "BatchNorm 和 Dropout 同时使用会有冲突吗？",
+    "answer": "BatchNorm 和 Dropout 单独使用都有正则化效果，但同时使用需要注意：两者结合可能导致过度正则化，尤其在数据量不够大时。另一个微妙的问题是 Dropout 的随机性可能干扰 BatchNorm 的训练统计量估计。具体来说：训练时 Dropout 会让某些神经元输出为 0，这会影响后续 BatchNorm 层的 batch 统计量。实践中通常可以同时使用，但需要相应调整 Dropout 的 keep_prob（设得更高一些）。近年来有研究建议用 Ghost BatchNorm 或调整网络结构来缓解这个问题。",
+    "misconception": "认为 BatchNorm 和 Dropout 是互补的正则化方法，可以无条件叠加使用。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_bn_006",
+    "related_node_id": "ml_batchnorm",
+    "question": "BatchNorm 为什么能加速训练？",
+    "answer": "BatchNorm 加速训练的原因有三点：1）减轻梯度消失/爆炸——通过将激活值稳定在合适范围，Sigmoid/Softmax 等激活函数的梯度不再趋近于零；2）允许更高的学习率——标准化后参数尺度的变化不会因为层间传递而放大，可以用更大的学习率；3）提供轻微正则化——每个 batch 的随机性产生噪声，类似于 Dropout 的效果，使模型不过度依赖特定神经元。综合效果是网络可以更快收敛。",
+    "misconception": "认为 BatchNorm 只是「让数据归一化」，不理解它对梯度动态和训练稳定性的深层影响。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+
+  {
+    "faq_id": "faq_cnn_002",
+    "related_node_id": "ml_cnn",
+    "question": "卷积神经网络为什么需要池化层？",
+    "answer": "池化层（Pooling）有三个主要作用：1）降维——通过下采样减少特征图尺寸，降低计算量和参数量；2）特征抽象——保留显著特征，过滤细粒度噪声；3）提供平移不变性——max pooling 让模型对特征位置的微小移动不敏感。池化分为 max pooling（取最大值，保留最显著特征）和 average pooling（取平均值，更平滑）。近年有研究（如 Strided Convolutions、Global Average Pooling）尝试用其他方式替代池化，但池化仍然是 CNN 的经典组件。",
+    "misconception": "认为池化只是简单的降采样，不理解它对平移不变性和特征抽象的贡献。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_cnn_003",
+    "related_node_id": "ml_cnn",
+    "question": "1x1 卷积核有什么作用？为什么 GoogLeNet 使用它？",
+    "answer": "1x1 卷积核虽然只在空间上取一个像素，但在通道维度上进行线性组合，作用相当于「逐点卷积」。具体用途：1）降维/升维——通过减少/增加通道数降低计算量（如 GoogLeNet 用 1x1 卷积将通道数从 256 降到 64）；2）增加非线性——1x1 卷积后接 ReLU，相当于在通道维度做非线性变换；3）跨通道信息融合——让网络学习通道间的相关性。1x1 卷积是设计高效网络（如 ResNet、MobileNet）的关键组件。",
+    "misconception": "认为 1x1 卷积没有实际作用，只是填充用的。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_cnn_004",
+    "related_node_id": "ml_cnn",
+    "question": "卷积层和全连接层各适合什么场景？",
+    "answer": "卷积层适合：图像、视频、语音等具有局部结构或空间层次的数据，参数共享使卷积层对输入的平移、旋转等变换有一定的鲁棒性。全连接层适合：需要特征全局组合、没有明显空间结构的数据（如表格数据）。现代 CNN 通常是卷积层和全连接层的组合：卷积层负责特征提取，全连接层负责最终的分类/回归。在迁移学习中，卷积层作为特征提取器通常被冻结，只微调全连接层。",
+    "misconception": "认为全连接层可以替代卷积层，或者不理解卷积层参数共享的优势。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_cnn_005",
+    "related_node_id": "ml_cnn",
+    "question": "卷积神经网络的平移不变性是什么意思？",
+    "answer": "平移不变性（Translation Invariance）是指当输入图像发生平移时，网络的输出（分类结果）保持不变。例如，识别「猫」的网络应该能认出图像中任何位置的猫，无论猫在左上角还是右下角。CNN 通过卷积层（参数共享）和池化层（空间下采样）实现平移不变性：卷积层用同一个滤波器扫描全图，无论猫在哪个位置都能被检测到；池化层进一步抽象位置信息。需要注意的是：CNN 的平移不变性是针对小幅度平移的，过度平移仍会影响识别。",
+    "misconception": "认为 CNN 可以处理任意程度的平移、旋转和尺度变换，不理解其平移不变性的局限性。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_cnn_006",
+    "related_node_id": "ml_cnn",
+    "question": "为什么 ResNet 比普通 CNN 更容易训练？",
+    "answer": "ResNet 的核心创新是残差连接（Shortcut Connection）：将输入直接加到输出上，H(x) = F(x) + x，其中 F(x) 是残差。普通网络需要直接学习映射 H(x)，而 ResNet 只需学习残差 F(x) = H(x) - x。当 H(x) 接近恒等映射时，F(x) 趋近于零，网络可以轻松学到；普通网络需要每个层都学习完整的映射。残差连接还提供了梯度高速公路，让梯度可以直接回传到浅层，有效缓解梯度消失问题，使得训练非常深的网络（如 1000+ 层）成为可能。",
+    "misconception": "认为 ResNet 只是另一个网络架构，不理解残差连接解决梯度消失的核心机制。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
+  },
+
+  {
+    "faq_id": "faq_rnn_002",
+    "related_node_id": "ml_rnn",
+    "question": "RNN 为什么难以处理长序列？",
+    "answer": "RNN 处理长序列困难的根本原因是梯度消失和梯度爆炸。在 BPTT（反向传播通过时间）过程中，损失对早期时间步的梯度需要经过多次矩阵连乘：∂L/∂W = Σ(∂L_t/∂W)。如果隐藏状态权重矩阵的特征值大于 1，梯度会指数爆炸；如果特征值小于 1，梯度会指数消失。这意味着早期时间步的信息几乎无法影响当前时间步的输出，网络「忘记」了早期的输入。LSTM 和 GRU 通过门控机制引入记忆单元，允许重要信息跨时间步传递，从根本上解决了这个问题。",
+    "misconception": "认为 RNN 和 LSTM/RNN 是同一类模型，不理解 LSTM/GRU 对长序列处理能力的改进。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_rnn_003",
+    "related_node_id": "ml_rnn",
+    "question": "LSTM 和 GRU 哪个更好？",
+    "answer": "LSTM 和 GRU 各有优势：LSTM 有三个门（输入门、遗忘门、输出门），结构更复杂，表达能力更强，但参数量大，训练较慢。GRU 只有两个门（更新门、重置门），结构更简单，参数量约为 LSTM 的一半，在中小规模数据上训练更快更稳定。实践中的选择建议：1）数据量小或资源有限时，用 GRU；2）数据量大且任务复杂时，用 LSTM；3）需要细粒度记忆控制时，用 LSTM。两者通常能取得相近的效果。",
+    "misconception": "认为 LSTM 总是比 GRU 好，或者不加区分地随意选择。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_rnn_004",
+    "related_node_id": "ml_rnn",
+    "question": "RNN 的梯度裁剪是如何工作的？",
+    "answer": "梯度裁剪（Gradient Clipping）用于防止梯度爆炸，核心思想是：当梯度的 L2 范数超过阈值 θ 时，将梯度缩放到 θ。具体操作：g = clip(g, θ) = g * θ / ||g||_2（当 ||g||_2 > θ 时）。θ 通常设为 1 到 10 之间。梯度裁剪不能解决梯度消失问题，只能防止梯度爆炸。在训练 RNN/LSTM 时，梯度裁剪几乎是必备技巧，因为它能显著提高训练稳定性。PyTorch 中使用 `torch.nn.utils.clip_grad_norm_`。",
+    "misconception": "认为梯度裁剪能解决所有梯度问题，不理解它只针对梯度爆炸。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_rnn_005",
+    "related_node_id": "ml_rnn",
+    "question": "RNN 训练为什么通常使用 BPTT 而不是普通反向传播？",
+    "answer": "普通反向传播只能处理单层网络，无法处理时间维度上的依赖关系。BPTT（Backpropagation Through Time）是反向传播在时间维度上的扩展：1）将 RNN 按时间步展开成深层网络（每个时间步一层）；2）从最后一个时间步开始，逐步向前计算每个时间步的梯度；3）将同一参数在不同时间步的梯度累加。BPTT 的时间复杂度是 O(T)，T 是序列长度，因此长序列训练成本高。这也是 Transformer 兴起的原因之一——并行计算能力强。",
+    "misconception": "不理解 RNN 为什么需要 BPTT，认为普通反向传播可以处理所有网络。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_rnn_006",
+    "related_node_id": "ml_rnn",
+    "question": "双向 RNN 是什么意思？适用于哪些任务？",
+    "answer": "双向 RNN（Bidirectional RNN）同时训练两个方向的 RNN：一个从左到右处理序列，一个从右到左处理序列，最终输出结合两个方向的隐藏状态。适用于：需要完整上下文信息的任务，如词性标注（需要前后单词信息）、机器翻译、语音识别等。不适用于：实时流处理（无法预知未来）、时间序列预测（只能基于历史预测未来）。双向 LSTM 是 NLP 任务中的常用架构。",
+    "misconception": "认为所有 RNN 都应该用双向，不理解双向只适用于特定任务。",
+    "source_ids": ["book_deep_learning_ai"]
+  },
+
+  {
+    "faq_id": "faq_svm_003",
+    "related_node_id": "ml_svm",
+    "question": "SVM 为什么叫「支持向量」机？",
+    "answer": "「支持向量」是指落在间隔边界（决策边界两侧的平行线）上的训练样本。SVM 的决策边界完全由这些支持向量决定，远离边界的其他样本对模型没有任何影响。直观理解：如果移走所有非支持向量，重新训练 SVM 会得到完全相同的决策边界；但如果移走任意一个支持向量，边界就会改变。支持向量这个名字来源于数学：在求解对偶问题时，只有支持向量的拉格朗日乘子 α_i > 0，其他样本的 α_i = 0。",
+    "misconception": "不理解「支持向量」的含义，认为所有训练样本都对 SVM 有贡献。",
+    "source_ids": ["book_zhou_ml", "book_lihang_statistical_learning"]
+  },
+  {
+    "faq_id": "faq_svm_004",
+    "related_node_id": "ml_svm",
+    "question": "SVM 如何处理线性不可分数据？",
+    "answer": "SVM 处理线性不可分数据有两种策略：1）软间隔 SVM（Soft Margin）——引入松弛变量 ξ，允许部分样本违反间隔约束，通过正则化参数 C 控制对违反间隔的惩罚程度。C 越大，对误分类的惩罚越重，模型越接近硬间隔 SVM；C 越小，容忍更多误分类，但可能欠拟合。2）核 SVM（Kernel SVM）——通过核函数将数据映射到高维空间，在高维空间寻找线性可分的超平面。常用核函数包括线性核、多项式核和 RBF（高斯）核。",
+    "misconception": "认为 SVM 只能处理线性可分数据，不理解软间隔和核方法的作用。",
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
+  },
+  {
+    "faq_id": "faq_svm_005",
+    "related_node_id": "ml_svm",
+    "question": "RBF 核 SVM 有哪些超参数需要调优？",
+    "answer": "RBF 核 SVM 主要有两个超参数：1）C（正则化参数）——控制对间隔违反的惩罚程度。C 越大，模型越复杂（间隔越窄），容易过拟合；C 越小，模型越简单（间隔越宽），容易欠拟合。2）γ（核系数）——控制单个训练样本的影响范围。γ 越大，每个样本的影响范围越小，模型越复杂；γ 越小，每个样本的影响范围越大，模型越简单。γ 和 C 通常用网格搜索或贝叶斯优化来选择，推荐的搜索范围是 C ∈ [0.1, 100]，γ ∈ [0.001, 10]。",
+    "misconception": "认为 SVM 调参只需要调 C，不理解 γ 对 RBF 核的重要性。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_zhou_ml"]
+  },
+  {
+    "faq_id": "faq_svm_006",
+    "related_node_id": "ml_svm",
+    "question": "SVM 和逻辑回归在什么情况下选哪个？",
+    "answer": "选择建议：1）特征维度远高于样本数时（n >> m）——用线性 SVM 或逻辑回归（线性模型在高维空间通常表现良好）；2）特征维度和样本数都适中时（n ≈ m）——用 RBF 核 SVM；3）样本数远高于特征维度时（m >> n）——用逻辑回归（计算效率更高）；4）需要概率输出时——优先用逻辑回归（SVM 的 Platt Scaling 概率校准效果通常不如原生概率模型）；5）特征重要性分析——逻辑回归可以直接看权重，SVM 不行。",
+    "misconception": "认为 SVM 总是比逻辑回归好，不考虑具体数据特点和任务需求。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_zhou_ml"]
+  },
+
+  {
+    "faq_id": "faq_gd_004",
+    "related_node_id": "ml_gradient_descent",
+    "question": "批量梯度下降、随机梯度下降和小批量梯度下降各有什么优缺点？",
+    "answer": "批量梯度下降（BGD）：每次用全部样本计算梯度。优点：梯度估计准确，收敛稳定；缺点：计算量大，不适合大数据集。随机梯度下降（SGD）：每次用一个样本计算梯度。优点：计算快，能逃离局部最优；缺点：梯度估计噪声大，收敛不稳定。小批量梯度下降（MBGD）：每次用 batch_size 个样本。综合了 BGD 和 SGD 的优点，是深度学习的主流选择。batch_size 的选择需要在计算效率和梯度质量之间权衡。",
+    "misconception": "认为 SGD 中的「随机」是缺点，不理解随机性对泛化的正面作用。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_gd_005",
+    "related_node_id": "ml_gradient_descent",
+    "question": "如何选择合适的学习率？",
+    "answer": "学习率选择没有万能公式，但有一些经验法则：1）从较小的值开始（如 0.001、0.01），观察损失曲线是否下降；2）如果损失上升或剧烈震荡，说明学习率太大；3）如果损失下降太慢，说明学习率可能太小；4）常用策略是学习率衰减：初始大学习率快速收敛，后期小学习率精细调整；5）使用自适应优化器（Adam、RMSprop）可以减少学习率调节的工作量；6）如果资源允许，可以用网格搜索或贝叶斯优化在验证集上选择最优学习率。",
+    "misconception": "认为学习率设大可以加速收敛，忽视震荡和发散的风险。",
+    "source_ids": ["book_hands_on_ml_3e_zh", "book_deep_learning_ai"]
+  },
+  {
+    "faq_id": "faq_gd_006",
+    "related_node_id": "ml_gradient_descent",
+    "question": "局部最优和鞍点如何区分？",
+    "answer": "在临界点（梯度为零），通过 Hessian 矩阵判断：Hessian 正定（所有特征值 > 0）→ 局部最小值；Hessian 负定（所有特征值 < 0）→ 局部最大值；Hessian 既有正也有负 → 鞍点。在高维空间中，鞍点比局部最优更常见（因为需要在所有方向上同时是极值）。逃离鞍点的方法：使用动量（累积速度）、使用 Adam（自适应学习率）、添加噪声。实践中，深度学习的损失曲面有大量鞍点，但不影响找到足够好的解。",
+    "misconception": "认为梯度为零的点一定是局部最优，不理解鞍点在高维空间中的普遍性。",
+    "source_ids": ["book_deep_learning_ai", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_gd_007",
+    "related_node_id": "ml_gradient_descent",
+    "question": "二阶优化方法为什么没有取代一阶方法？",
+    "answer": "理论上二阶方法（牛顿法、拟牛顿法）比一阶方法收敛更快，但实际应用有限：1）计算量大——精确 Hessian 是 O(n²)，对于百万参数的模型不可行；2）近似方法复杂——L-BFGS 等拟牛顿法虽然不需精确 Hessian，但存储和更新逆 Hessian 近似仍然开销大；3）非凸问题限制——神经网络的 Hessian 非正定，牛顿法不一定有效；4）一阶方法的收敛速度对深度学习已经足够。Adam 等一阶自适应方法因为实现简单、计算高效、对超参数相对鲁棒，成为深度学习的主流选择。",
+    "misconception": "认为越「高级」的优化方法越好，不理解计算复杂度对实用性的影响。",
+    "source_ids": ["book_deep_learning_ai", "book_mml_deisenroth"]
+  },
+  {
+    "faq_id": "faq_gd_008",
+    "related_node_id": "ml_gradient_descent",
+    "question": "学习率衰减有哪些常用策略？",
+    "answer": "常用学习率衰减策略：1）阶梯衰减（Step Decay）——每隔固定 epoch 降低学习率（如减半）；2）指数衰减（Exponential Decay）——lr = lr₀ * γ^t，γ 通常取 0.95-0.99；3）余弦退火（Cosine Annealing）——按照余弦函数曲线调整，学习率先高后低；4）热重启（Warm Restarts）——余弦退火加周期性重启，从头开始调节；5）按验证集性能调整——当验证性能停止提升时降低学习率。实践中最常用的是 ReduceLROnPlateau 和余弦退火。",
+    "misconception": "认为学习率一旦设定就不需要改变，不理解学习率衰减对收敛的帮助。",
+    "source_ids": ["book_deep_learning_ai", "book_hands_on_ml_3e_zh"]
   }
 ]

@@ -22,6 +22,23 @@ async def get_node(
     return node
 
 
+@router.get("/all", response_model=list[GraphNode])
+async def get_all_nodes(
+    graph_store: Annotated[Neo4jGraphStore, Depends(get_graph_store)],
+    limit: int = Query(default=200, ge=1, le=500),
+) -> list[GraphNode]:
+    return await graph_store.get_all_nodes(limit=limit)
+
+
+@router.get("/search", response_model=list[GraphNode])
+async def search_nodes(
+    graph_store: Annotated[Neo4jGraphStore, Depends(get_graph_store)],
+    q: str = Query(min_length=1),
+    limit: int = Query(default=10, ge=1, le=50),
+) -> list[GraphNode]:
+    return await graph_store.search_knowledge_points(q, limit=limit)
+
+
 @router.get("/subgraph/{uid}", response_model=SubgraphResult)
 async def get_subgraph(
     uid: str,

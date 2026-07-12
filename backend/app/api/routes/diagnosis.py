@@ -16,4 +16,8 @@ async def recommend(
     graph_store: Annotated[Neo4jGraphStore, Depends(get_graph_store)],
 ) -> DiagnosisRecommendResponse:
     service = DiagnosisService(graph_store)
-    return await service.recommend(payload.student_profile, top_k=payload.top_k)
+    return await service.recommend(
+        payload.student_profile,
+        top_k=payload.top_k,
+        node_mastery=payload.node_mastery,
+    )

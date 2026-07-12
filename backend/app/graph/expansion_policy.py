@@ -18,14 +18,17 @@ BLOCKED_EXPANSION_RELATIONS = [
 class GraphExpansionPolicy(BaseModel):
     """Controls GraphRAG subgraph expansion and evidence limits."""
 
-    depth: int = 1
-    max_prerequisites: int = 8
+    depth: int = 2  # 默认 2-hop（支持多跳推理）
+    max_prerequisites: int = 12  # 多跳场景需要更多前置节点
     max_related_nodes: int = 8
     max_exercises: int = 8
-    max_document_chunks: int = 6
-    max_code_cases: int = 3
+    max_document_chunks: int = 8  # 多跳收集更多文档
+    max_code_cases: int = 5       # 多跳收集更多代码案例
     max_sources: int = 10
-    max_subgraph_items: int = 80
+    max_subgraph_items: int = 120
+    multi_hop_enabled: bool = True
+    max_hop_depth: int = 3  # 最多 3 跳
+    collect_intermediate_evidence: bool = True  # 是否收集中间节点的证据
     cognitive_relations: list[str] = Field(default_factory=lambda: COGNITIVE_RELATIONS.copy())
     resource_relations: list[str] = Field(default_factory=lambda: RESOURCE_RELATIONS.copy())
     source_relations: list[str] = Field(default_factory=lambda: SOURCE_RELATIONS.copy())
