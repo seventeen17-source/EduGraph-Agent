@@ -2,6 +2,13 @@ export function percent(value?: number | null) {
   return Math.round((value || 0) * 100)
 }
 
+export function formatDate(value?: string | null) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '时间未知'
+  return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
 export function relativeTime(value?: string | null) {
   if (!value) return '暂无记录'
   const date = new Date(value)
@@ -38,7 +45,7 @@ export function sourceLabel(source?: string) {
 
 export function nodeName(node?: { properties?: Record<string, any>; uid?: string } | null) {
   const uid = node?.uid
-  return localizeText(node?.properties?.name || node?.properties?.title || (uid ? uidLabel(uid) : '未选择知识点'))
+  return displayNodeLabel(node?.properties?.name || node?.properties?.title || uid, '未选择知识点')
 }
 
 export function difficultyStars(value?: number) {
@@ -62,6 +69,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   exercise: '练习题',
   video_script: '视频脚本',
   code_case: '代码案例',
+  image: '图片',
   code: '代码'
 }
 
@@ -229,7 +237,22 @@ const GENERAL_LABELS: Record<string, string> = {
   multiple_candidates: '存在多个候选知识点',
   empty_query: '查询内容为空',
   llm_profile_extractor: '大模型画像抽取',
+  llm_rubric: '智能逐点评分',
+  llm_code_rubric: '智能代码评分',
+  llm_error: '大模型服务异常',
   dialogue_rule: '对话规则抽取',
+  exercise_page: '练习页',
+  generated_resource: '生成资源',
+  resource_center: '知识中心',
+  learning_path: '学习路径',
+  fallback_used: '使用降级方案',
+  source_uids: '证据来源',
+  resolved_uid: '定位知识点',
+  grounded: '证据支撑',
+  repair_actions: '修复动作',
+  fallback: '降级检索',
+  exact: '精确匹配',
+  none: '未匹配',
   self_reported: '学生自述',
   mastery: '掌握度计算',
   GraphRAG: '图谱增强检索',
@@ -239,6 +262,37 @@ const GENERAL_LABELS: Record<string, string> = {
   'Mini-batch': '小批量',
   UID: '编号',
   uid: '编号'
+}
+
+const INTERNAL_ID_PREFIX_LABELS: Record<string, string> = {
+  ml: '相关知识点',
+  faq: 'FAQ 证据',
+  chunk: '文档证据',
+  code: '代码案例',
+  ex: '练习题',
+  assess: '测评证据',
+  source: '课程来源',
+  book: '教材来源',
+  mem: '学习记忆',
+  session: '练习记录',
+  attempt: '作答记录'
+}
+
+const INTERNAL_ID_RE = /\b(?:ml|faq|chunk|code|ex|assess|source|book|mem|session|attempt)_[A-Za-z0-9_-]+\b/g
+
+export function isInternalId(value?: string | null) {
+  if (!value) return false
+  const text = String(value).trim()
+  if (NODE_UID_LABELS[text]) return true
+  return /^(?:ml|faq|chunk|code|ex|assess|source|book|mem|session|attempt)_[A-Za-z0-9_-]+$/.test(text)
+}
+
+export function internalIdLabel(value?: string | null, fallback = '相关内容') {
+  if (!value) return fallback
+  const text = String(value).trim()
+  if (NODE_UID_LABELS[text]) return NODE_UID_LABELS[text]
+  const prefix = text.split('_')[0]
+  return INTERNAL_ID_PREFIX_LABELS[prefix] || fallback
 }
 
 export function relationLabel(type?: string) {
@@ -274,7 +328,7 @@ export function sessionStatusLabel(status?: string) {
 }
 
 export function uidLabel(uid?: string | null) {
-  return uid ? NODE_UID_LABELS[uid] || uid : ''
+  return uid ? NODE_UID_LABELS[uid] || '' : ''
 }
 
 export function chapterLabel(chapter?: string | null) {
@@ -282,7 +336,7 @@ export function chapterLabel(chapter?: string | null) {
 }
 
 export function pathLabel(sourceUid?: string, targetUid?: string) {
-  return `${uidLabel(sourceUid)} → ${uidLabel(targetUid)}`
+  return `${displayNodeLabel(sourceUid)} → ${displayNodeLabel(targetUid)}`
 }
 
 export function profileFieldLabel(field?: string) {
@@ -305,9 +359,42 @@ export function profileSummaryLabel(summary?: string) {
   return text
 }
 
+export function displayNodeLabel(value?: string | null, fallback = '相关知识点') {
+  if (!value) return fallback
+  const text = String(value).trim()
+  const localized = localizeText(text).trim()
+  if (!localized) return fallback
+  return isInternalId(localized) ? internalIdLabel(localized, fallback) : localized
+}
+
+export function displaySourceLabel(value?: string | null, fallback = '课程证据') {
+  if (!value) return fallback
+  const text = String(value).trim()
+  const localized = localizeText(text).trim()
+  if (!localized) return fallback
+  return isInternalId(localized) ? internalIdLabel(localized, fallback) : localized
+}
+
 export function localizeText(value?: string | null) {
   if (!value) return ''
   let text = String(value)
+  text = text
+    .replace(/\n?\*\*下一步建议\*\*：已生成\s*0\s*类资源[^。\n]*(?:。)?/g, '')
+    .replace(/去练习（\/exercise\?resource_id=[^）]*）/g, '去练习')
+    .replace(/去练习\(\/exercise\?resource_id=[^)]*\)/g, '去练习')
+    .replace(/去练习类似题目（\/exercise\?node_id=[^）]*）/g, '去练习类似题目')
+    .replace(/去练习类似题目\(\/exercise\?node_id=[^)]*\)/g, '去练习类似题目')
+    .replace(/查看资源（\/knowledge-center）/g, '查看资源')
+    .replace(/查看资源\(\/knowledge-center\)/g, '查看资源')
+    .replace(/查看画像（\/profile\/panel）/g, '查看画像')
+    .replace(/查看画像\(\/profile\/panel\)/g, '查看画像')
+    .replace(/查看路径（\/learning-path）/g, '查看路径')
+    .replace(/查看路径\(\/learning-path\)/g, '查看路径')
+    .replace(/\/exercise\?resource_id=[^\s)）]+/g, '练习入口')
+    .replace(/\/exercise\?node_id=[^\s)）]+/g, '练习入口')
+    .replace(/\/knowledge-center/g, '知识中心')
+    .replace(/\/profile\/panel/g, '画像面板')
+    .replace(/\/learning-path/g, '学习路径')
   const entries = [
     RELATION_LABELS,
     RESOURCE_LABELS,
@@ -324,6 +411,7 @@ export function localizeText(value?: string | null) {
   entries.forEach(([key, label]) => {
     text = text.split(key).join(label)
   })
+  text = text.replace(INTERNAL_ID_RE, (match) => internalIdLabel(match))
   return text
 }
 

@@ -10,7 +10,7 @@ import type { EvidencePackage } from '@/types/graphrag'
 import type { ResourceType, StudentProfileInput } from '@/types/profile'
 import type { ResourceCenterDetail, ResourceCenterItem, ResourceGenerateResponse } from '@/types/resources'
 
-const AGENTS = ['RetrievalAgent', 'DocumentAgent', 'MindmapAgent', 'ExerciseAgent', 'VideoScriptAgent', 'CodeAgent']
+const AGENTS = ['RetrievalAgent', 'DocumentAgent', 'MindmapAgent', 'ExerciseAgent', 'VideoScriptAgent', 'CodeAgent', 'ImageAgent']
 
 export const useLearningStore = defineStore('learning', {
   state: () => ({
@@ -32,9 +32,7 @@ export const useLearningStore = defineStore('learning', {
   }),
   getters: {
     recommendedNodes(state): string[] {
-      return state.diagnosis?.recommended_nodes?.length
-        ? state.diagnosis.recommended_nodes
-        : ['ml_gradient_descent', 'ml_sgd_minibatch', 'ml_multilayer_neural_network', 'ml_backpropagation']
+      return state.diagnosis?.recommended_nodes || []
     }
   },
   actions: {
@@ -73,18 +71,18 @@ export const useLearningStore = defineStore('learning', {
         this.loadingEvidence = false
       }
     },
-    async loadDiagnosis(profile: StudentProfileInput, nodeMastery?: Record<string, any>) {
+    async loadDiagnosis(profile: StudentProfileInput, nodeMastery?: Record<string, any>, targetGoal?: string | null) {
       this.error = null
       try {
         this.diagnosis = await recommendDiagnosis({
-          student_profile: profile, top_k: 5, node_mastery: nodeMastery || {}
+          student_profile: profile, top_k: 5, node_mastery: nodeMastery || {}, target_goal: targetGoal || null
         })
       } catch (error: any) {
         this.error = error.displayMessage || '诊断推荐失败'
         this.diagnosis = {
-          recommended_nodes: ['ml_gradient_descent', 'ml_sgd_minibatch', 'ml_backpropagation'],
+          recommended_nodes: [],
           recommended_exercises: [],
-          reasoning: ['诊断接口暂不可用，使用演示主线节点作为推荐路径。'],
+          reasoning: ['诊断接口暂不可用，暂不生成推荐路径。'],
           node_priorities: {},
           sorted_by_prerequisites: false,
         }
@@ -122,7 +120,9 @@ export const useLearningStore = defineStore('learning', {
                   ? 'ExerciseAgent'
                   : type === 'video_script'
                     ? 'VideoScriptAgent'
-                    : 'CodeAgent'
+                    : type === 'image'
+                      ? 'ImageAgent'
+                      : 'CodeAgent'
           if (!this.agentStatuses[agentName] || this.agentStatuses[agentName] === 'waiting') {
             this.agentStatuses[agentName] = 'done'
           }
@@ -141,11 +141,16 @@ export const useLearningStore = defineStore('learning', {
         this.loadingResources = false
       }
     },
-    async loadResourceCenter(studentId?: string | null) {
+    async loadResourceCenter(studentId?: string | null, query = '', filterByWeakPoints = false) {
       this.loadingResourceCenter = true
       this.error = null
       try {
-        const response = await listResourceCenter({ student_id: studentId, limit: 60 })
+        const response = await listResourceCenter({
+          student_id: studentId,
+          limit: 60,
+          q: query,
+          filter_by_weak_points: filterByWeakPoints,
+        })
         this.resourceCenterItems = response.items
       } catch (error: any) {
         this.error = error.displayMessage || '知识中心加载失败'

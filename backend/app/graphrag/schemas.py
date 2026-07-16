@@ -10,6 +10,8 @@ class StudentProfileInput(BaseModel):
     weak_points: list[str] = Field(default_factory=list)
     preferences: list[str] = Field(default_factory=list)
     goal: str | None = None
+    # 多目标支持：可携带多个学习目标，供诊断推荐按目标分别匹配
+    goals: list[str] = Field(default_factory=list)
     mastery: dict[str, float] = Field(default_factory=dict)
 
 

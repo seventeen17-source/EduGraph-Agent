@@ -179,6 +179,7 @@ class AssistantMemoryRepository:
             intent=row.intent,
             target_node_id=row.target_node_id,
             resource_record_id=row.resource_record_id,
+            resource_has_exercises=bool((row.metadata_json or {}).get("resource_has_exercises")),
             actions=[AssistantAction.model_validate(item) for item in (row.actions_json or [])],
             agent_trace=[AssistantTraceItem.model_validate(item) for item in (row.agent_trace_json or [])],
             created_at=row.created_at,

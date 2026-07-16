@@ -51,8 +51,8 @@ export const useProfileStore = defineStore('profile', {
       const weakFromDashboard = dashboard?.weak_point_rank.map((item) => item.node_id || item.label).filter(Boolean) || []
       return {
         weak_points: Array.from(new Set([...weakFromProfile, ...weakFromDashboard])) as string[],
-        preferences: profile?.preferences.resource_ranking || ['diagram', 'code_case'],
-        goal: profile?.learning_goal.description || '理解机器学习核心概念',
+        preferences: profile?.preferences.resource_ranking || [],
+        goal: profile?.learning_goal.description || null,
         mastery: Object.fromEntries(
           Object.entries(profile?.node_mastery || {}).map(([nodeId, item]) => [nodeId, item.mastery_score])
         )

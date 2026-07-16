@@ -56,8 +56,8 @@
           </div>
 
           <div class="node-body">
-            <div class="node-label">{{ item.label }}</div>
-            <div v-if="item.summary" class="node-summary">{{ item.summary }}</div>
+            <div class="node-label">{{ localizeTraceText(item.label || item.node) }}</div>
+            <div v-if="item.summary" class="node-summary">{{ localizeTraceText(item.summary) }}</div>
             <div v-else-if="item.status === 'running'" class="node-summary running-text">
               <span class="typing-dots">执行中...</span>
             </div>
@@ -70,7 +70,7 @@
 
         <!-- 展开详情 -->
         <div v-if="expandedNodes.has(item.node) && item.summary" class="node-detail">
-          {{ item.summary }}
+          {{ localizeTraceText(item.summary) }}
         </div>
       </div>
     </div>
@@ -137,7 +137,7 @@ const displayNodes = computed(() => props.nodes)
 
 const runningNodeLabel = computed(() => {
   const running = props.nodes.find((n) => n.status === 'running')
-  return running?.label || null
+  return running ? localizeTraceText(running.label || running.node) : null
 })
 
 const hasCompleted = computed(() => props.nodes.some((n) => n.status === 'done'))
@@ -152,6 +152,43 @@ function toggleDetail(node: string) {
   } else {
     expandedNodes.value.add(node)
   }
+}
+
+function localizeTraceText(value: string) {
+  let text = value || ''
+  const replacements: Array<[RegExp, string]> = [
+    [/concept_explain/g, '知识点讲解'],
+    [/resource_generate/g, '资源生成'],
+    [/exercise_help/g, '练习辅导'],
+    [/path_plan/g, '路径规划'],
+    [/general_learning_chat/g, '学习问答'],
+    [/profile_update/g, '画像更新'],
+    [/assessment_review/g, '评估复盘'],
+    [/hybrid_rag:/g, '混合检索：'],
+    [/prepare_query/g, '整理问题'],
+    [/resolve_learning_target/g, '定位学习目标'],
+    [/retrieve_graph_context/g, '检索图谱证据'],
+    [/retrieve_semantic_context/g, '检索课程语义证据'],
+    [/retrieve_memory_context/g, '检索学生记忆'],
+    [/fuse_canonical_evidence/g, '融合规范证据'],
+    [/grade_evidence/g, '评估证据质量'],
+    [/finalize_evidence/g, '生成证据包'],
+    [/ml_backpropagation/g, '反向传播'],
+    [/ml_gradient_descent/g, '梯度下降'],
+    [/ml_multilayer_neural_network/g, '多层神经网络'],
+    [/code_backprop_demo/g, '反向传播代码案例'],
+    [/Neo4j canonical evidence/g, 'Neo4j 规范证据'],
+    [/canonical evidence/g, '规范证据'],
+    [/EvidencePackage/g, '证据包'],
+    [/HybridRAG/g, '混合检索'],
+    [/FAQ/g, '常见问题'],
+    [/coverage/g, '覆盖度'],
+    [/relevance/g, '相关性'],
+  ]
+  for (const [pattern, replacement] of replacements) {
+    text = text.replace(pattern, replacement)
+  }
+  return text
 }
 
 onBeforeUnmount(() => {

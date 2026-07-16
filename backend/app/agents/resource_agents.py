@@ -15,9 +15,11 @@ from app.agents.schemas import (
     GeneratedDocument,
     GeneratedExercise,
     GeneratedExercises,
+    GeneratedImage,
     GeneratedMindmap,
     GeneratedVideoScript,
 )
+from app.image_generation.service import ImageGenerationService
 
 
 T = TypeVar("T", bound=BaseModel)
@@ -28,6 +30,7 @@ class LangChainResourceAgents:
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self.image_service = ImageGenerationService(settings)
 
     async def generate_document(
         self,
@@ -180,6 +183,198 @@ class LangChainResourceAgents:
             profile=profile,
         )
 
+    # ---- 图片生成 ----
+    async def generate_image(
+        self,
+        evidence: EvidencePackage,
+        profile: StudentProfileInput,
+        *,
+        mode: str = "standalone",
+        focus_hint: str = "",
+    ) -> GeneratedImage:
+        task = (
+            self._image_prompt_task_for_document(focus_hint)
+            if mode == "document_illustration"
+            else self._image_prompt_task()
+        )
+
+        draft = await self._invoke_structured(
+            output_model=GeneratedImage,
+            agent_name="ImageAgent",
+            task=task,
+            evidence=evidence,
+            profile=profile,
+        )
+        draft = self._polish_image_prompt_metadata(draft, evidence)
+        issues = self._validate_image_prompt(draft)
+        if issues:
+            draft = await self._repair_image_prompt(draft, evidence=evidence, profile=profile, issues=issues)
+            draft = self._polish_image_prompt_metadata(draft, evidence)
+        return await self.image_service.generate(draft)
+
+    @staticmethod
+    def _image_prompt_task() -> str:
+        """【独立图片】场景 —— 学生直接要求生成图片，图片是唯一的教学载体。"""
+        return (
+            "你是教学视觉设计师，负责为真实图片生成模型编写高质量中文 prompt。"
+            "本场景是【独立教学图片】：学生只要求生成图片，图片本身就是主要学习材料，不依赖讲解文档。"
+            "请把中心知识点转化为清晰、专业、有教学含义的视觉方案，而不是机械套用白底扁平插画。"
+            "必须只输出符合 schema 的 JSON，字段包括 title、prompt、negative_prompt、width、height、source_uids；"
+            "image_url 和 local_path 必须为空字符串。\n\n"
+            "【先判断视觉类型，再写 prompt】\n"
+            "你必须根据知识点选择最合适的一类视觉，不要所有主题都用同一种风格：\n"
+            "1. 数据分布/回归/聚类/降维：数据可视化风格，可有散点、曲线、拟合线、区域、网格背景；允许坐标轴、刻度、短标签和少量数字，帮助学生读懂图。\n"
+            "2. 网络结构/神经网络/反向传播/图模型：结构示意风格，可用节点、层级、连接、流动光线，适合深色科技背景或半透明空间感。\n"
+            "3. 优化过程/梯度下降/损失函数：动态轨迹风格，可用山谷、曲面、路径、箭头、光点运动，强调方向和逐步逼近。\n"
+            "4. 概率/统计/抽象理论：概念隐喻风格，可用几何形状、分布形态、天平、漏斗、集合关系，背景可浅色、深色或渐变。\n"
+            "5. 算法流程/训练过程：流程示意风格，可用模块、箭头、数据流、步骤编号和短标签，让流程关系一眼可懂。\n\n"
+            "【prompt 写作要求】\n"
+            "- prompt 不少于 120 个中文字符，必须包含：教学目标、画面主体、元素关系、空间布局、视觉风格、光影/色彩、清晰度要求。\n"
+            "- 允许多元素对比或流程关系，不强制“一个元素”“白底”“主体居中”；但整体必须有明确主次，不杂乱。\n"
+            "- 如果需要表现对比、流程或数据关系，可以使用左右分区、前后层次、路径、箭头、色彩分组。\n"
+            "- 允许必要的短标签、数字步骤、箭头说明、层名、变量名或简短公式片段；标签默认使用中文，只有 Backpropagation、Loss、Gradient、Input、Output 等专门术语可使用英文或中英并列。\n"
+            "- 文字要少而清楚，服务教学理解，不要堆成长段说明。\n"
+            "- 画面要像教材或高质量科普中的专业插图，不要像随意贴图、表情包、低质海报或装饰背景。\n\n"
+            "【negative_prompt 要求】\n"
+            "negative_prompt 只用于过滤画质问题和画面污染，不要用它排除教学内容。"
+            "必须包含：low quality, blurry, pixelated, watermark, logo, signature, unreadable text, gibberish, malformed characters, "
+            "messy composition, unrelated objects, distorted geometry, duplicate elements, artifact, jpeg artifacts。\n\n"
+            "width 和 height 推荐填写 1536；不要超过 2048。"
+        )
+
+    @staticmethod
+    def _image_prompt_task_for_document(focus_hint: str = "") -> str:
+        """【文档配图】场景 —— 图片将插入讲解文档中，辅助文字说明，不需要独立完整。"""
+        focus_instruction = f"\n【本张插图的重点】\n{focus_hint}\n" if focus_hint else ""
+        return (
+            "你是教学文档的插图设计师，负责为真实图片生成模型编写中文 prompt。"
+            "本场景是【讲解文档内配图】：文字讲解已经存在，图片只需要服务于文档中的一个关键段落，帮助学生形成视觉锚点。"
+            "因此不要做大而全的独立海报，也不要机械套用白底扁平插画；要选择最适合该段概念的视觉形态。"
+            "必须只输出符合 schema 的 JSON，字段包括 title、prompt、negative_prompt、width、height、source_uids；"
+            "image_url 和 local_path 必须为空字符串。\n\n"
+            f"{focus_instruction}"
+            "【文档配图选择原则】\n"
+            "1. 只表现一个段落级概念，例如“散点到拟合线的距离”“参数沿梯度方向更新”“神经网络层间传递”。\n"
+            "2. 文档配图应比独立图片更克制：元素少、关系清楚、适合嵌入正文，但不强制白底或居中。\n"
+            "3. 数据关系类可以用浅色数据图风格；网络结构类可以用深色或半透明节点风格；优化过程类可以用轨迹/山谷/箭头；概念对比类可以用左右分区。\n"
+            "4. 允许必要的短标签、步骤数字、方向说明、层名、变量名或简短公式片段；标签默认使用中文，只有 Backpropagation、Loss、Gradient、Input、Output 等专门术语可使用英文或中英并列；文字只用于解释图中关键关系，不要生成大段正文。\n\n"
+            "【prompt 写作要求】\n"
+            "- prompt 不少于 90 个中文字符，必须写清：插图服务的概念、画面主体、元素关系、布局、风格、色彩、清晰度。\n"
+            "- 避免“漂亮背景但没有教学信息”；每个视觉元素都要与概念理解有关。\n"
+            "- 允许流程、对比、数据点、箭头、层级、轨迹，但要控制复杂度，适合正文中等尺寸展示。\n\n"
+            "【negative_prompt 要求】\n"
+            "negative_prompt 只用于过滤画质问题和画面污染，不要用它排除教学内容。"
+            "必须包含：low quality, blurry, pixelated, watermark, logo, signature, unreadable text, gibberish, malformed characters, "
+            "messy composition, unrelated objects, distorted geometry, duplicate elements, artifact, jpeg artifacts。\n\n"
+            "width 和 height 推荐填写 1536；不要超过 2048。"
+        )
+
+    def _polish_image_prompt_metadata(self, image: GeneratedImage, evidence: EvidencePackage) -> GeneratedImage:
+        center_name = ""
+        if evidence.center_node is not None:
+            center_name = str(evidence.center_node.properties.get("name") or evidence.resolved_uid or "")
+        if not image.title:
+            image.title = f"{center_name or '机器学习'}教学插图"
+        if center_name and center_name not in image.prompt:
+            image.prompt = f"主题：{center_name}。{image.prompt}".strip()
+        prompt = (image.prompt or "").strip()
+        readability_guard = (
+            "文字策略：允许少量清晰可读的教学标签、步骤数字、箭头说明、层名、变量名或简短公式片段；"
+            "标签默认使用中文，只有 Backpropagation、Loss、Gradient、Input、Output 等专门术语可使用英文或中英并列；"
+            "所有文字必须服务理解，不要堆叠长段正文。主体清晰，边缘锐利，构图有明确主次。"
+        )
+        if "文字策略" not in prompt and "短标签" not in prompt and "步骤数字" not in prompt:
+            image.prompt = f"{prompt}\n{readability_guard}".strip()
+        base_negative = (
+            "low quality, blurry, pixelated, watermark, logo, signature, unreadable text, gibberish, "
+            "malformed characters, messy composition, unrelated objects, distorted geometry, duplicate elements, "
+            "artifact, jpeg artifacts"
+        )
+        if not image.negative_prompt:
+            image.negative_prompt = base_negative
+        else:
+            existing = image.negative_prompt.strip()
+            for qt in (
+                "low quality",
+                "blurry",
+                "pixelated",
+                "watermark",
+                "logo",
+                "signature",
+                "unreadable text",
+                "gibberish",
+                "malformed characters",
+                "messy composition",
+                "unrelated objects",
+                "distorted geometry",
+                "duplicate elements",
+                "artifact",
+                "jpeg artifacts",
+            ):
+                if qt not in existing:
+                    existing = f"{existing}, {qt}"
+            image.negative_prompt = existing
+        default_size = 1536 if self.settings.xunfei_image_provider == "hidream" else 1024
+        image.width = image.width or default_size
+        image.height = image.height or default_size
+        if not image.source_uids:
+            image.source_uids = [source.uid for source in evidence.sources[:5]]
+        return image
+
+    def _validate_image_prompt(self, image: GeneratedImage) -> list[str]:
+        issues: list[str] = []
+        title = (image.title or "").strip()
+        prompt = (image.prompt or "").strip()
+        negative_prompt = (image.negative_prompt or "").strip()
+        if not title:
+            issues.append("标题为空。")
+        if len(prompt) < 80:
+            issues.append(f"图片 prompt 过短（{len(prompt)} < 80），无法稳定指导图片生成。")
+        style_keywords = (
+            "风格", "插画", "矢量", "写实", "示意图", "可视化", "隐喻", "科技", "数据",
+            "网络", "轨迹", "几何", "极简", "渐变", "背景", "光影", "色彩",
+            "illustration", "diagram", "visualization", "cinematic", "minimal"
+        )
+        if not any(term in prompt for term in style_keywords):
+            issues.append("图片 prompt 缺少视觉风格或背景描述。")
+        layout_keywords = (
+            "主体", "元素", "关系", "构图", "布局", "空间", "层次", "主次", "聚焦", "中心",
+            "对称", "左右", "上下", "前景", "背景", "路径", "箭头", "节点", "散点", "曲线"
+        )
+        if not any(term in prompt for term in layout_keywords):
+            issues.append("图片 prompt 缺少画面元素关系或构图布局描述。")
+        if len(negative_prompt) < 50:
+            issues.append("negative_prompt 过短，缺少生成质量约束。")
+        for term in ("low quality", "blurry", "watermark", "gibberish"):
+            if term not in negative_prompt:
+                issues.append(f"negative_prompt 缺少关键排除项：{term}。")
+        if image.image_url or image.local_path:
+            issues.append("图片还未生成，image_url 和 local_path 必须为空。")
+        return issues
+
+    async def _repair_image_prompt(
+        self,
+        image: GeneratedImage,
+        *,
+        evidence: EvidencePackage,
+        profile: StudentProfileInput,
+        issues: list[str],
+    ) -> GeneratedImage:
+        issue_text = "\n".join(f"- {issue}" for issue in issues)
+        return await self._invoke_structured(
+            output_model=GeneratedImage,
+            agent_name="ImageAgent",
+            task=(
+                "你刚才生成的图片提示词没有通过质量检查。请重新生成完整 JSON，只修复 prompt 设计，不要调用图片生成。\n"
+                f"失败原因：\n{issue_text}\n\n"
+                "修复时不要机械改成白底扁平插画；仍需根据知识点选择最合适的视觉类型。"
+                "保留有教学价值的画面关系和风格多样性，只补足缺失的画面描述、文字可读性要求或画质负面词。"
+                "重新输出完整 JSON。"
+            ),
+            evidence=evidence,
+            profile=profile,
+        )
+
     # ---- per-agent evidence routing ----
     _AGENT_EVIDENCE_KEYS: dict[str, list[str]] = {
         "DocumentAgent": ["center_node", "document_chunks", "misconceptions", "prerequisites", "sources"],
@@ -187,6 +382,7 @@ class LangChainResourceAgents:
         "ExerciseAgent": ["center_node", "exercises", "misconceptions", "document_chunks"],
         "VideoScriptAgent": ["center_node", "prerequisites", "document_chunks", "misconceptions", "related_nodes"],
         "CodeAgent": ["center_node", "code_cases", "exercises", "document_chunks"],
+        "ImageAgent": ["center_node", "document_chunks", "prerequisites", "related_nodes", "sources"],
     }
 
     def _personalized_task(
@@ -247,22 +443,22 @@ class LangChainResourceAgents:
                     "system",
                     "你是 EduGraph-Agent 的 {agent_name}。"
                     "你必须基于 GraphRAG 证据包生成学习资源，不能编造不存在的来源。"
-                    "如果证据不足，可以在输出中温和提示，但仍要围绕已有证据生成可用资源。"
-                    "你必须在回复的【末尾】输出一段严格 JSON，以 ```json 开头、``` 结尾，"
-                    "包含 schema 要求的全部顶层字段，不可遗漏。"
+                    "你必须只输出一段 ```json ... ``` 代码块，其中包含 schema 的全部顶层字段。"
+                    "不要在 JSON 块外输出任何额外解释、总结或说明文字——所有内容都必须放在 JSON 的对应字段内。"
                     "title 字段不可为空字符串。content/code/explanation 等核心字段必须有实质内容。"
+                    "content 字段中必须包含完整正文，禁止使用「完整内容见上方」「详见上文」等占位符。"
                     "source_uids 字段必须从证据包已有来源中选择，不可凭空编造。"
                     "\n\n【输出格式要求】\n"
-                    "在回复末尾，用以下格式输出 JSON：\n"
+                    "只输出一段 JSON 代码块：\n"
                     "```json\n{{你的JSON内容}}\n```\n"
-                    "注意：不要遗漏任何顶层字段，空值用 [] 或 \"\" 表示。",
+                    "不要在任何其他位置输出文本。空值用 [] 或 \"\" 表示。",
                 ),
                 (
                     "human",
                     "个性化指令：\n{task}\n\n"
                     "学生画像：\n{student_profile}\n\n"
                     "GraphRAG 证据包（{agent_name} 专属）：\n{evidence_context}\n\n"
-                    "请先给出内容，最后输出 ```json ... ``` 格式的结构化结果。",
+                    "请只输出 ```json ... ``` 代码块，所有内容放在 JSON 字段内，不要输出额外文字。",
                 ),
             ]
         )

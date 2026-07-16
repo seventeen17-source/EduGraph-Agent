@@ -66,6 +66,8 @@ class AssistantIntentResult(BaseModel):
     target_topic: str | None = None
     target_node_id: str | None = None
     resource_types: list[str] = Field(default_factory=list)
+    exercise_count: int | None = Field(default=None, ge=1, le=20)
+    exercise_type: Literal["choice", "short_answer", "coding", "case_analysis"] | None = None
     profile_update_hint: str | None = None
     exercise_context: str | None = None
     path_goal: str | None = None
@@ -150,6 +152,7 @@ class AssistantResponse(BaseModel):
     profile_delta: dict[str, Any] = Field(default_factory=dict)
     evidence: EvidencePackage | None = None
     resource_record_id: str | None = None
+    resource_has_exercises: bool = False
     resources: GeneratedResources | None = None
     path_plan: AssistantPathPlan | None = None
     exercise_feedback: ExerciseFeedback | None = None

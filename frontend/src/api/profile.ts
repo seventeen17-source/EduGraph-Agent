@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import type {
+  MasteryEvidenceRecord,
   ProfileChatResponse,
   ProfileChatMessageRecord,
   ProfileDashboardResponse,
@@ -7,6 +8,7 @@ import type {
   ProfileUpdateRecord,
   StudentProfile,
   TimelineResponse,
+  WeeklyReportResponse,
   ExerciseRoundAttempt
 } from '@/types/profile'
 
@@ -70,4 +72,12 @@ export function updateLearningProgress(payload: {
 
 export function getLearningTimeline(studentId: string, days = 90) {
   return apiClient.get<TimelineResponse>(`/api/profile/${studentId}/timeline?days=${days}`).then((res) => res.data)
+}
+
+export function getLearningReport(studentId: string, days = 7) {
+  return apiClient.get<WeeklyReportResponse>(`/api/profile/${studentId}/report?days=${days}`).then((res) => res.data)
+}
+
+export function getNodeEvidence(studentId: string, nodeId: string) {
+  return apiClient.get<MasteryEvidenceRecord[]>(`/api/profile/${studentId}/evidence/${nodeId}`).then((res) => res.data)
 }

@@ -19,9 +19,12 @@ ALGORITHM = "HS256"
 
 
 def _secret(settings: Settings) -> str:
-    """JWT 签名密钥。优先使用 LLM_API_KEY 的 SHA256 作为密钥，保证重启后 token 仍有效。"""
-    key = settings.llm_api_key or settings.neo4j_password or "edugraph-default-secret"
-    return hashlib.sha256(key.encode()).hexdigest()
+    """JWT 签名密钥。优先使用 JWT_SECRET，本地环境回退到 LLM_API_KEY。"""
+    if settings.jwt_secret:
+        return hashlib.sha256(settings.jwt_secret.encode()).hexdigest()
+    if settings.environment == "local":
+        return hashlib.sha256((settings.llm_api_key or settings.neo4j_password or "local-dev-secret").encode()).hexdigest()
+    raise ValueError("JWT_SECRET must be configured in non-local environments")
 
 
 def create_access_token(user_id: str, email: str, settings: Settings) -> str:

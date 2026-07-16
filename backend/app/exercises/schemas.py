@@ -3,7 +3,11 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from app.graphrag.schemas import StudentProfileInput
 from app.profile.schemas import ProfileDashboardResponse, ProfileUpdateRecord, StudentProfile
+
+
+ExerciseSourceType = Literal["all", "knowledge_base", "ai_generated", "mistake", "recommended"]
 
 
 class ExerciseAttemptSubmit(BaseModel):
@@ -24,6 +28,12 @@ class ExerciseAttemptSubmit(BaseModel):
     feedback: dict[str, Any] = Field(default_factory=dict)
     misconception_tags: list[str] = Field(default_factory=list)
     source_uids: list[str] = Field(default_factory=list)
+    mode: str = "practice"
+    viewed_answer: bool = False
+    grading_method: str | None = None
+    grading_status: str | None = None
+    grading_confidence: float | None = None
+    profile_update_allowed: bool | None = None
 
 
 class ExerciseSessionSubmitRequest(BaseModel):
@@ -34,9 +44,52 @@ class ExerciseSessionSubmitRequest(BaseModel):
     target_node_id: str = ""
     target_node_name: str = ""
     title: str = ""
+    mode: str = "practice"
     duration_seconds: int = 0
     started_at: datetime | None = None
     attempts: list[ExerciseAttemptSubmit]
+
+
+class ExerciseSearchRequest(BaseModel):
+    query: str = ""
+    student_id: str | None = None
+    source_type: ExerciseSourceType = "all"
+    limit: int = Field(default=30, ge=1, le=100)
+    node_id: str | None = None
+    student_profile: StudentProfileInput | None = None
+
+
+class ExerciseSearchItem(BaseModel):
+    id: str
+    source_type: Literal["knowledge_base", "ai_generated", "mistake", "recommended"]
+    source_label: str = ""
+    source_id: str = ""
+    resource_record_id: str | None = None
+    attempt_id: str | None = None
+    title: str = ""
+    type: str = "choice"
+    related_node_id: str = ""
+    related_node_name: str = ""
+    difficulty: int = 3
+    question: str = ""
+    options: list[dict[str, Any]] = Field(default_factory=list)
+    answer: dict[str, Any] = Field(default_factory=dict)
+    adaptive_feedback: dict[str, Any] = Field(default_factory=dict)
+    source_uids: list[str] = Field(default_factory=list)
+    exercise_snapshot: dict[str, Any] = Field(default_factory=dict)
+    rank_reason: list[str] = Field(default_factory=list)
+    review_type: str | None = None
+    review_score: float | None = None
+    review_reasons: list[str] = Field(default_factory=list)
+    recommended_node_id: str | None = None
+    created_at: datetime | None = None
+
+
+class ExerciseSearchResponse(BaseModel):
+    query: str
+    source_type: ExerciseSourceType
+    total: int
+    items: list[ExerciseSearchItem] = Field(default_factory=list)
 
 
 class ExerciseAttemptRecord(BaseModel):
@@ -60,6 +113,13 @@ class ExerciseAttemptRecord(BaseModel):
     feedback: dict[str, Any]
     misconception_tags: list[str]
     source_uids: list[str]
+    mode: str
+    viewed_answer: bool
+    grading_method: str
+    grading_status: str = "graded"
+    grading_confidence: float = 1.0
+    profile_update_allowed: bool = True
+    error_type: str | None = None
     created_at: datetime
 
 

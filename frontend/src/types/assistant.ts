@@ -118,6 +118,7 @@ export interface AssistantChatResponse {
   profile_delta: Record<string, any>
   evidence: EvidencePackage | null
   resource_record_id?: string | null
+  resource_has_exercises?: boolean
   resources: GeneratedResources | null
   path_plan: AssistantPathPlan | null
   exercise_feedback: ExerciseFeedback | null
@@ -133,7 +134,9 @@ export interface AssistantMessage {
   intent: string
   target_node_id: string
   resource_record_id?: string | null
+  resource_has_exercises?: boolean
   actions: AssistantAction[]
+  suggested_next_actions?: SuggestedNextAction[]
   agent_trace: AssistantTraceItem[]
   created_at: string
 }

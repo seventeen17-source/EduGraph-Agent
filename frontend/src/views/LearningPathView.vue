@@ -1,10 +1,13 @@
 <template>
   <div class="page">
     <!-- ===== 页面标题 ===== -->
-    <div class="page-header">
-      <div class="page-title">
-        <h1>📚 我的学习路径</h1>
-        <p class="muted">基于你的学习目标，系统会推荐最合适的学习顺序</p>
+    <div class="page-title">
+      <div class="page-title-left">
+        <div class="page-title-icon">🚀</div>
+        <div class="page-title-info">
+          <h1>我的学习路径</h1>
+          <div class="muted">基于你的目标、掌握度和薄弱点，系统会动态推荐下一批学习任务</div>
+        </div>
       </div>
       <div class="header-actions">
         <el-button type="primary" :loading="loading" @click="loadPath">
@@ -20,14 +23,14 @@
       <div class="guide-content">
         <div class="guide-icon">🎯</div>
         <div class="guide-text">
-          <h3>欢迎来到学习路径！</h3>
-          <p>告诉系统你想学什么，它会为你规划一条最合适的学习路线。</p>
+          <h3>还没有学习路径</h3>
+          <p>设置学习目标或做一次诊断评估，系统会为你推荐学习路径。</p>
         </div>
         <div class="guide-actions">
-          <el-button type="primary" @click="$router.push('/profile')">
+          <el-button type="primary" @click="$router.push('/profile/chat')">
             设置学习目标
           </el-button>
-          <el-button @click="useQuickStart">快速体验（示例路径）</el-button>
+          <el-button @click="$router.push('/exercise')">做诊断评估</el-button>
         </div>
       </div>
     </el-card>
@@ -37,7 +40,22 @@
       <div class="goal-row">
         <div class="goal-info">
           <span class="goal-label">🎯 学习目标</span>
-          <span class="goal-text">{{ learningGoalText }}</span>
+          <span v-if="!hasMultipleGoals" class="goal-text">{{ learningGoalText }}</span>
+          <el-select
+            v-else
+            v-model="selectedGoal"
+            placeholder="选择学习目标"
+            size="small"
+            class="goal-select"
+            @change="onGoalChange"
+          >
+            <el-option
+              v-for="goal in availableGoals"
+              :key="goal"
+              :label="goal"
+              :value="goal"
+            />
+          </el-select>
         </div>
         <div class="goal-stats">
           <div class="stat-item">
@@ -58,16 +76,34 @@
       </div>
     </el-card>
 
-    <!-- ===== 主内容：三栏式布局 ===== -->
-    <div class="path-three-columns">
+    <!-- ===== 有目标但无推荐路径时的引导 ===== -->
+    <el-card
+      v-if="hasLearningGoal && !loading && !learningStore.recommendedNodes.length"
+      class="guide-card"
+      shadow="never"
+    >
+      <div class="guide-content">
+        <div class="guide-icon">🚀</div>
+        <div class="guide-text">
+          <h3>还没有学习路径</h3>
+          <p>做一次诊断评估，系统会根据你的表现推荐个性化学习路径。</p>
+        </div>
+        <div class="guide-actions">
+          <el-button type="primary" @click="$router.push('/exercise')">做诊断评估</el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- ===== 主内容：三栏式布局（回退，当后端未返回 recommendations 时使用） ===== -->
+    <div v-if="hasLearningGoal && learningStore.recommendedNodes.length && !hasRecommendations" class="path-three-columns">
       <!-- 第一栏：当前正在学 -->
       <div class="path-column">
         <div class="column-header">
           <div class="column-title">
             <span class="col-badge current">进行中</span>
-            <span>当前章节</span>
+            <span>当前建议</span>
           </div>
-          <el-tooltip content="你目前正在学习的知识点，完成后可继续下一章节">
+          <el-tooltip content="当前最适合优先处理的知识点，不代表必须按固定章节顺序学习">
             <el-icon><QuestionFilled /></el-icon>
           </el-tooltip>
         </div>
@@ -81,8 +117,8 @@
           >
             <div class="node-icon">📖</div>
             <div class="node-content">
-              <strong>{{ nodeLabels[uid] || uidLabel(uid) }}</strong>
-              <p class="node-desc">{{ nodeMeta(uid)?.summary || '暂无简介' }}</p>
+              <strong>{{ displayNodeLabel(nodeLabels[uid] || uid) }}</strong>
+              <p class="node-desc">{{ localizeText(nodeMeta(uid)?.summary || '暂无简介') }}</p>
               <div class="node-tags">
                 <el-tag size="small" type="primary" effect="plain">进行中</el-tag>
                 <el-tag size="small" effect="plain">{{ nodeMeta(uid)?.estimated_minutes || 30 }}分钟</el-tag>
@@ -95,7 +131,7 @@
         <div v-else class="empty-column">
           <div class="empty-icon">🎉</div>
           <p>恭喜！已完成当前章节</p>
-          <p class="muted small">点击下方"下一步"开始新章节</p>
+          <p class="muted small">可以继续查看推荐学习或薄弱点复习</p>
         </div>
       </div>
 
@@ -120,8 +156,8 @@
           >
             <div class="node-icon">📝</div>
             <div class="node-content">
-              <strong>{{ nodeLabels[uid] || uidLabel(uid) }}</strong>
-              <p class="node-desc">{{ nodeReason(uid) }}</p>
+              <strong>{{ displayNodeLabel(nodeLabels[uid] || uid) }}</strong>
+              <p class="node-desc">{{ localizeText(nodeReason(uid)) }}</p>
               <div class="node-tags">
                 <el-tag size="small" type="warning" effect="plain">薄弱点</el-tag>
                 <el-tag v-if="masteryMap[uid]" size="small" effect="plain">
@@ -145,9 +181,9 @@
         <div class="column-header">
           <div class="column-title">
             <span class="col-badge next">▶️ 建议</span>
-            <span>推荐学习</span>
+            <span>推荐队列</span>
           </div>
-          <el-tooltip content="根据你的学习目标和前置知识，系统推荐的下一步学习内容">
+          <el-tooltip content="根据学习目标、前置知识、练习表现和掌握度动态排序的候选任务">
             <el-icon><QuestionFilled /></el-icon>
           </el-tooltip>
         </div>
@@ -161,8 +197,8 @@
           >
             <div class="node-icon">⭐</div>
             <div class="node-content">
-              <strong>{{ nodeLabels[uid] || uidLabel(uid) }}</strong>
-              <p class="node-desc">{{ nodeMeta(uid)?.summary || '暂无简介' }}</p>
+              <strong>{{ displayNodeLabel(nodeLabels[uid] || uid) }}</strong>
+              <p class="node-desc">{{ localizeText(nodeMeta(uid)?.summary || '暂无简介') }}</p>
               <div class="node-tags">
                 <el-tag size="small" effect="plain">{{ nodeMeta(uid)?.estimated_minutes || 30 }}分钟</el-tag>
                 <el-tag v-if="prereqCount(uid) > 0" size="small" type="info" effect="plain">
@@ -176,17 +212,115 @@
 
         <div v-else class="empty-column">
           <div class="empty-icon">🏁</div>
-          <p>学习路径已完成！</p>
+          <p>当前推荐队列已完成！</p>
           <p class="muted small">你已掌握所有推荐知识点</p>
         </div>
       </div>
     </div>
 
+    <!-- ===== 主内容：基于后端 recommendations 的分组布局（Task 4） ===== -->
+    <div v-if="hasLearningGoal && hasRecommendations" class="path-recommendations-layout">
+      <!-- 当前建议（突出显示） -->
+      <el-card class="current-reco-card" shadow="never">
+        <div class="column-header">
+          <div class="column-title">
+            <span class="col-badge current">进行中</span>
+            <span>当前建议</span>
+          </div>
+          <el-tooltip content="当前最适合优先处理的知识点，基于后端诊断推荐">
+            <el-icon><QuestionFilled /></el-icon>
+          </el-tooltip>
+        </div>
+        <div v-if="currentRecommendation" class="current-reco-body" @click="selectRecommendation(currentRecommendation)">
+          <div class="node-icon current-icon">📖</div>
+          <div class="current-reco-content">
+            <div class="current-reco-head">
+              <strong>{{ recommendationNodeName(currentRecommendation) }}</strong>
+              <el-tag size="small" type="primary" effect="dark">
+                {{ recommendationTypeLabel(currentRecommendation.recommendation_type) }}
+              </el-tag>
+              <el-tag v-if="currentRecommendation.difficulty" size="small" effect="plain">
+                {{ currentRecommendation.difficulty }}
+              </el-tag>
+            </div>
+            <p class="reco-reason">{{ localizeText(currentRecommendation.reason) }}</p>
+            <div v-if="evidenceSourceText(currentRecommendation)" class="reco-evidence">
+              <el-icon><QuestionFilled /></el-icon>
+              <span>证据：{{ evidenceSourceText(currentRecommendation) }}</span>
+            </div>
+            <div class="node-tags">
+              <el-tag v-if="inProgressIds.has(currentRecommendation.node_id)" size="small" type="primary" effect="plain">进行中</el-tag>
+              <el-tag v-if="currentRecommendation.chapter" size="small" effect="plain">{{ currentRecommendation.chapter }}</el-tag>
+              <el-tag size="small" effect="plain">{{ nodeMeta(currentRecommendation.node_id)?.estimated_minutes || 30 }}分钟</el-tag>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-column">
+          <div class="empty-icon">🎉</div>
+          <p>暂无当前建议</p>
+          <p class="muted small">可以查看下方推荐分组</p>
+        </div>
+      </el-card>
+
+      <!-- 按推荐类型分组 -->
+      <div class="reco-groups-grid">
+        <div
+          v-for="group in orderedGroups"
+          :key="group.type"
+          class="path-column reco-group-column"
+        >
+          <div class="column-header">
+            <div class="column-title">
+              <span class="col-badge" :class="group.badgeClass">
+                {{ group.icon }} {{ group.label }}
+              </span>
+              <span class="reco-group-count">{{ group.items.length }}</span>
+            </div>
+            <el-tooltip :content="`${group.label}：${group.items.length} 个知识点`">
+              <el-icon><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </div>
+
+          <div class="column-nodes">
+            <div
+              v-for="item in group.items"
+              :key="item.node_id"
+              class="node-card"
+              :class="group.badgeClass"
+              @click="selectRecommendation(item)"
+            >
+              <div class="node-icon">{{ group.icon }}</div>
+              <div class="node-content">
+                <div class="reco-node-head">
+                  <strong>{{ recommendationNodeName(item) }}</strong>
+                  <el-tag v-if="item.difficulty" size="small" effect="plain">{{ item.difficulty }}</el-tag>
+                </div>
+                <p class="node-desc reco-reason">{{ localizeText(item.reason) }}</p>
+                <div v-if="evidenceSourceText(item)" class="reco-evidence">
+                  <el-icon><QuestionFilled /></el-icon>
+                  <span>{{ evidenceSourceText(item) }}</span>
+                </div>
+                <div class="node-tags">
+                  <el-tag v-if="completedIds.has(item.node_id)" size="small" type="success" effect="plain">已掌握</el-tag>
+                  <el-tag v-if="item.chapter" size="small" effect="plain">{{ item.chapter }}</el-tag>
+                  <el-tag v-if="item.prerequisites?.length" size="small" type="info" effect="plain">
+                    需先学 {{ item.prerequisites.length }} 个
+                  </el-tag>
+                  <el-tag size="small" effect="plain">{{ nodeMeta(item.node_id)?.estimated_minutes || 30 }}分钟</el-tag>
+                </div>
+              </div>
+              <div class="node-arrow">→</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== 完整路径列表（可展开） ===== -->
-    <el-card class="full-path-card" shadow="never">
+    <el-card v-if="hasLearningGoal && learningStore.recommendedNodes.length" class="full-path-card" shadow="never">
       <template #header>
         <div class="full-path-header">
-          <span>📋 完整学习路径（共 {{ learningStore.recommendedNodes.length }} 个节点）</span>
+          <span>📋 完整推荐队列（共 {{ learningStore.recommendedNodes.length }} 个节点）</span>
           <el-button size="small" @click="showFullPath = !showFullPath">
             {{ showFullPath ? '收起' : '展开全部' }}
           </el-button>
@@ -206,7 +340,7 @@
             <div class="timeline-step">{{ index + 1 }}</div>
             <div class="timeline-connector" v-if="index < learningStore.recommendedNodes.length - 1"></div>
             <div class="timeline-info">
-              <span class="timeline-name">{{ nodeLabels[uid] || uidLabel(uid) }}</span>
+              <span class="timeline-name">{{ displayNodeLabel(nodeLabels[uid] || uid) }}</span>
               <span class="timeline-status">{{ nodeStatusLabel(uid) }}</span>
             </div>
           </div>
@@ -218,8 +352,8 @@
         <div v-for="(uid, index) in learningStore.recommendedNodes" :key="uid" class="full-path-item">
           <div class="item-step" :class="nodeStatusClass(uid)">{{ index + 1 }}</div>
           <div class="item-content">
-            <strong>{{ nodeLabels[uid] || uidLabel(uid) }}</strong>
-            <p class="muted small">{{ nodeMeta(uid)?.summary || '' }}</p>
+            <strong>{{ displayNodeLabel(nodeLabels[uid] || uid) }}</strong>
+            <p class="muted small">{{ localizeText(nodeMeta(uid)?.summary || '') }}</p>
           </div>
           <div class="item-status">
             <el-tag size="small" :type="nodeStatusTagType(uid)" effect="plain">
@@ -255,7 +389,7 @@
       </template>
       <ul class="reason-list">
         <li v-for="(reason, i) in simplifiedReasons" :key="i">
-          {{ reason }}
+          {{ localizeText(reason) }}
         </li>
       </ul>
     </el-card>
@@ -271,7 +405,8 @@ import ErrorAlert from '@/components/common/ErrorAlert.vue'
 import { getGraphNode, getSubgraph } from '@/api/graph'
 import { useLearningStore } from '@/stores/learning'
 import { useProfileStore } from '@/stores/profile'
-import { localizeText, uidLabel } from '@/utils/format'
+import type { RecommendationItem } from '@/types/diagnosis'
+import { displayNodeLabel, displaySourceLabel, localizeText } from '@/utils/format'
 
 const profileStore = useProfileStore()
 const learningStore = useLearningStore()
@@ -295,6 +430,20 @@ const hasLearningGoal = computed(() => {
 
 const learningGoalText = computed(() => {
   return profileStore.profile?.learning_goal?.description || profileStore.studentProfileInput.goal || '未设置'
+})
+
+// ===== 多目标支持 =====
+const availableGoals = computed<string[]>(() => {
+  return profileStore.profile?.learning_goal?.goals || []
+})
+
+const hasMultipleGoals = computed(() => availableGoals.value.length > 1)
+
+const selectedGoal = ref<string>('')
+
+const effectiveTargetGoal = computed<string | null>(() => {
+  if (!hasMultipleGoals.value) return null
+  return selectedGoal.value || null
 })
 
 const completedCount = computed(() => completedIds.value.size)
@@ -324,6 +473,68 @@ const nextNodes = computed(() => {
   return nodes.length ? nodes.slice(0, 2) : learningStore.recommendedNodes.slice(0, 2)
 })
 
+// ===== 后端 recommendations 分组（Task 4） =====
+const recommendations = computed<RecommendationItem[]>(() => {
+  return learningStore.diagnosis?.recommendations || []
+})
+
+const hasRecommendations = computed(() => recommendations.value.length > 0)
+
+const currentNodeIdFromBackend = computed<string | null>(() => {
+  return learningStore.diagnosis?.current_node_id || null
+})
+
+// 当前建议：优先 current_node_id → 进行中的节点 → 推荐队列第一项
+const currentRecommendation = computed<RecommendationItem | null>(() => {
+  if (!recommendations.value.length) return null
+  // 1. 后端指定的 current_node_id
+  if (currentNodeIdFromBackend.value) {
+    const found = recommendations.value.find(r => r.node_id === currentNodeIdFromBackend.value)
+    if (found) return found
+  }
+  // 2. 进行中的节点
+  const inProgress = recommendations.value.find(r => inProgressIds.value.has(r.node_id))
+  if (inProgress) return inProgress
+  // 3. 取推荐队列第一项作为当前建议
+  return recommendations.value[0]
+})
+
+// 推荐类型分组配置
+const recommendationTypeConfig: Record<string, { label: string; icon: string; badgeClass: string; cardClass: string }> = {
+  weak_point: { label: '薄弱补强', icon: '⚠️', badgeClass: 'weak', cardClass: 'weak' },
+  prerequisite: { label: '前置补缺', icon: '🔗', badgeClass: 'prereq', cardClass: 'prereq' },
+  goal_related: { label: '目标相关', icon: '🎯', badgeClass: 'goal', cardClass: 'goal' },
+  forgetting_review: { label: '遗忘复习', icon: '🔁', badgeClass: 'review', cardClass: 'review' },
+  mistake_related: { label: '错题关联', icon: '❌', badgeClass: 'mistake', cardClass: 'mistake' },
+}
+
+// 按类型分组（排除当前建议节点）
+const groupedRecommendations = computed<Record<string, RecommendationItem[]>>(() => {
+  const groups: Record<string, RecommendationItem[]> = {}
+  for (const item of recommendations.value) {
+    if (currentRecommendation.value && item.node_id === currentRecommendation.value.node_id) continue
+    if (!groups[item.recommendation_type]) {
+      groups[item.recommendation_type] = []
+    }
+    groups[item.recommendation_type].push(item)
+  }
+  return groups
+})
+
+// 按预定义顺序排列的分组（仅含有内容的分组）
+const orderedGroups = computed(() => {
+  const order = ['weak_point', 'prerequisite', 'goal_related', 'forgetting_review', 'mistake_related']
+  return order
+    .filter(type => groupedRecommendations.value[type]?.length)
+    .map(type => ({
+      type,
+      label: recommendationTypeConfig[type]?.label || displaySourceLabel(type, '推荐类型'),
+      icon: recommendationTypeConfig[type]?.icon || '📌',
+      badgeClass: recommendationTypeConfig[type]?.badgeClass || 'default',
+      items: groupedRecommendations.value[type],
+    }))
+})
+
 // 简化的推荐理由（面向新用户）
 const simplifiedReasons = computed(() => {
   const reasons: string[] = []
@@ -333,16 +544,30 @@ const simplifiedReasons = computed(() => {
     reasons.push(`你的学习目标是：${goal}`)
   }
 
-  if (weakNodes.value.length) {
-    reasons.push(`系统发现你在「${nodeLabels.value[weakNodes.value[0]] || '某些知识点'}」上需要加强`)
-  }
-
-  if (currentNodes.value.length) {
-    reasons.push(`你当前正在学习「${nodeLabels.value[currentNodes.value[0]] || '当前章节'}」，完成后继续下一章节`)
-  }
-
-  if (nextNodes.value.length) {
-    reasons.push(`建议接下来学习「${nodeLabels.value[nextNodes.value[0]] || '推荐内容'}」`)
+  // 优先使用后端 recommendations 的 reason
+  if (hasRecommendations.value) {
+    if (currentRecommendation.value) {
+      reasons.push(`当前建议学习「${displayNodeLabel(currentRecommendation.value.node_name || nodeLabels.value[currentRecommendation.value.node_id] || currentRecommendation.value.node_id, '当前节点')}」：${currentRecommendation.value.reason}`)
+    }
+    const weakGroup = groupedRecommendations.value['weak_point']
+    if (weakGroup?.length) {
+      reasons.push(`系统发现你在「${displayNodeLabel(weakGroup[0].node_name || weakGroup[0].node_id, '某些知识点')}」上需要加强（薄弱补强）`)
+    }
+    const reviewGroup = groupedRecommendations.value['forgetting_review']
+    if (reviewGroup?.length) {
+      reasons.push(`有 ${reviewGroup.length} 个知识点临近遗忘，建议及时复习`)
+    }
+  } else {
+    // 回退到原有逻辑
+    if (weakNodes.value.length) {
+      reasons.push(`系统发现你在「${displayNodeLabel(nodeLabels.value[weakNodes.value[0]] || weakNodes.value[0], '某些知识点')}」上需要加强`)
+    }
+    if (currentNodes.value.length) {
+      reasons.push(`你当前正在学习「${displayNodeLabel(nodeLabels.value[currentNodes.value[0]] || currentNodes.value[0], '当前建议')}」，完成后系统会继续调整推荐队列`)
+    }
+    if (nextNodes.value.length) {
+      reasons.push(`建议接下来学习「${displayNodeLabel(nodeLabels.value[nextNodes.value[0]] || nextNodes.value[0], '推荐内容')}」`)
+    }
   }
 
   return reasons.length ? reasons : ['完成学习目标设置后，系统会为你推荐学习路径']
@@ -393,13 +618,55 @@ function nodeReason(uid: string): string {
   return '推荐学习此知识点'
 }
 
+// 推荐类型标签
+function recommendationTypeLabel(type: string): string {
+  return recommendationTypeConfig[type]?.label || displaySourceLabel(type, '推荐类型')
+}
+
+// 推荐类型图标
+function recommendationTypeIcon(type: string): string {
+  return recommendationTypeConfig[type]?.icon || '📌'
+}
+
+// 证据来源文本
+function evidenceSourceText(item: RecommendationItem): string {
+  if (!item.evidence) return ''
+  const parts: string[] = []
+  if (item.evidence.source) parts.push(displaySourceLabel(item.evidence.source, '推荐证据'))
+  if (item.evidence.detail) parts.push(localizeText(item.evidence.detail))
+  if (item.evidence.mastery != null) {
+    parts.push(`掌握度 ${Math.round((item.evidence.mastery || 0) * 100)}%`)
+  }
+  if (item.evidence.last_attempt) {
+    parts.push(`最近作答 ${item.evidence.last_attempt}`)
+  }
+  return localizeText(parts.join(' · '))
+}
+
+// 节点显示名（优先 recommendation 自带名称，回退到 nodeLabels）
+function recommendationNodeName(item: RecommendationItem): string {
+  return displayNodeLabel(item.node_name || nodeLabels.value[item.node_id] || item.node_id)
+}
+
 // ===== 数据加载 =====
 async function loadPath() {
   loading.value = true
   try {
     if (!profileStore.profile) await profileStore.initFromAuth()
     await profileStore.refreshDashboard()
-    await learningStore.loadDiagnosis(profileStore.studentProfileInput, profileStore.profile?.node_mastery || {})
+    if (!hasLearningGoal.value) {
+      learningStore.diagnosis = null
+      return
+    }
+    // 多目标：初始化选中目标（默认第一个）
+    if (hasMultipleGoals.value && !selectedGoal.value) {
+      selectedGoal.value = availableGoals.value[0]
+    }
+    await learningStore.loadDiagnosis(
+      profileStore.studentProfileInput,
+      profileStore.profile?.node_mastery || {},
+      effectiveTargetGoal.value,
+    )
 
     const nodes = learningStore.recommendedNodes
     if (!nodes.length) return
@@ -410,10 +677,10 @@ async function loadPath() {
     await Promise.all(nodes.map(async (uid) => {
       try {
         const node = await getGraphNode(uid)
-        labels[uid] = node.properties?.name || uidLabel(uid)
+        labels[uid] = displayNodeLabel(node.properties?.name || uid)
         meta[uid] = node.properties || {}
       } catch {
-        labels[uid] = uidLabel(uid)
+        labels[uid] = displayNodeLabel(uid)
       }
     }))
     nodeLabels.value = labels
@@ -443,14 +710,45 @@ async function loadPath() {
   }
 }
 
-function useQuickStart() {
-  // 快速体验模式：使用示例路径
-  ElMessage.info('正在加载示例学习路径...')
-  loadPath()
-}
-
 async function selectNode(uid: string) {
   await learningStore.loadEvidence(uid, profileStore.studentProfileInput, profileStore.studentId)
+}
+
+async function selectRecommendation(item: RecommendationItem) {
+  await selectNode(item.node_id)
+}
+
+// 多目标：切换目标后重新加载诊断推荐
+async function onGoalChange() {
+  loading.value = true
+  try {
+    await learningStore.loadDiagnosis(
+      profileStore.studentProfileInput,
+      profileStore.profile?.node_mastery || {},
+      effectiveTargetGoal.value,
+    )
+    const nodes = learningStore.recommendedNodes
+    if (nodes.length) {
+      const labels: Record<string, string> = {}
+      const meta: Record<string, Record<string, any>> = {}
+      await Promise.all(nodes.map(async (uid) => {
+        try {
+          const node = await getGraphNode(uid)
+          labels[uid] = displayNodeLabel(node.properties?.name || uid)
+          meta[uid] = node.properties || {}
+        } catch {
+          labels[uid] = displayNodeLabel(uid)
+        }
+      }))
+      nodeLabels.value = labels
+      nodeMetadata.value = meta
+    }
+    ElMessage.success(`已切换到目标：${selectedGoal.value}`)
+  } catch (error) {
+    console.error('切换目标失败:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(loadPath)
@@ -464,19 +762,6 @@ onMounted(loadPath)
 }
 
 /* ===== 页面标题 ===== */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.page-title h1 {
-  margin: 0 0 4px;
-  font-size: 24px;
-  font-weight: 600;
-}
-
 .header-actions {
   display: flex;
   gap: 12px;
@@ -549,6 +834,10 @@ onMounted(loadPath)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.goal-select {
+  width: 240px;
 }
 
 .goal-stats {
@@ -719,6 +1008,164 @@ onMounted(loadPath)
 .empty-icon {
   font-size: 40px;
   margin-bottom: 12px;
+}
+
+/* ===== 推荐 reasons 布局（Task 4） ===== */
+.path-recommendations-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.current-reco-card {
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+}
+
+.current-reco-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #dbeafe;
+  background: #fff;
+}
+
+.current-reco-body:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
+}
+
+.current-icon {
+  font-size: 28px;
+  color: #3b82f6;
+}
+
+.current-reco-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.current-reco-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.current-reco-head strong {
+  font-size: 16px;
+  color: #1e3a8a;
+}
+
+.reco-reason {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0 0 8px;
+  word-break: break-word;
+}
+
+.reco-evidence {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 4px 0 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 6px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.reco-evidence .el-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.reco-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.reco-group-column {
+  min-height: 200px;
+}
+
+.reco-group-count {
+  font-size: 12px;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.reco-node-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.reco-node-head strong {
+  font-size: 14px;
+}
+
+/* 推荐类型 badge 配色 */
+.col-badge.prereq {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.col-badge.goal {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.col-badge.review {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.col-badge.mistake {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.col-badge.default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* 节点卡片按类型左侧描边 */
+.node-card.prereq {
+  border-left: 4px solid #8b5cf6;
+}
+
+.node-card.goal {
+  border-left: 4px solid #10b981;
+}
+
+.node-card.review {
+  border-left: 4px solid #f59e0b;
+}
+
+.node-card.mistake {
+  border-left: 4px solid #ef4444;
+}
+
+.node-card.default {
+  border-left: 4px solid #94a3b8;
 }
 
 /* ===== 完整路径卡片 ===== */

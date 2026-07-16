@@ -197,3 +197,98 @@ class FeedbackAnalyzer:
                 + (f", free_text=\"{text}\"" if text else "")
             )
         return "\n".join(lines)
+
+    # ── 反馈闭环：根据反馈类型触发对应动作 ──
+
+    # 负反馈标签 → 动作映射
+    _FEEDBACK_ACTIONS: dict[str, dict] = {
+        "dont_get": {
+            "action": "re_explain",
+            "label": "重新解释",
+            "prompt": "请用更简单的方式重新解释，并补充具体例子",
+            "user_message": "已根据你的反馈重新解释，降低了理解难度并补充了例子",
+        },
+        "too_hard": {
+            "action": "simplify",
+            "label": "降低难度",
+            "prompt": "请降低难度，推荐前置知识，用更基础的方式讲解",
+            "user_message": "已根据你的反馈降低了难度，并推荐了前置知识",
+        },
+        "too_easy": {
+            "action": "advance",
+            "label": "提高难度",
+            "prompt": "请推荐更高难度内容，增加推导、对比或综合题",
+            "user_message": "已根据你的反馈提高了挑战度，推荐了更高难度内容",
+        },
+        "incorrect": {
+            "action": "regenerate",
+            "label": "重新生成",
+            "prompt": "内容有误，请重新生成正确的内容",
+            "user_message": "已标记内容待审核，并尝试重新生成",
+        },
+        "too_vague": {
+            "action": "add_detail",
+            "label": "补充细节",
+            "prompt": "请给出更具体的步骤、依据和可执行建议",
+            "user_message": "已根据你的反馈补充了更具体的步骤和建议",
+        },
+        "want_examples": {
+            "action": "generate_example",
+            "label": "补充例子",
+            "prompt": "请补充例题、代码或具体场景",
+            "user_message": "已根据你的反馈补充了例子和具体场景",
+        },
+        "want_summary": {
+            "action": "generate_summary",
+            "label": "补充总结",
+            "prompt": "请在结尾给出更清晰的要点总结",
+            "user_message": "已根据你的反馈补充了要点总结",
+        },
+    }
+
+    def trigger_feedback_action(
+        self,
+        feedback_tags: list[str],
+        message_content: str = "",
+        student_id: str = "",
+    ) -> dict:
+        """根据反馈标签触发对应动作。
+
+        Args:
+            feedback_tags: 反馈标签列表（如 ["dont_get", "too_hard"]）
+            message_content: 原始助手回复内容（供生成新回复时参考）
+            student_id: 学生 ID
+
+        Returns:
+            {
+                "action": 动作标识（re_explain/simplify/advance/...）,
+                "label": 动作中文名,
+                "prompt": 重新生成的提示词,
+                "user_message": 展示给用户的系统响应消息,
+                "feedback_tag": 触发该动作的反馈标签,
+            }
+            如果没有匹配的负反馈，返回 {"action": "none", ...}
+        """
+        # 按优先级匹配：incorrect > dont_get > too_hard > too_vague > want_examples > want_summary > too_easy
+        priority = [
+            "incorrect", "dont_get", "too_hard", "too_vague",
+            "want_examples", "want_summary", "too_easy",
+        ]
+        tag_set = set(feedback_tags or [])
+        for tag in priority:
+            if tag in tag_set:
+                action = self._FEEDBACK_ACTIONS[tag]
+                return {
+                    "action": action["action"],
+                    "label": action["label"],
+                    "prompt": action["prompt"],
+                    "user_message": action["user_message"],
+                    "feedback_tag": tag,
+                }
+        return {
+            "action": "none",
+            "label": "",
+            "prompt": "",
+            "user_message": "反馈已记录，会用于后续个性化调整",
+            "feedback_tag": "",
+        }

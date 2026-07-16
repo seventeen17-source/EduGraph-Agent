@@ -96,6 +96,18 @@
     "recommended_for": ["神经网络", "反向传播", "CNN", "RNN", "注意力机制", "Transformer"]
   },
   {
+    "source_id": "book_deep_learning_ai",
+    "title": "Deep Learning",
+    "author": "Ian Goodfellow, Yoshua Bengio, Aaron Courville",
+    "type": "open_textbook",
+    "language": "en",
+    "publisher_or_platform": "MIT Press",
+    "url": "https://www.deeplearningbook.org/",
+    "local_file": "",
+    "license_or_usage_note": "作为深度学习理论参考，知识库正文使用自写摘要，不大段复制原文。",
+    "recommended_for": ["神经网络", "反向传播", "深度学习", "优化", "CNN", "RNN"]
+  },
+  {
     "source_id": "book_hands_on_ml_3e_zh",
     "title": "机器学习实战：基于 Scikit-Learn、Keras 和 TensorFlow（原书第3版）",
     "author": "Aurélien Géron",

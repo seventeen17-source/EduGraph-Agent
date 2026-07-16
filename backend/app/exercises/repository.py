@@ -1,8 +1,20 @@
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.models import GeneratedResourceRecord
 from app.exercises import models
 from app.exercises.schemas import ExerciseAttemptRecord, ExerciseSessionRecord
+
+
+def _normalize_search_text(value: str) -> str:
+    return (
+        str(value or "")
+        .strip()
+        .lower()
+        .replace("-", "")
+        .replace("_", "")
+        .replace(" ", "")
+    )
 
 
 class ExerciseRepository:
@@ -65,13 +77,18 @@ class ExerciseRepository:
         limit: int = 100,
         offset: int = 0,
         node_id: str | None = None,
+        error_type: str | None = None,
     ) -> tuple[int, list[ExerciseAttemptRecord]]:
         conditions = [
             models.ExerciseAttempt.student_id == student_id,
             models.ExerciseAttempt.is_correct.is_(False),
+            models.ExerciseAttempt.grading_status == "graded",
+            models.ExerciseAttempt.profile_update_allowed.is_(True),
         ]
         if node_id:
             conditions.append(models.ExerciseAttempt.related_node_id == node_id)
+        if error_type:
+            conditions.append(models.ExerciseAttempt.error_type == error_type)
         total = await self.session.scalar(
             select(func.count()).select_from(models.ExerciseAttempt).where(*conditions)
         )
@@ -83,6 +100,97 @@ class ExerciseRepository:
             .limit(limit)
         )
         return int(total or 0), [self._attempt_record(row) for row in rows]
+
+    async def had_previous_correct(self, student_id: str, node_id: str) -> bool:
+        """检查学生是否在同一知识点之前答对过。"""
+        count = await self.session.scalar(
+            select(func.count()).select_from(models.ExerciseAttempt).where(
+                models.ExerciseAttempt.student_id == student_id,
+                models.ExerciseAttempt.related_node_id == node_id,
+                models.ExerciseAttempt.is_correct.is_(True),
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
+            )
+        )
+        return int(count or 0) > 0
+
+    async def search_ai_generated_exercises(
+        self,
+        *,
+        student_id: str | None,
+        query: str,
+        limit: int = 30,
+    ) -> list[dict]:
+        stmt = select(GeneratedResourceRecord).order_by(desc(GeneratedResourceRecord.created_at)).limit(200)
+        if student_id:
+            stmt = stmt.where(GeneratedResourceRecord.student_id.in_([student_id, ""]))
+        rows = list((await self.session.scalars(stmt)).all())
+        q = _normalize_search_text(query)
+        matches: list[dict] = []
+        for record in rows:
+            resources = dict(record.resources_json or {})
+            exercises = list(resources.get("exercises") or [])
+            record_text = _normalize_search_text(" ".join([
+                record.query or "",
+                record.center_node_name or "",
+                record.resolved_uid or "",
+            ]))
+            for index, exercise in enumerate(exercises):
+                if not isinstance(exercise, dict):
+                    continue
+                exercise_text = _normalize_search_text(" ".join([
+                    str(exercise.get("title") or ""),
+                    str(exercise.get("question") or ""),
+                    str(exercise.get("related_node_id") or ""),
+                    record_text,
+                ]))
+                if q and q not in exercise_text:
+                    continue
+                matches.append({
+                    "record": record,
+                    "exercise": exercise,
+                    "index": index,
+                })
+                if len(matches) >= limit:
+                    return matches
+        return matches
+
+    async def search_mistake_exercises(
+        self,
+        *,
+        student_id: str,
+        query: str,
+        limit: int = 30,
+    ) -> list[ExerciseAttemptRecord]:
+        q = _normalize_search_text(query)
+        rows = await self.session.scalars(
+            select(models.ExerciseAttempt)
+            .where(
+                models.ExerciseAttempt.student_id == student_id,
+                models.ExerciseAttempt.is_correct.is_(False),
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
+            )
+            .order_by(desc(models.ExerciseAttempt.created_at))
+            .limit(200)
+        )
+        matches: list[ExerciseAttemptRecord] = []
+        for row in rows:
+            record = self._attempt_record(row)
+            snapshot = record.exercise_snapshot or {}
+            haystack = _normalize_search_text(" ".join([
+                record.exercise_title,
+                record.exercise_id,
+                record.related_node_id,
+                record.related_node_name,
+                str(snapshot.get("question") or ""),
+            ]))
+            if q and q not in haystack:
+                continue
+            matches.append(record)
+            if len(matches) >= limit:
+                break
+        return matches
 
     async def add_bookmark(self, student_id: str, attempt_id: str, tag: str, note: str) -> models.ExerciseBookmark:
         row = models.ExerciseBookmark(
@@ -126,30 +234,42 @@ class ExerciseRepository:
         )
         total_attempts = await self.session.scalar(
             select(func.count()).select_from(models.ExerciseAttempt).where(
-                models.ExerciseAttempt.student_id == student_id
+                models.ExerciseAttempt.student_id == student_id,
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
             )
         )
         correct_attempts = await self.session.scalar(
             select(func.count()).select_from(models.ExerciseAttempt).where(
                 models.ExerciseAttempt.student_id == student_id,
                 models.ExerciseAttempt.is_correct.is_(True),
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
             )
         )
         mistake_count = await self.session.scalar(
             select(func.count()).select_from(models.ExerciseAttempt).where(
                 models.ExerciseAttempt.student_id == student_id,
                 models.ExerciseAttempt.is_correct.is_(False),
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
             )
         )
         practiced_nodes = await self.session.scalar(
             select(func.count(func.distinct(models.ExerciseAttempt.related_node_id))).where(
                 models.ExerciseAttempt.student_id == student_id,
                 models.ExerciseAttempt.related_node_id != "",
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
             )
         )
         recent_rows = await self.session.scalars(
             select(models.ExerciseAttempt)
-            .where(models.ExerciseAttempt.student_id == student_id)
+            .where(
+                models.ExerciseAttempt.student_id == student_id,
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
+            )
             .order_by(desc(models.ExerciseAttempt.created_at))
             .limit(20)
         )
@@ -160,6 +280,8 @@ class ExerciseRepository:
                 models.ExerciseAttempt.student_id == student_id,
                 models.ExerciseAttempt.is_correct.is_(False),
                 models.ExerciseAttempt.related_node_id != "",
+                models.ExerciseAttempt.grading_status == "graded",
+                models.ExerciseAttempt.profile_update_allowed.is_(True),
             )
             .group_by(models.ExerciseAttempt.related_node_id)
             .order_by(desc(func.count()))
@@ -232,5 +354,12 @@ class ExerciseRepository:
             feedback=dict(row.feedback_json or {}),
             misconception_tags=list(row.misconception_tags_json or []),
             source_uids=list(row.source_uids_json or []),
+            mode=getattr(row, "mode", "practice") or "practice",
+            viewed_answer=bool(getattr(row, "viewed_answer", False)),
+            grading_method=getattr(row, "grading_method", "rule") or "rule",
+            grading_status=getattr(row, "grading_status", "graded") or "graded",
+            grading_confidence=float(getattr(row, "grading_confidence", 1.0) or 0.0),
+            profile_update_allowed=bool(getattr(row, "profile_update_allowed", True)),
+            error_type=getattr(row, "error_type", None),
             created_at=row.created_at,
         )

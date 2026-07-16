@@ -1,24 +1,25 @@
+import logging
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from neo4j import AsyncDriver
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.service_cache import get_service_cache
+
+logger = logging.getLogger(__name__)
 from app.db.relational import get_db_session
-from app.db.neo4j import get_neo4j_driver
 from app.agents.repository import ResourceRepository
 from app.agents.service import ResourceGenerationService
 from app.assistant.memory import AssistantMemoryRepository
 from app.assistant.service import AssistantService
 from app.assistant.tools import AssistantTools
 from app.diagnosis.service import DiagnosisService
-from app.graph.neo4j_store import Neo4jGraphStore
 from app.graphrag.service import GraphRAGService
+from app.profile.extractor import ProfileExtractor
 from app.profile.repository import ProfileRepository
 from app.profile.service import ProfileService
-from app.profile.extractor import ProfileExtractor
 
 security = HTTPBearer(auto_error=False)
 
@@ -48,21 +49,29 @@ async def get_current_user(
         if user is None or not user.is_active:
             return None
         return user
-    except Exception:
+    except Exception as exc:
+        logger.debug("Authentication failed: %s", exc)
         return None
 
 
-async def get_graph_store(
-    driver: Annotated[AsyncDriver, Depends(get_neo4j_driver)],
-    settings: Annotated[Settings, Depends(get_settings)],
-) -> Neo4jGraphStore:
-    return Neo4jGraphStore(driver=driver, settings=settings)
+def get_graph_store():
+    cache = get_service_cache()
+    return cache.graph_store
 
 
-async def get_graphrag_service(
-    graph_store: Annotated[Neo4jGraphStore, Depends(get_graph_store)],
-) -> GraphRAGService:
-    return GraphRAGService(graph_store)
+def get_graphrag_service():
+    cache = get_service_cache()
+    return cache.graphrag_service
+
+
+def get_diagnosis_service():
+    cache = get_service_cache()
+    return cache.diagnosis_service
+
+
+def get_profile_extractor():
+    cache = get_service_cache()
+    return cache.profile_extractor
 
 
 async def get_resource_generation_service(
@@ -79,9 +88,9 @@ async def get_resource_generation_service(
 
 async def get_profile_service(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    settings: Annotated[Settings, Depends(get_settings)],
+    extractor: Annotated[ProfileExtractor, Depends(get_profile_extractor)],
 ) -> ProfileService:
-    return ProfileService(ProfileRepository(session), extractor=ProfileExtractor(settings))
+    return ProfileService(ProfileRepository(session), extractor=extractor)
 
 
 async def get_assistant_service(
@@ -90,14 +99,14 @@ async def get_assistant_service(
     profile_service: Annotated[ProfileService, Depends(get_profile_service)],
     graphrag_service: Annotated[GraphRAGService, Depends(get_graphrag_service)],
     resource_service: Annotated[ResourceGenerationService, Depends(get_resource_generation_service)],
-    graph_store: Annotated[Neo4jGraphStore, Depends(get_graph_store)],
+    diagnosis_service: Annotated[DiagnosisService, Depends(get_diagnosis_service)],
 ) -> AssistantService:
     tools = AssistantTools(
         settings=settings,
         profile_service=profile_service,
         graphrag_service=graphrag_service,
         resource_service=resource_service,
-        diagnosis_service=DiagnosisService(graph_store),
+        diagnosis_service=diagnosis_service,
     )
     return AssistantService(
         settings=settings,

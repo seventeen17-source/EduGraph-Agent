@@ -125,6 +125,8 @@ class ProfileRepository:
         record.ability_state_json = profile.ability_state.model_dump(mode="json")
         record.learning_behavior_json = profile.learning_behavior.model_dump(mode="json")
         record.updated_at = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+        for mastery in profile.node_mastery.values():
+            await self.upsert_node_mastery(profile.student_id, mastery)
 
     async def save_learning_behavior(
         self,
@@ -159,6 +161,7 @@ class ProfileRepository:
         row.attempts = mastery.attempts
         row.correct_count = mastery.correct_count
         row.last_practiced_at = mastery.last_practiced_at
+        row.updated_at = mastery.updated_at or datetime.now(timezone.utc).replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
 
     async def add_update_event(
         self,
@@ -215,6 +218,23 @@ class ProfileRepository:
                 summary=summary,
             )
         )
+
+    async def list_mastery_evidence(
+        self,
+        student_id: str,
+        node_id: str,
+        limit: int = 50,
+    ) -> list[models.MasteryEvidence]:
+        rows = await self.session.scalars(
+            select(models.MasteryEvidence)
+            .where(
+                models.MasteryEvidence.student_id == student_id,
+                models.MasteryEvidence.node_id == node_id,
+            )
+            .order_by(models.MasteryEvidence.created_at.desc())
+            .limit(limit)
+        )
+        return list(rows)
 
     async def list_chat_messages(self, student_id: str, limit: int = 100) -> list[ProfileChatMessageRecord]:
         rows = await self.session.scalars(

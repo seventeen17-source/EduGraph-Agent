@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -8,12 +9,14 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import text
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.models import GeneratedResourceRecord
 from app.api.deps import get_db_session
 from app.core.config import Settings, get_settings
 from app.db.neo4j import neo4j_client
+from app.exercises.models import ExerciseAttempt, ExerciseSession
 from app.memory.embedding import EmbeddingService
 from app.memory.vector_store import MemoryVectorStore
 from app.rag.course_vector_store import CourseVectorStore
@@ -305,4 +308,93 @@ async def runtime_status(
         components=components,
         degraded_features=degraded,
         warnings=warnings,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
+# 业务指标
+# ═══════════════════════════════════════════════════════════════
+
+
+class ResourceMetrics(BaseModel):
+    total_generations: int = 0
+    avg_quality_score: float = 0.0
+    by_type: dict[str, int] = Field(default_factory=dict)
+
+
+class ExerciseMetrics(BaseModel):
+    total_sessions: int = 0
+    total_attempts: int = 0
+    avg_accuracy: float = 0.0
+
+
+class BusinessMetricsResponse(BaseModel):
+    resource_generation: ResourceMetrics = Field(default_factory=ResourceMetrics)
+    exercises: ExerciseMetrics = Field(default_factory=ExerciseMetrics)
+    active_users: int = 0
+    generated_at: str = ""
+
+
+@router.get("/metrics", response_model=BusinessMetricsResponse)
+async def get_business_metrics(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BusinessMetricsResponse:
+    """返回业务运行指标：资源生成统计、练习统计、活跃用户数。"""
+
+    # ── 资源生成统计 ──
+    total_generations = await session.scalar(
+        select(func.count(GeneratedResourceRecord.id))
+    ) or 0
+    avg_quality = await session.scalar(
+        select(func.avg(GeneratedResourceRecord.quality_score))
+    ) or 0.0
+
+    # 按类型分布：取最近 200 条记录统计
+    type_rows = await session.execute(
+        select(GeneratedResourceRecord.resource_types_json)
+        .order_by(desc(GeneratedResourceRecord.created_at))
+        .limit(200)
+    )
+    by_type: dict[str, int] = {}
+    for row in type_rows:
+        types = row[0] or []
+        if isinstance(types, list):
+            for t in types:
+                by_type[str(t)] = by_type.get(str(t), 0) + 1
+
+    # ── 练习统计 ──
+    total_sessions = await session.scalar(
+        select(func.count(ExerciseSession.id))
+    ) or 0
+    total_attempts = await session.scalar(
+        select(func.count(ExerciseAttempt.id))
+    ) or 0
+    avg_accuracy = await session.scalar(
+        select(func.avg(ExerciseSession.accuracy))
+    ) or 0.0
+
+    # ── 活跃用户数（两个表去重） ──
+    exercise_users_result = await session.execute(
+        select(func.distinct(ExerciseSession.student_id))
+    )
+    exercise_users = set(exercise_users_result.scalars().all())
+    resource_users_result = await session.execute(
+        select(func.distinct(GeneratedResourceRecord.student_id))
+    )
+    resource_users = set(resource_users_result.scalars().all())
+    active_users = len(exercise_users | resource_users)
+
+    return BusinessMetricsResponse(
+        resource_generation=ResourceMetrics(
+            total_generations=total_generations,
+            avg_quality_score=round(float(avg_quality), 4),
+            by_type=by_type,
+        ),
+        exercises=ExerciseMetrics(
+            total_sessions=total_sessions,
+            total_attempts=total_attempts,
+            avg_accuracy=round(float(avg_accuracy), 4),
+        ),
+        active_users=active_users,
+        generated_at=datetime.utcnow().isoformat() + "Z",
     )

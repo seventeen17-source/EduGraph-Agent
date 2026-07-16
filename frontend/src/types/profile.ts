@@ -1,5 +1,5 @@
 export type KnowledgeLevel = 'weak' | 'basic' | 'intermediate' | 'advanced'
-export type ResourceType = 'document' | 'diagram' | 'mindmap' | 'exercise' | 'video_script' | 'code_case'
+export type ResourceType = 'document' | 'diagram' | 'mindmap' | 'exercise' | 'video_script' | 'code_case' | 'image'
 
 export interface KnownTopic {
   topic: string
@@ -65,6 +65,7 @@ export interface StudentProfile {
     source: string
     confidence: number
     last_updated: string | null
+    goals: string[]
   }
   knowledge_base: {
     known_topics: KnownTopic[]
@@ -186,6 +187,9 @@ export interface TimelineEvent {
   score_before: number | null
   score_after: number | null
   chapter_id: string | null
+  related_id: string | null
+  related_type: string | null
+  action_url: string | null
 }
 
 export interface DailySummary {
@@ -222,6 +226,7 @@ export interface ForgettingNode {
   estimated_forgetting_rate: number
   threshold_days: number
   urgency: 'low' | 'medium' | 'high'
+  action_url: string | null
 }
 
 export interface LearningStats {
@@ -244,6 +249,53 @@ export interface TimelineResponse {
   stats: LearningStats
   forgetting_soon: ForgettingNode[]
   generated_at: string
+}
+
+// ── 周报 / 月报 ──
+
+export interface ReportExerciseStats {
+  total_sessions: number
+  total_attempts: number
+  correct_attempts: number
+  accuracy: number
+  practiced_nodes: number
+  active_days: number
+}
+
+export interface ReportMasteryChangeItem {
+  node_id: string
+  node_name: string
+  mastery_score: number
+  level: KnowledgeLevel
+  updated: boolean
+}
+
+export interface ReportMasteryChanges {
+  updated_nodes: ReportMasteryChangeItem[]
+  new_mastered: ReportMasteryChangeItem[]
+  needs_attention: ReportMasteryChangeItem[]
+  total_mastered: number
+  total_strong: number
+}
+
+export interface ReportRecommendationItem {
+  node_id: string
+  node_name: string
+  reason: string
+  urgency: 'high' | 'medium' | 'low'
+}
+
+export interface WeeklyReportResponse {
+  student_id: string
+  period_days: number
+  period_label: string
+  generated_at: string
+  exercise_stats: ReportExerciseStats
+  mastery_changes: ReportMasteryChanges
+  forgetting_warnings: ForgettingNode[]
+  recommendations: ReportRecommendationItem[]
+  profile_updates: ProfileUpdateRecord[]
+  summary: string
 }
 
 // ── 行为画像 ──
@@ -319,4 +371,18 @@ export interface ExerciseRoundAttempt {
   difficulty?: number
   cognitive_level?: string
   used_hint?: boolean
+}
+
+// ── 掌握度证据链 ──
+
+export interface MasteryEvidenceRecord {
+  id: string
+  student_id: string
+  node_id: string
+  source_type: string  // exercise_result/forgetting_detection/diagnosis/self_report/feedback
+  source_id: string
+  score_delta: number
+  confidence_delta: number
+  summary: string
+  created_at: string
 }

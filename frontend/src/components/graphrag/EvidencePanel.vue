@@ -4,7 +4,7 @@
       <div class="panel-title">
         <span>学习导航</span>
         <el-tag v-if="evidence?.resolved_uid" type="primary" size="small">
-          {{ uidLabel(evidence.resolved_uid) }}
+          {{ displayNodeLabel(evidence.resolved_uid) }}
         </el-tag>
         <el-tag v-if="semanticHits.length" type="success" size="small">
           语义命中 {{ semanticHits.length }}
@@ -15,8 +15,16 @@
     <el-empty v-if="!evidence" description="暂无证据数据" />
     <div v-else class="evidence-body">
       <div class="concept-summary">
-        {{ evidence.center_node?.properties?.summary || '当前知识点暂无摘要。' }}
+        {{ localizeText(evidence.center_node?.properties?.summary || '当前知识点暂无摘要。') }}
       </div>
+
+      <el-alert
+        v-if="evidence.resolution_quality && evidence.resolution_quality !== 'exact'"
+        :type="evidence.resolution_quality === 'none' ? 'warning' : 'info'"
+        :title="resolutionNotice"
+        :closable="false"
+        show-icon
+      />
 
       <div v-if="mergeReport" class="fusion-banner">
         <span class="fusion-title">HybridRAG 证据融合</span>
@@ -27,7 +35,7 @@
       <div v-if="evidence.multi_hop_summary?.dependency_paths?.length" class="learn-path">
         <div class="path-title">学习路线</div>
         <div class="path-intro">
-          要理解「{{ uidLabel(evidence.resolved_uid || '') }}」，建议按以下依赖关系回顾。
+          要理解「{{ displayNodeLabel(evidence.resolved_uid || '') }}」，建议按以下依赖关系回顾。
         </div>
         <div class="path-steps">
           <div
@@ -41,7 +49,7 @@
               <template v-for="(nodeId, nIdx) in dp.path_nodes" :key="`${idx}-${nodeId}-${nIdx}`">
                 <span v-if="nIdx > 0" class="step-arrow">→</span>
                 <span class="step-node" :class="{ target: nIdx === dp.path_nodes.length - 1 }">
-                  {{ uidLabel(nodeId) }}
+                  {{ displayNodeLabel(nodeId) }}
                 </span>
               </template>
             </span>
@@ -101,11 +109,11 @@
         <el-collapse-item v-if="semanticHits.length" :title="`语义检索命中（${semanticHits.length} 条）`" name="semantic">
           <div v-for="hit in semanticHits.slice(0, 8)" :key="hit.view.id" class="semantic-hit">
             <div class="hit-main">
-              <strong>{{ hit.view.title || uidLabel(hit.view.target_uid) }}</strong>
+              <strong>{{ displaySourceLabel(hit.view.title || hit.view.target_uid, '语义证据') }}</strong>
               <el-tag size="small" effect="plain">{{ targetTypeLabel(hit.view.target_type) }}</el-tag>
               <el-tag size="small" type="success" effect="plain">{{ viewTypeLabel(hit.view.view_type) }}</el-tag>
             </div>
-            <p>{{ hit.view.text.slice(0, 180) }}</p>
+            <p>{{ localizeText(hit.view.text.slice(0, 180)) }}</p>
             <div class="hit-meta">
               <span>综合 {{ formatScore(hit.score) }}</span>
               <span>语义 {{ formatScore(hit.semantic_score) }}</span>
@@ -121,7 +129,7 @@
         <el-collapse-item v-if="evidence.document_chunks?.length" :title="`文档证据（${evidence.document_chunks.length} 篇）`" name="docs">
           <div v-for="chunk in evidence.document_chunks.slice(0, 6)" :key="chunk.uid" class="chunk-item">
             <div class="item-title">
-              <strong>{{ localizeText(chunk.properties?.title || uidLabel(chunk.uid)) }}</strong>
+              <strong>{{ displaySourceLabel(chunk.properties?.title || chunk.uid, '文档证据') }}</strong>
               <SemanticTag :match="chunk.properties?._semantic_match" />
             </div>
             <p>{{ localizeText((chunk.properties?.content || '').slice(0, 220)) }}</p>
@@ -142,7 +150,7 @@
         <el-collapse-item v-if="evidence.code_cases?.length" :title="`代码案例（${evidence.code_cases.length} 个）`" name="code">
           <div v-for="code in evidence.code_cases.slice(0, 5)" :key="code.uid" class="chunk-item">
             <div class="item-title">
-              <strong>{{ localizeText(code.properties?.title || uidLabel(code.uid)) }}</strong>
+              <strong>{{ displaySourceLabel(code.properties?.title || code.uid, '代码案例') }}</strong>
               <SemanticTag :match="code.properties?._semantic_match" />
             </div>
             <p>{{ localizeText(code.properties?.description || code.properties?.summary || '') }}</p>
@@ -152,7 +160,7 @@
         <el-collapse-item v-if="evidence.exercises?.length" :title="`练习题（${evidence.exercises.length} 道）`" name="exercises">
           <div v-for="exercise in evidence.exercises.slice(0, 5)" :key="exercise.uid" class="chunk-item">
             <div class="item-title">
-              <strong>{{ localizeText(exercise.properties?.title || uidLabel(exercise.uid)) }}</strong>
+              <strong>{{ displaySourceLabel(exercise.properties?.title || exercise.uid, '练习题') }}</strong>
               <SemanticTag :match="exercise.properties?._semantic_match" />
             </div>
             <p>{{ localizeText(exercise.properties?.question || exercise.properties?.stem || '') }}</p>
@@ -166,7 +174,7 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, type PropType } from 'vue'
 import type { EvidencePackage } from '@/types/graphrag'
-import { localizeText, uidLabel } from '@/utils/format'
+import { displayNodeLabel, displaySourceLabel, localizeText } from '@/utils/format'
 
 interface SemanticMatch {
   view_id?: string
@@ -184,6 +192,18 @@ const props = defineProps<{
 
 const semanticHits = computed(() => props.evidence?.semantic_hits || [])
 const mergeReport = computed(() => props.evidence?.student_profile_adaptation?.semantic_canonical_merge || null)
+const resolutionNotice = computed(() => {
+  const evidence = props.evidence
+  if (!evidence) return ''
+  if (evidence.resolution_quality === 'fallback') {
+    const label = displayNodeLabel(evidence.resolved_uid || '', '相关知识点')
+    return `未精确匹配你的问题，系统暂按「${label}」组织证据。`
+  }
+  if (evidence.resolution_quality === 'none') {
+    return '系统暂未定位到明确知识点，请尝试补充更具体的问题或选择候选知识点。'
+  }
+  return ''
+})
 
 const semanticAddedCount = computed(() => {
   const added = mergeReport.value?.added || {}
@@ -223,7 +243,7 @@ function targetTypeLabel(type?: string) {
     Exercise: '练习',
     CodeCase: '代码'
   }
-  return labels[type || ''] || type || '证据'
+  return labels[type || ''] || displaySourceLabel(type, '证据')
 }
 
 function viewTypeLabel(type?: string) {
@@ -235,7 +255,7 @@ function viewTypeLabel(type?: string) {
     learning_action: '学习行动',
     raw_summary: '原文摘要'
   }
-  return labels[type || ''] || type || '语义视图'
+  return labels[type || ''] || displaySourceLabel(type, '语义视图')
 }
 
 const SemanticTag = defineComponent({

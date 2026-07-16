@@ -33,27 +33,26 @@ const resizeChart = () => chart?.resize()
 // ---- visual helpers ----
 
 const MASTERY_COLORS: Record<string, string> = {
-  weak: '#E6A23C',      // 薄弱点：橙色
+  weak: '#F56C6C',      // 薄弱点：红色
   basic: '#909399',     // 基础：灰色
-  intermediate: '#409EFF', // 学习中：蓝色
-  advanced: '#67C23A',  // 掌握：绿色
+  intermediate: '#818CF8', // 学习中：紫色
+  advanced: '#10B981',  // 掌握：绿色
 }
 
 function nodeColor(node: GraphNode): string {
   const uid = node.uid
-  // 薄弱点优先显示
   if (props.weakPoints?.includes(uid)) return '#F56C6C'
-  // 按掌握度
   const mastery = props.masteryMap?.[uid]
   if (mastery && MASTERY_COLORS[mastery]) return MASTERY_COLORS[mastery]
-  // 回退到 role
   const role = node.properties?.role_in_path
-  if (role === 'core') return '#409EFF'
-  if (role === 'bridge') return '#67C23A'
-  if (role === 'advanced') return '#E6A23C'
+  if (role === 'core') return '#6366F1'
+  if (role === 'bridge') return '#10B981'
+  if (role === 'advanced') return '#F59E0B'
   const type = node.properties?.node_type
-  if (type === 'exercise') return '#F56C6C'
-  return '#909399'
+  if (type === 'exercise') return '#EC4899'
+  if (type === 'code_case') return '#14B8A6'
+  if (type === 'document') return '#3B82F6'
+  return '#64748B'
 }
 
 function nodeSymbol(node: GraphNode): string {
@@ -140,28 +139,49 @@ function render() {
   const centerX = chart.getWidth() / 2
   const centerY = chart.getHeight() / 2
 
-  const nodes = props.subgraph.nodes.map((node) => ({
-    id: node.uid,
-    name: nodeLabel(node),
-    value: node.properties?.difficulty || 1,
-    fixed: node.uid === props.selectedUid,
-    x: node.uid === props.selectedUid ? centerX : undefined,
-    y: node.uid === props.selectedUid ? centerY : undefined,
-    symbol: nodeSymbol(node),
-    symbolSize: nodeSize(node),
-    itemStyle: {
-      color: nodeColor(node),
-      borderColor: node.uid === props.selectedUid ? '#1f2d3d' : '#fff',
-      borderWidth: node.uid === props.selectedUid ? 3 : 2
-    },
-    label: {
-      show: true,
-      formatter: '{b}',
-      fontSize: node.uid === props.selectedUid ? 12 : 10,
-      fontWeight: node.uid === props.selectedUid ? 'bold' : 'normal'
-    },
-    raw: node
-  }))
+  const nodes = props.subgraph.nodes.map((node) => {
+    const isSelected = node.uid === props.selectedUid
+    const color = nodeColor(node)
+    return {
+      id: node.uid,
+      name: nodeLabel(node),
+      value: node.properties?.difficulty || 1,
+      fixed: isSelected,
+      x: isSelected ? centerX : undefined,
+      y: isSelected ? centerY : undefined,
+      symbol: nodeSymbol(node),
+      symbolSize: nodeSize(node),
+      itemStyle: {
+        color: color,
+        borderColor: isSelected ? '#1f2d3d' : '#fff',
+        borderWidth: isSelected ? 3 : 2,
+        shadowBlur: isSelected ? 20 : 8,
+        shadowColor: isSelected ? color : 'rgba(0,0,0,0.15)',
+        shadowOffsetY: 2
+      },
+      label: {
+        show: true,
+        formatter: '{b}',
+        fontSize: isSelected ? 12 : 10,
+        fontWeight: isSelected ? 'bold' : 'normal',
+        color: '#334155',
+        lineHeight: 14,
+        padding: [2, 4]
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 25,
+          shadowColor: color,
+          scale: 1.15
+        },
+        label: {
+          fontSize: isSelected ? 13 : 11,
+          fontWeight: 'bold'
+        }
+      },
+      raw: node
+    }
+  })
 
   const links = props.subgraph.relationships.map((rel) => ({
     source: rel.source_uid,
@@ -185,6 +205,15 @@ function render() {
   chart.setOption({
     tooltip: {
       trigger: 'item',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      padding: [12, 16],
+      textStyle: {
+        color: '#334155',
+        fontSize: 13,
+        lineHeight: 1.6
+      },
       formatter: (params: any) => {
         if (params.dataType === 'edge') return params.data.tooltip?.formatter || ''
         const raw = params.data?.raw as GraphNode | undefined
@@ -195,7 +224,7 @@ function render() {
         const weakText = isWeak ? ' ⚠️ 薄弱点' : ''
         const diff = raw.properties?.difficulty
         const diffText = diff ? `难度：${'★'.repeat(Math.round(diff))}` : ''
-        return `<strong>${nodeName(raw)}</strong><br/>${masteryText}${weakText}<br/>${diffText}`
+        return `<strong style="color:#4f46e5;">${nodeName(raw)}</strong><br/>${masteryText}${weakText}<br/>${diffText}`
       }
     },
     series: [
@@ -208,11 +237,24 @@ function render() {
         bottom: 24,
         roam: true,
         draggable: true,
-        animationDurationUpdate: 450,
-        force: { repulsion: 400, edgeLength: 160, gravity: 0.1 },
+        animationDuration: 1000,
+        animationDurationUpdate: 600,
+        animationEasing: 'elasticOut',
+        animationEasingUpdate: 'cubicInOut',
+        force: {
+          repulsion: 350,
+          edgeLength: [120, 200],
+          gravity: 0.08,
+          layoutAnimation: true
+        },
         edgeSymbol: ['none', 'arrow'],
-        edgeSymbolSize: 8,
-        emphasis: { focus: 'adjacency', itemStyle: { shadowBlur: 12, shadowColor: 'rgba(64,158,255,0.4)' } },
+        edgeSymbolSize: [0, 10],
+        emphasis: {
+          focus: 'adjacency',
+          lineStyle: {
+            width: 4
+          }
+        },
         data: nodes,
         links
       }

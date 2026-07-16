@@ -16,16 +16,20 @@ class EmbeddingService:
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        api_key = settings.embedding_api_key or settings.llm_api_key or "sk-placeholder"
+        api_key = settings.embedding_api_key or settings.llm_api_key
         base_url = settings.embedding_base_url or settings.llm_base_url or None
-        kwargs: dict = {"api_key": api_key}
-        if base_url:
-            kwargs["base_url"] = base_url
-        self.client = AsyncOpenAI(**kwargs)  # type: ignore[arg-type]
+        self.client: AsyncOpenAI | None = None
+        if api_key:
+            kwargs: dict = {"api_key": api_key}
+            if base_url:
+                kwargs["base_url"] = base_url
+            self.client = AsyncOpenAI(**kwargs)  # type: ignore[arg-type]
         self.model = settings.embedding_model
 
     async def embed(self, text: str) -> list[float]:
         """将文本嵌入为向量。"""
+        if self.client is None:
+            raise RuntimeError("Embedding API key is not configured; semantic retrieval is disabled.")
         text = text.strip()
         if not text:
             return [0.0] * self.embedding_dim()
@@ -41,6 +45,8 @@ class EmbeddingService:
 
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """批量嵌入。"""
+        if self.client is None:
+            raise RuntimeError("Embedding API key is not configured; semantic retrieval is disabled.")
         if not texts:
             return []
         texts = [t.strip()[:8000] for t in texts]

@@ -1,3 +1,4 @@
+from app.core.labels import choose_node_label
 from app.graph.expansion_policy import GraphExpansionPolicy
 from app.graph.models import DependencyPath, GraphNode, GraphPath, MultiHopSummary
 from app.graph.neo4j_store import Neo4jGraphStore
@@ -124,7 +125,12 @@ class EvidenceRetriever:
             misconceptions=misconceptions,
         )
 
-        exercises = rank_nodes_by_profile(exercises, profile.weak_points)
+        exercises = rank_nodes_by_profile(
+            exercises,
+            profile.weak_points,
+            mastery=profile.mastery,
+            preferences=profile.preferences,
+        )
         sources = await self._collect_sources(center, exercises, document_chunks, code_cases, misconceptions)
         missing = []
         if not document_chunks:
@@ -499,16 +505,16 @@ class EvidenceRetriever:
                 f"建议按拓扑顺序逐步学习，不要跳过中间节点。"
             )
 
-        node_label_by_id = {center_uid: center_uid}
+        node_label_by_id = {center_uid: choose_node_label(None, center_uid)}
         for dp in dependency_paths:
             for node_id, label in zip(dp.path_nodes, dp.path_labels):
-                node_label_by_id[node_id] = label or node_id
+                node_label_by_id[node_id] = choose_node_label(label, node_id)
         for path in prerequisites:
             for node in path.nodes:
                 node_label_by_id[node.uid] = (
                     node.properties.get("name")
                     or node.properties.get("title")
-                    or node.uid
+                    or choose_node_label(None, node.uid)
                 )
 
         for node_id, label in sorted(node_label_by_id.items(), key=lambda item: len(item[0]), reverse=True):

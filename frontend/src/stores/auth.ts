@@ -61,6 +61,9 @@ export const useAuthStore = defineStore('auth', {
     displayName(state): string {
       return state.user?.username || ''
     },
+    isDemoUser(state): boolean {
+      return state.user?.email === 'demo@edugraph.local'
+    },
   },
 
   actions: {

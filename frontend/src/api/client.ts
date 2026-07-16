@@ -1,7 +1,15 @@
 import axios from 'axios'
 
+export function defaultApiBaseUrl() {
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:8000`
+  }
+  return 'http://127.0.0.1:8000'
+}
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+  baseURL: defaultApiBaseUrl(),
   timeout: 120000,
   headers: { 'Content-Type': 'application/json' },
 })

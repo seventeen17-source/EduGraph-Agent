@@ -9,12 +9,16 @@ Current scope:
 - `ExerciseAgent`: generate structured exercises.
 - `VideoScriptAgent`: generate storyboard-style video scripts.
 - `CodeAgent`: generate Python code cases.
-- `QualityAgent`: produce a lightweight grounding report.
+- `ImageAgent`: generate concept illustration images (Xunfei HiDream).
 
-The first API entrypoint is:
+All agents implement a **generate-validate-repair-revalidate** chain: if the first output fails validation, an LLM repair pass is attempted before failing.
+
+API entrypoints:
 
 ```text
-POST /api/agents/generate-resources
+POST /api/agents/generate-resources   # generate multiple resource types
+POST /api/agents/retry                # retry a single failed resource type
+GET  /api/agents/resource-types       # list available resource types
 ```
 
-The agents reuse the existing GraphRAG evidence package before calling the LLM. LangGraph orchestration can wrap this package later without changing the public response shape.
+The agents reuse the existing GraphRAG evidence package before calling the LLM.

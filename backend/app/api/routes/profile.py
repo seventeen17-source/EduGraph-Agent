@@ -8,6 +8,7 @@ from app.profile.schemas import (
     ExerciseRoundProfileUpdateRequest,
     LearningProgressUpdateRequest,
     ManualProfilePatchRequest,
+    MasteryEvidenceRecord,
     ProfileChatMessageRecord,
     ProfileChatRequest,
     ProfileChatResponse,
@@ -16,6 +17,7 @@ from app.profile.schemas import (
     ProfileInitRequest,
     ProfileUpdateRecord,
     StudentProfile,
+    WeeklyReportResponse,
 )
 from app.profile.service import ProfileService
 
@@ -102,6 +104,16 @@ async def get_profile_chat_history(
     return await service.list_chat_messages(student_id)
 
 
+@router.get("/{student_id}/evidence/{node_id}", response_model=list[MasteryEvidenceRecord])
+async def get_node_evidence(
+    student_id: str,
+    node_id: str,
+    service: Annotated[ProfileService, Depends(get_profile_service)],
+) -> list[MasteryEvidenceRecord]:
+    """返回某知识点的掌握度证据列表。"""
+    return await service.list_node_evidence(student_id, node_id)
+
+
 @router.get("/{student_id}/timeline")
 async def get_learning_timeline(
     student_id: str,
@@ -144,6 +156,10 @@ async def get_learning_timeline(
     detector = ForgettingDetector()
     response.forgetting_soon = detector.detect(profile.node_mastery)
 
+    # 5. 写入遗忘检测证据（去重，7天内不重复）
+    if response.forgetting_soon:
+        await service.record_forgetting_evidence(student_id, response.forgetting_soon)
+
     # 从 profile 补充统计
     response.stats.total_exercises = sum(
         m.attempts for m in profile.node_mastery.values()
@@ -160,3 +176,17 @@ async def patch_profile(
     service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> StudentProfile:
     return await service.patch_profile(student_id, payload)
+
+
+@router.get("/{student_id}/report", response_model=WeeklyReportResponse)
+async def get_learning_report(
+    student_id: str,
+    service: Annotated[ProfileService, Depends(get_profile_service)],
+    days: int = 7,
+) -> WeeklyReportResponse:
+    """生成学习周报/月报。
+
+    支持通过 days 参数切换周报（默认 7 天）或月报（days=30）。
+    返回本周/本月练习统计、掌握度变化、遗忘预警和推荐下一步学习。
+    """
+    return await service.generate_weekly_report(student_id, days=days)

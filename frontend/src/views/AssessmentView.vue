@@ -1,9 +1,12 @@
 <template>
   <div class="page">
     <div class="page-title">
-      <div>
-        <h1>学习效果评估</h1>
-        <div class="muted">知识点掌握度雷达、薄弱点分布、掌握度趋势和学习建议</div>
+      <div class="page-title-left">
+        <div class="page-title-icon">🎯</div>
+        <div class="page-title-info">
+          <h1>学习效果评估</h1>
+          <div class="muted">知识点掌握度雷达、薄弱点分布、掌握度趋势和学习建议</div>
+        </div>
       </div>
       <div class="title-actions">
         <el-button :loading="loading" @click="load">刷新评估</el-button>
@@ -15,14 +18,15 @@
 
     <el-empty
       v-if="!loading && mastery.length === 0 && weak.length === 0"
-      description="暂无评估数据"
+      description="完成一次练习后这里会显示你的掌握度画像"
     >
       <template #default>
         <div class="empty-guide">
-          <p>要生成评估数据，请先完成以下步骤：</p>
+          <p class="muted">要生成评估数据，请先完成以下步骤：</p>
           <p>1. <el-button size="small" text type="primary" @click="$router.push('/profile/chat')">完善学习画像</el-button></p>
           <p>2. <el-button size="small" text type="primary" @click="$router.push('/exercise')">做一次练习测试</el-button></p>
           <p>3. <el-button size="small" text type="primary" @click="$router.push('/assistant')">与学习助手对话</el-button></p>
+          <el-button type="primary" @click="$router.push('/exercise')">去做练习</el-button>
         </div>
       </template>
     </el-empty>
@@ -81,7 +85,7 @@
           <div v-for="(evt, i) in timeline.slice(0, 15)" :key="i" class="timeline-item">
             <div class="tl-dot" :class="evt.trigger"></div>
             <div class="tl-content">
-              <span class="tl-summary">{{ evt.summary }}</span>
+              <span class="tl-summary">{{ localizeText(evt.summary) }}</span>
               <span class="tl-time muted small">{{ formatDate(evt.timestamp) }}</span>
             </div>
           </div>
@@ -101,7 +105,7 @@
             <div class="advice-title">📋 优先学习</div>
             <ul>
               <li v-for="item in weak.slice(0, 5)" :key="item.label">
-                <strong>{{ item.label }}</strong>
+                <strong>{{ displayNodeLabel(item.label || item.node_id) }}</strong>
                 <span class="muted">（薄弱度 {{ Math.round((item.score || 0) * 100) }}%）</span>
               </li>
             </ul>
@@ -110,7 +114,7 @@
             <div class="advice-title">📈 进步最快</div>
             <ul>
               <li v-for="uid in improvingNodes.slice(0, 3)" :key="uid">
-                <strong>{{ uidLabelMap[uid] || uid }}</strong>
+                <strong>{{ displayNodeLabel(uidLabelMap[uid] || uid) }}</strong>
                 <span class="muted"> 持续提升中</span>
               </li>
               <li v-if="!improvingNodes.length" class="muted">继续学习，积累更多数据后这里会显示进步最快的知识点</li>
@@ -131,7 +135,7 @@ import * as echarts from 'echarts'
 
 import LoadingSkeleton from '@/components/common/LoadingSkeleton.vue'
 import { useProfileStore } from '@/stores/profile'
-import { uidLabel } from '@/utils/format'
+import { displayNodeLabel, formatDate, localizeText, uidLabel } from '@/utils/format'
 
 const profileStore = useProfileStore()
 const loading = ref(false)
@@ -162,7 +166,7 @@ const improvingNodes = computed(() => {
 const uidLabelMap = computed(() => {
   const map: Record<string, string> = {}
   for (const item of mastery.value) {
-    map[item.node_id] = item.node_name || uidLabel(item.node_id)
+    map[item.node_id] = displayNodeLabel(item.node_name || item.node_id)
   }
   return map
 })
@@ -178,12 +182,13 @@ async function load() {
 }
 
 function renderCharts() {
+  // 没有真实数据时不渲染示例图表
+  if (!mastery.value.length && !weak.value.length) return
+
   // 雷达图：当前 + 目标
-  if (radarRef.value) {
+  if (radarRef.value && mastery.value.length) {
     radar ||= echarts.init(radarRef.value)
-    const items = mastery.value.length
-      ? mastery.value.slice(0, 8)
-      : [{ node_id: 'ml_basic', node_name: '示例', mastery_score: 0.4 }]
+    const items = mastery.value.slice(0, 8)
     const current = items.map((i: any) => i.mastery_score || 0)
     const target = items.map(() => 0.6)
     radar.setOption({
@@ -191,7 +196,7 @@ function renderCharts() {
       legend: { data: ['当前掌握度', '目标掌握度'], bottom: 0 },
       radar: {
         indicator: items.map((i: any) => ({
-          name: i.node_name || uidLabel(i.node_id) || '知识点',
+          name: displayNodeLabel(i.node_name || i.node_id, '知识点'),
           max: 1
         }))
       },
@@ -215,11 +220,9 @@ function renderCharts() {
   }
 
   // 饼图
-  if (pieRef.value) {
+  if (pieRef.value && weak.value.length) {
     pie ||= echarts.init(pieRef.value)
-    const items = weak.value.length
-      ? weak.value.slice(0, 6)
-      : [{ label: '示例薄弱点', score: 0.5 }]
+    const items = weak.value.slice(0, 6)
     pie.setOption({
       tooltip: { formatter: '{b}: {c}%' },
       series: [{
@@ -229,7 +232,7 @@ function renderCharts() {
         itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
         label: { show: true, formatter: '{b}\n{c}%' },
         data: items.map((i: any) => ({
-          name: i.label, value: Math.round((i.score || 0.5) * 100)
+          name: displayNodeLabel(i.label || i.node_id, '知识点'), value: Math.round((i.score || 0.5) * 100)
         })),
         emphasis: {
           scale: true,
@@ -240,18 +243,16 @@ function renderCharts() {
   }
 
   // 掌握度柱状图
-  if (barRef.value) {
+  if (barRef.value && mastery.value.length) {
     bar ||= echarts.init(barRef.value)
-    const items = mastery.value.length
-      ? mastery.value.slice(0, 12)
-      : [{ node_id: 'ml_basic', node_name: '示例', mastery_score: 0.4 }]
+    const items = mastery.value.slice(0, 12)
     bar.setOption({
       tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
       grid: { left: 120, right: 30, top: 10, bottom: 10 },
       xAxis: { type: 'value', name: '掌握度(%)', min: 0, max: 100 },
       yAxis: {
         type: 'category',
-        data: items.map((i: any) => i.node_name || uidLabel(i.node_id) || '知识点'),
+        data: items.map((i: any) => displayNodeLabel(i.node_name || i.node_id, '知识点')),
         axisLabel: { fontSize: 12, width: 110, overflow: 'truncate' },
       },
       series: [{
@@ -276,13 +277,6 @@ function exportReport() {
   const a = document.createElement('a')
   a.href = url; a.download = `edugraph-assessment-${Date.now()}.png`
   a.click()
-}
-
-function formatDate(d: string) {
-  if (!d) return ''
-  const date = new Date(d); date.setHours(date.getHours() + 8)
-  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) + ' ' +
-    date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
 onMounted(load)

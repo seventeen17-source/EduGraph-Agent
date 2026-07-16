@@ -1,6 +1,8 @@
 import { apiClient } from './client'
 import type {
   ExerciseMistakeListResponse,
+  ExerciseSearchRequest,
+  ExerciseSearchResponse,
   ExerciseSessionListResponse,
   ExerciseSessionRecord,
   ExerciseSessionSubmitRequest,
@@ -10,6 +12,10 @@ import type {
 
 export function submitExerciseSession(payload: ExerciseSessionSubmitRequest) {
   return apiClient.post<ExerciseSessionSubmitResponse>('/api/exercises/sessions', payload).then((res) => res.data)
+}
+
+export function searchExercises(payload: ExerciseSearchRequest) {
+  return apiClient.post<ExerciseSearchResponse>('/api/exercises/search', payload).then((res) => res.data)
 }
 
 export function listExerciseSessions(studentId: string, params: { limit?: number; offset?: number } = {}) {

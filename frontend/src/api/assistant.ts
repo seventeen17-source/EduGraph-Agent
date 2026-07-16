@@ -1,4 +1,4 @@
-import { apiClient } from './client'
+import { apiClient, defaultApiBaseUrl } from './client'
 import type {
   AssistantChatRequest,
   AssistantChatResponse,
@@ -24,8 +24,19 @@ export interface FeedbackSubmitPayload {
   target_node_id?: string
 }
 
+export interface FeedbackSubmitResponse {
+  ok: boolean
+  feedback_id: string
+  created: boolean
+  profile_updated: boolean
+  profile_update_error: string
+  adaptation_summary: string
+  action_taken: string
+  action_result: string
+}
+
 export function submitFeedback(payload: FeedbackSubmitPayload) {
-  return apiClient.post('/api/assistant/feedback', payload).then((res) => res.data)
+  return apiClient.post<FeedbackSubmitResponse>('/api/assistant/feedback', payload).then((res) => res.data)
 }
 
 export async function streamAssistant(
@@ -33,7 +44,7 @@ export async function streamAssistant(
   handlers: AssistantStreamHandlers = {},
   signal?: AbortSignal,
 ) {
-  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+  const baseURL = defaultApiBaseUrl()
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   try {
     const raw = localStorage.getItem('edugraph_auth')

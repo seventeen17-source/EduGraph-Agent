@@ -3,11 +3,19 @@
     <template #header>
       <div class="panel-title">
         <span>{{ localizeText(document?.title) || '讲解文档' }}</span>
-        <el-tag type="primary">图文讲解</el-tag>
+        <el-tag :type="document && !hasContent ? 'warning' : 'primary'">图文讲解</el-tag>
       </div>
     </template>
-    <div v-if="document" class="markdown-body" v-html="html" />
-    <el-empty v-else description="暂无讲解文档" />
+    <el-empty v-if="!document" description="暂无讲解文档" />
+    <el-alert
+      v-else-if="!hasContent"
+      type="warning"
+      title="讲解文档生成结果为空"
+      description="本次生成没有得到可展示的正文，请重新生成，或查看质量报告中的失败原因。"
+      show-icon
+      :closable="false"
+    />
+    <div v-else class="markdown-body" v-html="html" />
   </el-card>
 </template>
 
@@ -25,12 +33,14 @@ const props = defineProps<{
   document: GeneratedDocument | null
 }>()
 
+const hasContent = computed(() => Boolean(props.document?.content?.trim()))
+
 const FORMULA_LINE_RE =
   /(?:\\(?:frac|partial|sum|sqrt|cdot|times|alpha|beta|gamma|theta|lambda|sigma|nabla)|[∂∑√∞≈≤≥×÷]|[A-Za-z0-9_})\]]\s*=\s*[^，。；;]+(?:[+\-*/^]|\\cdot|×|∂|∑|√))/
 
 function renderMath(source: string, displayMode: boolean): string {
   try {
-    return katex.renderToString(source, {
+    return katex.renderToString(normalizeMathExpression(source), {
       displayMode,
       throwOnError: false,
       strict: false,
@@ -112,6 +122,16 @@ function mathBlockRule(state: any, startLine: number, endLine: number, silent: b
 
 function normalizeMathExpression(source: string): string {
   return source
+    .replace(/\bhaty(?=_|\b)/g, '\\hat{y}')
+    .replace(/\bhat([A-Za-z])(?=_|\b)/g, '\\hat{$1}')
+    .replace(/\bdots\b/g, '\\cdots')
+    .replace(/\bmathbf([A-Za-z]+)\b/g, '\\mathbf{$1}')
+    .replace(/\bfrac1N\b/g, '\\frac{1}{N}')
+    .replace(/\bfracpartial([A-Za-z]+)partial([A-Za-z_][A-Za-z0-9_]*)\b/g, '\\frac{\\partial $1}{\\partial $2}')
+    .replace(/\bsum([A-Za-z])=([0-9]+)([A-Za-z])\b/g, '\\sum_{$1=$2}^{$3}')
+    .replace(/\bsum([A-Za-z])=([0-9]+)/g, '\\sum_{$1=$2}')
+    .replace(/ŷ/g, '\\hat{y}')
+    .replace(/([A-Za-z])ᵀ/g, '$1^T')
     .replace(/∂\s*([A-Za-z][A-Za-z0-9_]*)\s*\/\s*∂\s*([A-Za-z][A-Za-z0-9_]*)/g, '\\frac{\\partial $1}{\\partial $2}')
     .replace(/([A-Za-z])_([A-Za-z0-9]+)/g, '$1_{$2}')
     .replace(/\*/g, '\\cdot ')
@@ -156,6 +176,117 @@ function preprocessMarkdownMath(content: string): string {
     .join('\n')
 }
 
+function normalizeDocumentMarkdown(content: string): string {
+  let text = localizeText(content || '')
+  const trimmed = text.trim()
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (typeof parsed === 'string') text = parsed
+    } catch {
+      // Keep the original text when it is not a JSON-encoded string.
+    }
+  }
+  text = text
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n(?!abla\b|eq\b|ot\b|u\b)/g, '\n')
+    .replace(/\\t/g, '  ')
+    .replace(/\\"/g, '"')
+  text = stripLeakedJsonFields(text)
+  text = repairBrokenFormulaLines(text)
+  return fenceLoosePythonBlocks(text)
+}
+
+function stripLeakedJsonFields(content: string): string {
+  const leakedFieldRe = /",\s*"(?:(?:代码|code|explanation|learning_objectives|prerequisites|additional_references|证据来源|source_uids|key_points)|[a-z_]{3,})"\s*:/i
+  const match = leakedFieldRe.exec(content)
+  if (!match || match.index < 80) return content
+  return content.slice(0, match.index).trim()
+}
+
+function repairBrokenFormulaLines(content: string): string {
+  const lines = content.split(/\r?\n/)
+  const result: string[] = []
+  let formulaBuffer: string[] = []
+
+  const isFormulaLike = (line: string) => {
+    const trimmed = line.trim()
+    if (!trimmed) return false
+    if (/[\u4e00-\u9fff]/.test(trimmed) && !/[=+\-^_]|frac|sum|hat|mathbf|mathbf|dots/.test(trimmed)) return false
+    return /^(?:\.{2,}|[A-Za-z0-9_{}()[\]^+\-*/=,\s]+|(?:hat|frac|sum|mathbf|mathb|dots|cdot|partial)\w*)$/.test(trimmed)
+      || /\b(?:haty|hat[A-Za-z]|frac1N|fracpartial|sum[A-Za-z]=|mathbf|mathb|dots)\b/.test(trimmed)
+  }
+  const shouldContinueFormula = (line: string) => {
+    return /[=+\-*/,(]\s*$/.test(line.trim())
+  }
+  const flushFormula = () => {
+    if (!formulaBuffer.length) return
+    result.push(formulaBuffer.join(' ').replace(/\s+/g, ' ').trim())
+    formulaBuffer = []
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    const previous = formulaBuffer[formulaBuffer.length - 1] || ''
+    const mergeWithBuffer = formulaBuffer.length > 0 && (
+      isFormulaLike(line)
+      || shouldContinueFormula(previous)
+      || /^(?:\.{2,}|frac|sum|hat|mathbf|mathb|dots)/.test(trimmed)
+    )
+    if (mergeWithBuffer) {
+      formulaBuffer.push(trimmed)
+      if (!shouldContinueFormula(trimmed) && !/^(?:frac|sum|hat|mathbf|mathb|dots|\.\.\.)/.test(trimmed)) {
+        flushFormula()
+      }
+      continue
+    }
+    if (isFormulaLike(line) && shouldContinueFormula(line)) {
+      formulaBuffer.push(trimmed)
+      continue
+    }
+    flushFormula()
+    result.push(line)
+  }
+  flushFormula()
+  return result.join('\n')
+}
+
+function fenceLoosePythonBlocks(content: string): string {
+  const lines = content.split(/\r?\n/)
+  const result: string[] = []
+  let inLoosePython = false
+
+  const isLoosePythonStart = (index: number) => {
+    return lines[index]?.trim().toLowerCase() === 'python'
+      && /^(import|from|#|[A-Za-z_][A-Za-z0-9_]*\s*=)/.test(lines[index + 1]?.trim() || '')
+  }
+  const isPythonLikeLine = (line: string) => {
+    const trimmed = line.trim()
+    if (!trimmed) return true
+    if (/^#{2,6}\s/.test(trimmed)) return false
+    return /^(import|from|#(?!#)|print\(|for\s|if\s|elif\s|else:|def\s|class\s|return\b)/.test(trimmed)
+      || /^[A-Za-z_][A-Za-z0-9_]*(?:\s*=|\.)/.test(trimmed)
+      || /^[)\]},\]]/.test(trimmed)
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i]
+    const trimmed = line.trim()
+    if (!inLoosePython && isLoosePythonStart(i)) {
+      result.push('```python')
+      inLoosePython = true
+      continue
+    }
+    if (inLoosePython && trimmed && !isPythonLikeLine(line)) {
+      result.push('```')
+      inLoosePython = false
+    }
+    result.push(line)
+  }
+  if (inLoosePython) result.push('```')
+  return result.join('\n')
+}
+
 const md = new MarkdownIt({
   html: false,
   linkify: true,
@@ -176,5 +307,23 @@ md.renderer.rules.math_block = (tokens: any[], idx: number) => {
   return `<div class="math-block">${renderMath(tokens[idx].content, true)}</div>\n`
 }
 
-const html = computed(() => md.render(preprocessMarkdownMath(props.document?.content || '')))
+const html = computed(() => md.render(preprocessMarkdownMath(normalizeDocumentMarkdown(props.document?.content || ''))))
 </script>
+
+<style scoped>
+.markdown-body :deep(img) {
+  display: block;
+  max-width: 100%;
+  max-height: 520px;
+  height: auto;
+  object-fit: contain;
+  margin: 18px auto 8px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.markdown-body :deep(em) {
+  color: #64748b;
+}
+</style>

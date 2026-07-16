@@ -55,7 +55,7 @@
               <div class="info-label">需要加强</div>
               <div class="weak-tags">
                 <el-tag v-for="item in profileStore.dashboard.weak_point_rank.slice(0,4)" :key="item.node_id || item.label" type="warning" size="small">
-                  {{ item.label }}
+                  {{ displayNodeLabel(item.label || item.node_id) }}
                 </el-tag>
               </div>
             </div>
@@ -65,7 +65,7 @@
               <div class="info-label">正在学习</div>
               <div class="tag-row">
                 <el-tag v-for="uid in profileStore.profile.progress.in_progress_node_ids.slice(0,3)" :key="uid" type="primary" size="small">
-                  {{ uidLabel(uid) }}
+                  {{ displayNodeLabel(uid) }}
                 </el-tag>
               </div>
             </div>
@@ -142,7 +142,7 @@
                   <span>诊断薄弱点</span>
                 </div>
               </div>
-              <el-collapse class="demo-guide">
+              <el-collapse v-if="authStore.isDemoUser" class="demo-guide">
                 <el-collapse-item title="🎬 7分钟演示路线（点击展开）" name="demo">
                   <div class="demo-steps">
                     <div class="demo-step" @click="quickAsk('我想学习机器学习，但对梯度下降不太理解')">
@@ -195,11 +195,42 @@
                 <div v-if="msg.role === 'assistant' && msg.resource_record_id" class="bubble-resource-link">
                   <div>
                     <div class="resource-link-title">本次生成的学习资源已保存</div>
-                    <div class="resource-link-desc">可在知识中心查看题目、答案、解析和证据来源。</div>
+                    <div class="resource-link-desc">
+                      {{ msg.resource_has_exercises ? '已生成练习题，可以直接开始作答。' : '可在知识中心查看题目、答案、解析和证据来源。' }}
+                    </div>
                   </div>
-                  <el-button type="primary" plain size="small" @click="openResourceRecord(msg.resource_record_id)">
-                    查看资源
-                  </el-button>
+                  <div class="resource-link-actions">
+                    <el-button v-if="msg.resource_has_exercises" type="primary" size="small" @click="startExerciseFromAssistant(msg.resource_record_id)">
+                      立即开始作答
+                    </el-button>
+                    <el-button type="primary" plain size="small" @click="openResourceRecord(msg.resource_record_id)">
+                      查看资源
+                    </el-button>
+                  </div>
+                </div>
+
+                <!-- 下一步建议 -->
+                <div
+                  v-if="msg.role === 'assistant' && msg.suggested_next_actions && msg.suggested_next_actions.length"
+                  class="bubble-next-actions"
+                >
+                  <div class="next-actions-title">💡 下一步建议</div>
+                  <div class="next-actions-list">
+                    <template v-for="(action, idx) in msg.suggested_next_actions" :key="idx">
+                      <el-button
+                        v-if="action.route"
+                        size="small"
+                        type="primary"
+                        plain
+                        @click="handleSuggestedAction(action)"
+                      >
+                        {{ action.label }}
+                      </el-button>
+                      <span v-else class="next-action-hint">
+                        {{ action.label }}
+                      </span>
+                    </template>
+                  </div>
                 </div>
 
                 <!-- 快速反馈标签（仅 assistant 消息，回复完成后显示） -->
@@ -244,6 +275,13 @@
                   </div>
                   <div v-if="feedbackState(msg.id)?.submitted" class="feedback-done">
                     已反馈 — {{ (feedbackState(msg.id)?.tags || []).map(t => quickFeedbackTags.find(q => q.key === t)?.label).join('、') }}
+                  </div>
+                  <div v-if="feedbackState(msg.id)?.adaptationSummary" class="feedback-adaptation">
+                    {{ feedbackState(msg.id)?.adaptationSummary }}
+                  </div>
+                  <div v-if="feedbackState(msg.id)?.actionResult" class="feedback-action-response">
+                    <span class="action-icon">🔄</span>
+                    <span class="action-text">{{ feedbackState(msg.id)?.actionResult }}</span>
                   </div>
                 </div>
               </div>
@@ -375,7 +413,7 @@
               <div class="step-dot" :class="item.status"></div>
               <div class="step-content">
                 <span class="step-name">{{ traceNodeLabel(item.node) }}</span>
-                <span class="step-summary">{{ item.summary }}</span>
+                <span class="step-summary">{{ traceSummaryLabel(item.summary) }}</span>
               </div>
             </div>
           </div>
@@ -439,20 +477,20 @@
           <template #header>
             <div class="card-header">
               <el-icon><Guide /></el-icon>
-              <span>{{ assistantStore.pathPlan.title }}</span>
+              <span>{{ localizeText(assistantStore.pathPlan.title) }}</span>
               <el-tag size="small" type="primary">{{ pathModeLabel(assistantStore.pathPlan.mode) }}</el-tag>
             </div>
           </template>
           <div class="path-nodes">
             <div v-for="node in assistantStore.pathPlan.nodes" :key="node.node_id" class="path-node-item" :class="node.status">
-              <el-tag :type="pathStatusTag(node.status)" size="small">{{ node.label || uidLabel(node.node_id) }}</el-tag>
-              <span class="node-reason">{{ node.reason }}</span>
+              <el-tag :type="pathStatusTag(node.status)" size="small">{{ displayNodeLabel(node.label || node.node_id) }}</el-tag>
+              <span class="node-reason">{{ localizeText(node.reason) }}</span>
             </div>
           </div>
           <el-divider />
           <div class="path-reasons">
             <div v-for="reason in assistantStore.pathPlan.reasons" :key="reason" class="reason-item">
-              {{ reason }}
+              {{ localizeText(reason) }}
             </div>
           </div>
         </el-card>
@@ -586,10 +624,10 @@ import ErrorAlert from '@/components/common/ErrorAlert.vue'
 import { useAssistantStore } from '@/stores/assistant'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
-import { resourceLabel, uidLabel } from '@/utils/format'
+import { displayNodeLabel, displaySourceLabel, localizeText, resourceLabel } from '@/utils/format'
 
 const authStore = useAuthStore()
-import type { AssistantAction, AssistantTraceItem } from '@/types/assistant'
+import type { AssistantAction, AssistantTraceItem, SuggestedNextAction } from '@/types/assistant'
 
 const router = useRouter()
 const assistantStore = useAssistantStore()
@@ -604,12 +642,24 @@ const typewriterTarget = ref('')
 const typewriterDisplay = ref('')
 let typewriterTimer: ReturnType<typeof setInterval> | null = null
 
+function scrollToBottom(smooth = true) {
+  if (!messagesRef.value) return
+  if (smooth) {
+    messagesRef.value.scrollTo({
+      top: messagesRef.value.scrollHeight,
+      behavior: 'smooth'
+    })
+  } else {
+    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
+  }
+}
+
 function startTypewriter(fullText: string) {
   stopTypewriter()
   typewriterTarget.value = fullText
   typewriterDisplay.value = ''
   typewriterActive.value = true
-  const charsPerTick = 3  // 每 tick 3 个字符（中英文混合时粗略按字符数）
+  const charsPerTick = 4
   let pos = 0
   typewriterTimer = setInterval(() => {
     pos += charsPerTick
@@ -619,11 +669,8 @@ function startTypewriter(fullText: string) {
     } else {
       typewriterDisplay.value = fullText.slice(0, pos)
     }
-    // 滚动到底部
-    if (messagesRef.value) {
-      messagesRef.value.scrollTop = messagesRef.value.scrollHeight
-    }
-  }, 16) // ~60fps
+    scrollToBottom(false)
+  }, 16)
 }
 
 function stopTypewriter() {
@@ -666,7 +713,7 @@ const md = new MarkdownIt({
 })
 
 function renderMarkdown(content: string) {
-  const cleaned = content.replace(/\n{3,}/g, '\n\n')
+  const cleaned = localizeText(content).replace(/\n{3,}/g, '\n\n')
   return md.render(cleaned)
 }
 
@@ -691,6 +738,7 @@ const generatedResourceSummary = computed(() => {
   if (resources.mindmap) items.push({ label: '思维导图', count: '1 张' })
   if (resources.video_script) items.push({ label: '视频脚本', count: '1 份' })
   if (resources.code_case) items.push({ label: '代码案例', count: '1 个' })
+  if (resources.image) items.push({ label: '教学图片', count: '1 张' })
   return items
 })
 
@@ -701,6 +749,7 @@ const preferredResourceTab = computed(() => {
   if (resources?.mindmap) return 'mindmap'
   if (resources?.video_script) return 'video'
   if (resources?.code_case) return 'code'
+  if (resources?.image) return 'image'
   return 'exercise'
 })
 
@@ -715,9 +764,7 @@ assistantStore.loadHistory(authStore.studentId || profileStore.studentId)
 // 自动滚动
 watch(() => assistantStore.messages.length, async () => {
   await nextTick()
-  if (messagesRef.value) {
-    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
-  }
+  scrollToBottom()
 })
 
 // 上划加载更多历史
@@ -762,6 +809,14 @@ function quickAsk(text: string) {
   send()
 }
 
+onMounted(() => {
+  const prefill = sessionStorage.getItem('assistant_prefill')
+  if (prefill) {
+    inputText.value = prefill
+    sessionStorage.removeItem('assistant_prefill')
+  }
+})
+
 function handleAction(action: AssistantAction) {
   if (!action.route) return
   const query: Record<string, string> = {}
@@ -769,6 +824,15 @@ function handleAction(action: AssistantAction) {
   if (action.resource_record_id) query.record_id = action.resource_record_id
   for (const [k, v] of Object.entries(action.query)) {
     if (v !== undefined && v !== null) query[k] = String(v)
+  }
+  router.push({ path: action.route, query })
+}
+
+function handleSuggestedAction(action: SuggestedNextAction) {
+  if (!action.route) return
+  const query: Record<string, string> = {}
+  for (const [k, v] of Object.entries(action.query || {})) {
+    if (v !== undefined && v !== null && v !== '') query[k] = String(v)
   }
   router.push({ path: action.route, query })
 }
@@ -782,6 +846,10 @@ function openResourceRecord(recordId?: string | null) {
       tab: preferredResourceTab.value,
     },
   })
+}
+
+function startExerciseFromAssistant(resourceId: string) {
+  router.push({ path: '/exercise', query: { resource_id: resourceId } })
 }
 
 function nodeCount(trace: AssistantTraceItem[]) {
@@ -820,10 +888,61 @@ const _nodeLabels: Record<string, string> = {
   review_assessment: '评估复盘',
   general_tutor: '答疑',
   error_recovery: '错误恢复',
+  'hybrid_rag:prepare_query': '整理检索问题',
+  'hybrid_rag:resolve_learning_target': '定位学习目标',
+  'hybrid_rag:retrieve_graph_context': '检索图谱证据',
+  'hybrid_rag:retrieve_semantic_context': '检索课程语义证据',
+  'hybrid_rag:retrieve_memory_context': '检索学生记忆',
+  'hybrid_rag:fuse_canonical_evidence': '融合规范证据',
+  'hybrid_rag:grade_evidence': '评估证据质量',
+  'hybrid_rag:finalize_evidence': '生成证据包',
 }
 
 function traceNodeLabel(node: string) {
-  return _nodeLabels[node] || node
+  return _nodeLabels[node] || localizeTraceText(node)
+}
+
+function traceSummaryLabel(summary?: string) {
+  return localizeTraceText(summary || '')
+}
+
+function localizeTraceText(value: string) {
+  let text = value || ''
+  const replacements: Array<[RegExp, string]> = [
+    [/concept_explain/g, '知识点讲解'],
+    [/resource_generate/g, '资源生成'],
+    [/exercise_help/g, '练习辅导'],
+    [/path_plan/g, '路径规划'],
+    [/general_learning_chat/g, '学习问答'],
+    [/profile_update/g, '画像更新'],
+    [/assessment_review/g, '评估复盘'],
+    [/retrieve_memory/g, '检索记忆'],
+    [/hybrid_rag:/g, '混合检索：'],
+    [/prepare_query/g, '整理问题'],
+    [/resolve_learning_target/g, '定位学习目标'],
+    [/retrieve_graph_context/g, '检索图谱证据'],
+    [/retrieve_semantic_context/g, '检索课程语义证据'],
+    [/retrieve_memory_context/g, '检索学生记忆'],
+    [/fuse_canonical_evidence/g, '融合规范证据'],
+    [/grade_evidence/g, '评估证据质量'],
+    [/finalize_evidence/g, '生成证据包'],
+    [/ml_backpropagation/g, '反向传播'],
+    [/ml_gradient_descent/g, '梯度下降'],
+    [/ml_multilayer_neural_network/g, '多层神经网络'],
+    [/ml_kmeans/g, 'K-Means'],
+    [/code_backprop_demo/g, '反向传播代码案例'],
+    [/Neo4j canonical evidence/g, 'Neo4j 规范证据'],
+    [/canonical evidence/g, '规范证据'],
+    [/EvidencePackage/g, '证据包'],
+    [/HybridRAG/g, '混合检索'],
+    [/FAQ/g, '常见问题'],
+    [/coverage/g, '覆盖度'],
+    [/relevance/g, '相关性'],
+  ]
+  for (const [pattern, replacement] of replacements) {
+    text = text.replace(pattern, replacement)
+  }
+  return localizeText(text)
 }
 
 function pathModeLabel(mode: string) {
@@ -834,7 +953,7 @@ function pathModeLabel(mode: string) {
     project_practice: '项目实战',
     free_exploration: '自由探索',
   }
-  return labels[mode] || mode
+  return labels[mode] || displaySourceLabel(mode, '路径模式')
 }
 
 function pathStatusTag(status: string) {
@@ -905,7 +1024,7 @@ function scoreColor(score: number) {
 
 function retryResources() {
   const nodeId = assistantStore.evidence?.resolved_uid || ''
-  const refineMsg = `请重新生成关于 ${nodeId} 的更详细的学习资源`
+  const refineMsg = `请重新生成关于${displayNodeLabel(nodeId)}的更详细的学习资源`
   inputText.value = refineMsg
   send()
 }
@@ -937,6 +1056,31 @@ function retryResources() {
   grid-template-columns: 280px minmax(0, 1fr) 380px;
   gap: 20px;
   align-items: start;
+}
+
+@media (max-width: 1400px) {
+  .assistant-layout {
+    grid-template-columns: 240px minmax(0, 1fr) 320px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .assistant-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  .assistant-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .assistant-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .assistant-panel {
+    display: none;
+  }
 }
 
 .assistant-sidebar,
@@ -1039,6 +1183,26 @@ function retryResources() {
   overflow-y: auto;
   padding: 20px;
   max-height: 500px;
+  scrollbar-width: thin;
+  scrollbar-color: #c4b5fd #f1f5f9;
+}
+
+.messages-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-area::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.messages-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c4b5fd, #8b5cf6);
+  border-radius: 3px;
+}
+
+.messages-area::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a78bfa, #7c3aed);
 }
 
 .welcome-area {
@@ -1106,23 +1270,46 @@ function retryResources() {
 
 .message-bubble {
   max-width: 75%;
-  padding: 14px 18px;
-  border-radius: 18px;
-  background: #f1f5f9;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  padding: 16px 20px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ffffff, #f1f5f9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  animation: bubbleIn 0.3s ease-out;
 }
 
 .message-wrapper.user .message-bubble {
-  background: linear-gradient(135deg, #4f46e5, #3730a3);
+  background: linear-gradient(145deg, #6366f1, #4f46e5);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3), 0 1px 3px rgba(79, 70, 229, 0.2);
 }
 
 .message-wrapper.assistant .message-bubble {
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 6px;
 }
 
 .message-wrapper.user .message-bubble {
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 6px;
+}
+
+.message-bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.message-wrapper.user .message-bubble:hover {
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4), 0 2px 4px rgba(79, 70, 229, 0.25);
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .bubble-header {
@@ -1153,6 +1340,29 @@ function retryResources() {
   font-size: 14px;
   line-height: 1.7;
   color: #1e293b;
+}
+
+.message-wrapper.user .markdown-body {
+  color: #fff;
+}
+
+.message-wrapper.user .markdown-body :deep(strong) {
+  color: #c7d2fe;
+}
+
+.message-wrapper.user .markdown-body :deep(em) {
+  color: #ddd6fe;
+}
+
+.message-wrapper.user .markdown-body :deep(code) {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.message-wrapper.user .markdown-body :deep(blockquote) {
+  color: #e0e7ff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #c7d2fe;
 }
 
 .markdown-body :deep(h1),
@@ -1280,6 +1490,44 @@ function retryResources() {
   margin-top: 2px;
   font-size: 12px;
   color: #64748b;
+}
+
+.resource-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 下一步建议 */
+.bubble-next-actions {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+
+.next-actions-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.next-actions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.next-action-hint {
+  font-size: 12px;
+  color: #16a34a;
+  padding: 3px 8px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 10px;
 }
 
 .loading-more {
@@ -1743,6 +1991,39 @@ function retryResources() {
   margin-top: 6px;
   font-size: 11px;
   color: #94a3b8;
+}
+
+.feedback-adaptation {
+  margin-top: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.feedback-action-response {
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  font-size: 12px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.feedback-action-response .action-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.feedback-action-response .action-text {
+  font-weight: 500;
 }
 
 .typing-dots::after {

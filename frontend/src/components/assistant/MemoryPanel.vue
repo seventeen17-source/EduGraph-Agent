@@ -30,7 +30,7 @@
             </el-progress>
           </div>
           <div class="memory-text">
-            <div class="memory-question">{{ mem.student_question_summary || mem.key_insight }}</div>
+            <div class="memory-question">{{ localizeText(mem.student_question_summary || mem.key_insight) }}</div>
             <div class="memory-meta">
               <el-tag
                 v-for="node in (mem.confusion_nodes || []).slice(0, 2)"
@@ -39,10 +39,10 @@
                 type="warning"
                 effect="plain"
               >
-                {{ uidLabel(node) }}
+                {{ displayNodeLabel(node) }}
               </el-tag>
               <span v-if="mem.learning_preference_hint" class="pref-hint">
-                {{ mem.learning_preference_hint }}
+                {{ localizeText(mem.learning_preference_hint) }}
               </span>
             </div>
           </div>
@@ -55,15 +55,15 @@
         <div v-if="expandedId === mem.id" class="memory-detail">
           <div v-if="mem.key_insight" class="detail-row">
             <span class="detail-label">关键发现</span>
-            <span>{{ mem.key_insight }}</span>
+            <span>{{ localizeText(mem.key_insight) }}</span>
           </div>
           <div v-if="mem.caution_topics?.length" class="detail-row">
             <span class="detail-label">需注意</span>
-            <span>{{ mem.caution_topics.join('、') }}</span>
+            <span>{{ mem.caution_topics.map(localizeText).join('、') }}</span>
           </div>
           <div v-if="mem.suggested_follow_up" class="detail-row">
             <span class="detail-label">建议</span>
-            <span>{{ mem.suggested_follow_up }}</span>
+            <span>{{ localizeText(mem.suggested_follow_up) }}</span>
           </div>
           <div v-if="mem.node_ids?.length" class="detail-row">
             <span class="detail-label">关联知识点</span>
@@ -74,7 +74,7 @@
               type="primary"
               effect="plain"
             >
-              {{ uidLabel(nid) }}
+              {{ displayNodeLabel(nid) }}
             </el-tag>
           </div>
         </div>
@@ -86,7 +86,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ArrowDown, Clock } from '@element-plus/icons-vue'
-import { uidLabel } from '@/utils/format'
+import { displayNodeLabel, localizeText } from '@/utils/format'
 import type { MemoryEntrySummary } from '@/types/assistant'
 
 defineProps<{

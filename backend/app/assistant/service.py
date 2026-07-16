@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import AsyncIterator
 
 from app.assistant.graph import build_assistant_graph
+
+logger = logging.getLogger(__name__)
 from app.assistant.memory import AssistantMemoryRepository
 from app.assistant.schemas import AssistantChatRequest, AssistantHistoryResponse, AssistantResponse, ClarifyOption
 from app.assistant.state import AssistantState
@@ -32,6 +35,8 @@ class AssistantService:
     def _init_memory_services(self, settings: Settings, tools: AssistantTools) -> None:
         """初始化 embedding、向量存储、记忆提取器，注入到 tools 中。"""
         try:
+            if not (settings.embedding_api_key or settings.llm_api_key):
+                raise RuntimeError("Embedding credential is not configured.")
             embedding_service = EmbeddingService(settings)
             memory_store = MemoryVectorStore(
                 settings,
@@ -48,8 +53,8 @@ class AssistantService:
             # 异步种子记忆（不阻塞服务启动）
             import asyncio
             asyncio.create_task(self._seed_demo_memories(embedding_service, memory_store))
-        except Exception:
-            # 记忆服务初始化失败不阻塞主流程
+        except Exception as exc:
+            logger.warning("Memory services initialization failed, continuing without memory features: %s", exc)
             tools.embedding_service = None
             tools.memory_store = None
             tools.memory_extractor = None
@@ -77,8 +82,7 @@ class AssistantService:
             embeddings = await embedding_service.embed_batch(texts)
             await memory_store.insert_batch(entries, embeddings)
         except Exception as exc:
-            import logging
-            logging.getLogger("edugraph").warning("种子记忆填充失败: %s", exc)
+            logger.warning("Seed memories population failed: %s", exc)
 
     @staticmethod
     def _seed_format_text(entry) -> str:
@@ -264,6 +268,7 @@ class AssistantService:
             agent_trace_json=trace_json,
             actions_json=actions_json,
             resource_record_id=response.resource_record_id,
+            metadata_json={"resource_has_exercises": response.resource_has_exercises},
         )
         # 回填真实 message id 到 response，供前端反馈绑定
         response.assistant_message_id = assistant_msg.id
@@ -317,6 +322,7 @@ class AssistantService:
             profile_delta=state.get("profile_update", {}),
             evidence=state.get("evidence"),
             resource_record_id=state.get("resource_record_id"),
+            resource_has_exercises=state.get("resource_has_exercises") or False,
             resources=state.get("resources"),
             path_plan=state.get("path_plan"),
             exercise_feedback=state.get("exercise_feedback"),

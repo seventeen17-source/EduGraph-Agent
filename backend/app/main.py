@@ -3,28 +3,37 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
-from app.core.config import get_settings
+from app.core.config import get_settings, validate_settings
+from app.core.logging import setup_logging
+from app.core.service_cache import initialize_service_cache, shutdown_service_cache
 from app.db.neo4j import neo4j_client
 from app.db.relational import close_relational_db, init_relational_db
+from app.image_generation.storage import resolve_assets_dir
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await neo4j_client.connect()
     await init_relational_db()
+    await initialize_service_cache()
     yield
+    await shutdown_service_cache()
     await close_relational_db()
     await neo4j_client.close()
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    validate_settings(settings)
+    setup_logging(settings.app_name)
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
+        allow_origin_regex=settings.cors_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -34,6 +43,10 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         neo4j_status = await neo4j_client.healthcheck()
         return {"status": "ok", **neo4j_status}
+
+    assets_dir = resolve_assets_dir(settings)
+    assets_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/generated-assets", StaticFiles(directory=str(assets_dir)), name="generated-assets")
 
     app.include_router(api_router, prefix=settings.api_prefix)
     return app

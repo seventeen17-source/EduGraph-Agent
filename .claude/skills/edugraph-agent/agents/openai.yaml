@@ -1,4 +1,0 @@
-interface:
-  display_name: "EduGraph Agent"
-  short_description: "Project workflow for EduGraph-Agent"
-  default_prompt: "Use $edugraph-agent to plan or implement EduGraph-Agent project work."

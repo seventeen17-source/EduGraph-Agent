@@ -271,6 +271,249 @@ class Neo4jGraphStore:
             paths=self._dedupe_paths(paths),
         )
 
+    async def get_node_with_mastery(self, uid: str, student_id: str) -> dict | None:
+        """获取节点信息。mastery 数据由 service 层从 SQLite 补充。
+
+        Args:
+            uid: 知识点节点 uid
+            student_id: 学生 ID（保留参数，mastery 由 service 层补充）
+
+        Returns:
+            包含 uid/name/type/chapter/difficulty 的字典，节点不存在时返回 None
+        """
+        node = await self.get_node(uid)
+        if node is None:
+            return None
+        props = node.properties
+        labels = [lb for lb in node.labels if lb != "Entity"]
+        return {
+            "uid": uid,
+            "name": props.get("name", "") or uid,
+            "type": props.get("type", "") or (labels[0] if labels else "KnowledgePoint"),
+            "chapter": props.get("chapter", "") or "",
+            "difficulty": props.get("difficulty", "") or "",
+        }
+
+    async def get_all_nodes_with_mastery(self, student_id: str, profile_service=None) -> list[dict]:
+        """返回所有知识点节点，附带掌握度和状态。
+        
+        Args:
+            student_id: 学生 ID
+            profile_service: ProfileService 实例，用于查询掌握度
+        
+        Returns:
+            节点列表，每项包含 uid/name/chapter/difficulty/mastery_score/status/last_practiced
+            status: "mastered" | "weak" | "forgetting" | "unlearned"
+        """
+        rows = await self._run(
+            """
+            MATCH (k:KnowledgePoint)
+            RETURN k.uid AS uid, k.name AS name, k.chapter AS chapter, 
+                   k.difficulty AS difficulty, k.summary AS summary
+            ORDER BY coalesce(k.chapter, k.uid)
+            LIMIT 300
+            """,
+        )
+        
+        # 从 profile 获取掌握度
+        node_mastery_map = {}
+        if profile_service:
+            try:
+                from app.core.errors import NotFoundError
+                profile = await profile_service.get_profile(student_id)
+                node_mastery_map = profile.node_mastery
+            except Exception:
+                pass
+        
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        
+        result = []
+        for row in rows:
+            uid = row["uid"]
+            mastery_score = 0.0
+            last_practiced = None
+            status = "unlearned"
+            
+            mastery = node_mastery_map.get(uid)
+            if mastery is not None:
+                mastery_score = mastery.mastery_score
+                last_practiced = mastery.last_practiced_at
+                
+                if mastery_score >= 0.6:
+                    # 检查遗忘风险
+                    if last_practiced:
+                        days_since = (now - last_practiced).days
+                        if days_since > 14:
+                            status = "forgetting"
+                        else:
+                            status = "mastered"
+                    else:
+                        status = "mastered"
+                elif mastery_score < 0.4:
+                    status = "weak"
+                else:
+                    status = "learning"
+            
+            result.append({
+                "uid": uid,
+                "name": row["name"] or uid,
+                "chapter": row["chapter"] or "",
+                "difficulty": row["difficulty"] or "",
+                "summary": row["summary"] or "",
+                "mastery_score": round(mastery_score, 2),
+                "status": status,
+                "last_practiced": last_practiced.strftime("%Y-%m-%d") if last_practiced else None,
+            })
+        
+        return result
+
+    async def get_edges_with_weight(self, uid: str, direction: str = "both") -> list[dict]:
+        """获取节点的边信息，包含权重和解释。
+
+        权重逻辑：
+            - 直接前置依赖（PREREQUISITE 1跳）: 1.0
+            - 间接前置（PREREQUISITE 2跳）: 0.6
+            - 相关概念（RELATED_TO）: 0.4
+
+        Args:
+            uid: 知识点节点 uid
+            direction: "prerequisites" | "next" | "both"
+
+        Returns:
+            边信息列表，每项包含 uid/name/weight/explanation/relation_type/direction/depth
+        """
+        edges: list[dict] = []
+        seen: set[tuple[str, str]] = set()
+
+        center_node = await self.get_node(uid)
+        center_name = (center_node.properties.get("name", "") if center_node else "") or uid
+
+        def _add_edge(
+            target_uid: str,
+            target_name: str,
+            weight: float,
+            relation_type: str,
+            edge_direction: str,
+            depth: int,
+            source_name: str,
+            target_label: str,
+        ) -> None:
+            key = (target_uid, edge_direction)
+            if key in seen:
+                return
+            seen.add(key)
+            if relation_type == "PREREQUISITE":
+                explanation = (
+                    f"{source_name} 是 {target_label} 的前置知识，"
+                    f"掌握 {source_name} 是理解 {target_label} 的基础"
+                )
+            else:
+                explanation = f"{source_name} 与 {target_label} 是相关概念，学习时可以互相参照"
+            edges.append({
+                "uid": target_uid,
+                "name": target_name or target_uid,
+                "weight": weight,
+                "explanation": explanation,
+                "relation_type": relation_type,
+                "direction": edge_direction,
+                "depth": depth,
+            })
+
+        # 1. 前置依赖（prerequisites）
+        if direction in ("prerequisites", "both"):
+            # 1-hop 直接前置: pre -> this
+            rows = await self._run(
+                """
+                MATCH (pre:KnowledgePoint)-[:PREREQUISITE]->(k:KnowledgePoint {uid: $uid})
+                RETURN pre.uid AS uid, pre.name AS name
+                LIMIT 20
+                """,
+                uid=uid,
+            )
+            for row in rows:
+                pre_name = row["name"] or row["uid"]
+                _add_edge(
+                    target_uid=row["uid"],
+                    target_name=pre_name,
+                    weight=1.0,
+                    relation_type="PREREQUISITE",
+                    edge_direction="prerequisite",
+                    depth=1,
+                    source_name=pre_name,
+                    target_label=center_name,
+                )
+
+            # 2-hop 间接前置: pre -> mid -> this（排除已有直接边的节点）
+            rows = await self._run(
+                """
+                MATCH (pre:KnowledgePoint)-[:PREREQUISITE*2]->(k:KnowledgePoint {uid: $uid})
+                WHERE NOT (pre)-[:PREREQUISITE]->(k)
+                RETURN DISTINCT pre.uid AS uid, pre.name AS name
+                LIMIT 20
+                """,
+                uid=uid,
+            )
+            for row in rows:
+                pre_name = row["name"] or row["uid"]
+                _add_edge(
+                    target_uid=row["uid"],
+                    target_name=pre_name,
+                    weight=0.6,
+                    relation_type="PREREQUISITE",
+                    edge_direction="prerequisite",
+                    depth=2,
+                    source_name=pre_name,
+                    target_label=center_name,
+                )
+
+        # 2. 后续节点（next_nodes）: this -> PREREQUISITE -> next
+        if direction in ("next", "both"):
+            rows = await self._run(
+                """
+                MATCH (k:KnowledgePoint {uid: $uid})-[:PREREQUISITE]->(next:KnowledgePoint)
+                RETURN next.uid AS uid, next.name AS name
+                LIMIT 20
+                """,
+                uid=uid,
+            )
+            for row in rows:
+                next_name = row["name"] or row["uid"]
+                _add_edge(
+                    target_uid=row["uid"],
+                    target_name=next_name,
+                    weight=1.0,
+                    relation_type="PREREQUISITE",
+                    edge_direction="next",
+                    depth=1,
+                    source_name=center_name,
+                    target_label=next_name,
+                )
+
+        # 3. 相关概念（related）
+        rows = await self._run(
+            """
+            MATCH (k:KnowledgePoint {uid: $uid})-[:RELATED|EXTENDS|CONTRASTS]-(r:KnowledgePoint)
+            RETURN DISTINCT r.uid AS uid, r.name AS name
+            LIMIT 20
+            """,
+            uid=uid,
+        )
+        for row in rows:
+            rel_name = row["name"] or row["uid"]
+            _add_edge(
+                target_uid=row["uid"],
+                target_name=rel_name,
+                weight=0.4,
+                relation_type="RELATED_TO",
+                edge_direction="related",
+                depth=1,
+                source_name=center_name,
+                target_label=rel_name,
+            )
+
+        return edges
+
     async def _fallback_property_paths(
         self,
         uid: str,

@@ -81,6 +81,71 @@
         </div>
       </el-tab-pane>
 
+      <el-tab-pane label="业务指标" name="metrics">
+        <div v-if="metricsLoading" class="muted loading-line">
+          正在加载业务指标...
+        </div>
+        <template v-else-if="metrics">
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-value">{{ metrics.resource_generation.total_generations }}</div>
+              <div class="stat-label">资源生成总数</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ (metrics.resource_generation.avg_quality_score * 100).toFixed(1) }}%</div>
+              <div class="stat-label">平均质量分</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ metrics.exercises.total_sessions }}</div>
+              <div class="stat-label">练习会话数</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ metrics.active_users }}</div>
+              <div class="stat-label">活跃用户数</div>
+            </div>
+          </div>
+
+          <el-card class="section-card" shadow="never">
+            <template #header>
+              <div class="panel-title">
+                <span>资源类型分布</span>
+              </div>
+            </template>
+            <div v-if="resourceTypeItems.length" class="intent-stats">
+              <div v-for="item in resourceTypeItems" :key="item.type" class="intent-row">
+                <div class="intent-name">{{ item.label }}</div>
+                <div class="intent-bars">
+                  <span class="intent-tag-bar info">{{ item.count }} 次</span>
+                </div>
+              </div>
+            </div>
+            <el-empty v-else description="暂无数据" />
+          </el-card>
+
+          <el-card class="section-card" shadow="never">
+            <template #header>
+              <div class="panel-title">
+                <span>练习统计</span>
+              </div>
+            </template>
+            <el-descriptions :column="2" border>
+              <el-descriptions-item label="练习会话数">{{ metrics.exercises.total_sessions }}</el-descriptions-item>
+              <el-descriptions-item label="作答总数">{{ metrics.exercises.total_attempts }}</el-descriptions-item>
+              <el-descriptions-item label="平均正确率">{{ (metrics.exercises.avg_accuracy * 100).toFixed(1) }}%</el-descriptions-item>
+              <el-descriptions-item label="生成时间">{{ formatTime(metrics.generated_at) }}</el-descriptions-item>
+            </el-descriptions>
+          </el-card>
+        </template>
+        <div v-else class="muted loading-line">
+          点击加载业务指标查看运行数据。
+        </div>
+        <div class="feedback-actions">
+          <el-button type="primary" :loading="metricsLoading" @click="loadMetrics">
+            {{ metrics ? '刷新' : '加载业务指标' }}
+          </el-button>
+        </div>
+      </el-tab-pane>
+
       <el-tab-pane label="反馈分析" name="feedback">
         <div v-if="feedbackLoading" class="muted loading-line">
           正在加载反馈数据...
@@ -149,7 +214,7 @@
                   </el-tag>
                 </span>
                 <span class="recent-intent">{{ intentLabel(fb.intent) }}</span>
-                <span v-if="fb.target_node_id" class="recent-node">{{ fb.target_node_id }}</span>
+                <span v-if="fb.target_node_id" class="recent-node">{{ displayNodeLabel(fb.target_node_id) }}</span>
                 <span class="recent-time">{{ formatTime(fb.created_at) }}</span>
               </div>
             </div>
@@ -186,7 +251,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { apiClient } from '@/api/client'
-import { getRuntimeStatus, type RuntimeStatusResponse } from '@/api/admin'
+import { getBusinessMetrics, getRuntimeStatus, type BusinessMetricsResponse, type RuntimeStatusResponse } from '@/api/admin'
+import { displayNodeLabel, displaySourceLabel, localizeText } from '@/utils/format'
 
 const activeTab = ref('system')
 const runtime = ref<RuntimeStatusResponse | null>(null)
@@ -194,6 +260,8 @@ const runtimeLoading = ref(false)
 const feedbackStats = ref<any>(null)
 const feedbackLoading = ref(false)
 const feedbackStudentId = ref('')
+const metrics = ref<BusinessMetricsResponse | null>(null)
+const metricsLoading = ref(false)
 
 async function checkRuntime() {
   runtimeLoading.value = true
@@ -218,6 +286,35 @@ async function loadFeedbackStats() {
   }
 }
 
+async function loadMetrics() {
+  metricsLoading.value = true
+  try {
+    metrics.value = await getBusinessMetrics()
+  } catch {
+    metrics.value = null
+  } finally {
+    metricsLoading.value = false
+  }
+}
+
+const resourceTypeItems = computed(() => {
+  const byType = metrics.value?.resource_generation?.by_type || {}
+  return Object.entries(byType)
+    .map(([type, count]) => ({ type, label: resourceTypeLabel(type), count }))
+    .sort((a, b) => b.count - a.count)
+})
+
+function resourceTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    document: '讲解文档',
+    mindmap: '思维导图',
+    exercise: '练习题',
+    video_script: '视频脚本',
+    code_case: '代码案例',
+  }
+  return labels[type] || displaySourceLabel(type, '资源类型')
+}
+
 const positiveRate = computed(() => {
   if (!feedbackStats.value?.by_intent) return 0
   let pos = 0
@@ -240,7 +337,7 @@ function componentLabel(name: string): string {
     embedding: 'Embedding 服务',
     chroma: 'Chroma 向量库',
   }
-  return labels[name] || name
+  return labels[name] || displaySourceLabel(name, '系统组件')
 }
 
 function statusLabel(status: string): string {
@@ -253,7 +350,7 @@ function statusLabel(status: string): string {
     error: '异常',
     unchecked: '未检查',
   }
-  return labels[status] || status
+  return labels[status] || displaySourceLabel(status, '状态')
 }
 
 function statusTag(status?: string): 'success' | 'warning' | 'danger' | 'info' {
@@ -285,7 +382,7 @@ function tagLabel(tag: string): string {
     want_summary: '想要总结',
     incorrect: '内容有误',
   }
-  return labels[tag] || tag
+  return labels[tag] || localizeText(tag)
 }
 
 function intentLabel(intent: string): string {
@@ -299,7 +396,7 @@ function intentLabel(intent: string): string {
     profile_update: '画像更新',
     progress_update: '进度更新',
   }
-  return labels[intent] || intent
+  return labels[intent] || displaySourceLabel(intent, '意图')
 }
 
 function formatTime(iso: string): string {

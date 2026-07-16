@@ -56,9 +56,30 @@ async def init_relational_db(settings: Settings | None = None) -> None:
     from app.exercises import models as _exercise_models  # noqa: F401
     from app.profile import models as _profile_models  # noqa: F401
 
+    settings = settings or get_settings()
     engine = get_engine(settings)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        if settings.database_url.startswith("sqlite+aiosqlite:///"):
+            await _ensure_sqlite_compat_columns(conn)
+
+
+async def _ensure_sqlite_compat_columns(conn) -> None:
+    """Add columns introduced after create_all for existing local SQLite DBs."""
+    result = await conn.exec_driver_sql("PRAGMA table_info(exercise_attempts)")
+    existing = {row[1] for row in result.fetchall()}
+    columns = {
+        "mode": "VARCHAR(40) DEFAULT 'practice'",
+        "viewed_answer": "BOOLEAN DEFAULT 0",
+        "grading_method": "VARCHAR(40) DEFAULT 'rule'",
+        "grading_status": "VARCHAR(40) DEFAULT 'graded'",
+        "grading_confidence": "FLOAT DEFAULT 1.0",
+        "profile_update_allowed": "BOOLEAN DEFAULT 1",
+        "error_type": "VARCHAR(40)",
+    }
+    for name, ddl in columns.items():
+        if name not in existing:
+            await conn.exec_driver_sql(f"ALTER TABLE exercise_attempts ADD COLUMN {name} {ddl}")
 
 
 async def close_relational_db() -> None:

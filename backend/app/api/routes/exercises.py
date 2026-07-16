@@ -3,13 +3,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session, get_profile_service
+from app.api.deps import get_db_session, get_graphrag_service, get_profile_service
 from app.exercises.repository import ExerciseRepository
 from app.exercises.schemas import (
     ExerciseActionResponse,
     ExerciseBookmarkRequest,
     ExerciseMistakeListResponse,
     ExerciseReviewRequest,
+    ExerciseSearchRequest,
+    ExerciseSearchResponse,
     ExerciseSessionListResponse,
     ExerciseSessionRecord,
     ExerciseSessionSubmitRequest,
@@ -17,6 +19,7 @@ from app.exercises.schemas import (
     ExerciseStatsResponse,
 )
 from app.exercises.service import ExerciseRecordService
+from app.graphrag.service import GraphRAGService
 from app.profile.service import ProfileService
 
 router = APIRouter()
@@ -25,8 +28,9 @@ router = APIRouter()
 async def get_exercise_service(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     profile_service: Annotated[ProfileService, Depends(get_profile_service)],
+    graphrag_service: Annotated[GraphRAGService, Depends(get_graphrag_service)],
 ) -> ExerciseRecordService:
-    return ExerciseRecordService(ExerciseRepository(session), profile_service)
+    return ExerciseRecordService(ExerciseRepository(session), profile_service, graphrag_service)
 
 
 @router.post("/sessions", response_model=ExerciseSessionSubmitResponse)
@@ -35,6 +39,14 @@ async def submit_exercise_session(
     service: Annotated[ExerciseRecordService, Depends(get_exercise_service)],
 ) -> ExerciseSessionSubmitResponse:
     return await service.submit_session(payload)
+
+
+@router.post("/search", response_model=ExerciseSearchResponse)
+async def search_exercises(
+    payload: ExerciseSearchRequest,
+    service: Annotated[ExerciseRecordService, Depends(get_exercise_service)],
+) -> ExerciseSearchResponse:
+    return await service.search_exercises(payload)
 
 
 @router.get("/sessions/{student_id}", response_model=ExerciseSessionListResponse)
@@ -66,8 +78,11 @@ async def list_mistakes(
     limit: int = 100,
     offset: int = 0,
     node_id: str | None = None,
+    error_type: str | None = None,
 ) -> ExerciseMistakeListResponse:
-    return await service.list_mistakes(student_id, limit=limit, offset=offset, node_id=node_id)
+    return await service.list_mistakes(
+        student_id, limit=limit, offset=offset, node_id=node_id, error_type=error_type
+    )
 
 
 @router.get("/stats/{student_id}", response_model=ExerciseStatsResponse)

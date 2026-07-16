@@ -126,4 +126,8 @@ class AssistantFeedback(Base):
     # 分析状态
     analyzed: Mapped[bool] = mapped_column(default=False)
 
+    # 反馈闭环：系统响应动作
+    action_taken: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    action_result: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

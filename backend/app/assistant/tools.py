@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+
+logger = logging.getLogger(__name__)
 
 from app.agents.schemas import ResourceGenerateRequest
 from app.agents.service import ResourceGenerationService
@@ -23,18 +27,26 @@ from app.assistant.schemas import (
 from app.assistant.state import AssistantState
 from app.core.config import Settings
 from app.core.errors import NotFoundError, ServiceUnavailableError
+from app.core.labels import node_label
 from app.diagnosis.service import DiagnosisService
 from app.graphrag.service import GraphRAGService
 from app.memory.embedding import EmbeddingService
 from app.memory.extractor import MemoryExtractor
 from app.memory.vector_store import MemoryVectorStore
-from app.profile.schemas import LearningProgressUpdateRequest
+from app.profile.schemas import KnowledgePointMastery, LearningProgressUpdateRequest
 from app.profile.service import ProfileService
 
 _RESOURCE_ALIASES = {
     "diagram": "mindmap",
     "图解": "mindmap",
     "图": "mindmap",
+    "图片": "image",
+    "插图": "image",
+    "示意图": "image",
+    "配图": "image",
+    "可视化图片": "image",
+    "image": "image",
+    "illustration": "image",
     "代码": "code_case",
     "code": "code_case",
     "练习": "exercise",
@@ -43,7 +55,10 @@ _RESOURCE_ALIASES = {
     "讲解": "document",
     "视频": "video_script",
 }
-_VALID_RESOURCE_TYPES = {"document", "mindmap", "exercise", "video_script", "code_case"}
+_VALID_RESOURCE_TYPES = {"document", "mindmap", "exercise", "video_script", "code_case", "image"}
+_NODE_ID_ALIASES = {
+    "ml_neural_network": "ml_multilayer_neural_network",
+}
 
 
 class AssistantTools:
@@ -91,7 +106,8 @@ class AssistantTools:
             detector = ForgettingDetector()
             forgetting = detector.detect(profile.node_mastery)
             state["_forgetting_nodes"] = [f.node_id for f in forgetting]
-        except Exception:
+        except Exception as exc:
+            logger.debug("Forgetting detection failed: %s", exc)
             state["_forgetting_nodes"] = []
         self._trace(state, "load_context", "done", "已加载学生画像、薄弱点、偏好和学习进度。")
         state["relevant_memories"] = []
@@ -137,8 +153,8 @@ class AssistantTools:
                             if node.uid != hint_node and node.uid not in seen_rel:
                                 seen_rel.add(node.uid)
                                 related_node_ids.append(node.uid)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Graph query for related nodes failed: %s", exc)
 
             # 混合检索
             all_node_ids = [hint_node] + related_node_ids if hint_node else []
@@ -154,7 +170,8 @@ class AssistantTools:
             for r in results:
                 try:
                     relevant.append(r.entry.model_dump(mode="json"))
-                except Exception:
+                except Exception as exc:
+                    logger.debug("Memory entry serialization failed: %s", exc)
                     relevant.append({
                         "id": r.entry.id,
                         "key_insight": r.entry.key_insight,
@@ -181,6 +198,33 @@ class AssistantTools:
         return state
 
     async def understand_intent(self, state: AssistantState) -> AssistantState:
+        embedded_exercise_context = self._extract_embedded_exercise_context(state["user_message"])
+        if embedded_exercise_context:
+            state["intent"] = "exercise_help"
+            state["intent_confidence"] = 0.98
+            state["target_node_id"] = self._normalize_node_id(
+                embedded_exercise_context.get("node_id") or self._quick_node_match(state["user_message"])
+            )
+            state["exercise_context"] = embedded_exercise_context.get("context", "")
+            state["entities"] = {
+                "exercise_context": state["exercise_context"],
+                "exercise_title": embedded_exercise_context.get("title"),
+                "student_answer": embedded_exercise_context.get("student_answer"),
+                "is_correct": embedded_exercise_context.get("is_correct"),
+            }
+            state["needs_clarification"] = False
+            self._trace(
+                state,
+                "understand_intent",
+                "done",
+                "检测到练习页传入的题目上下文，已直接路由到练习辅导。",
+                {
+                    "target_node_id": state.get("target_node_id"),
+                    "exercise_title": embedded_exercise_context.get("title"),
+                },
+            )
+            return state
+
         if not self.settings.llm_api_key:
             state["llm_available"] = False
             state["status"] = "unavailable"
@@ -206,31 +250,62 @@ class AssistantTools:
                 }
             )
             result.resource_types = self._normalize_resource_types(result.resource_types)
-            generation_request = self._parse_generation_request(state["user_message"])
             state["intent"] = result.intent
             state["intent_confidence"] = result.confidence
             state["intent_reasoning"] = result.reasoning
-            state["target_node_id"] = result.target_node_id or self._quick_node_match(state["user_message"])
+            target_node_id = self._normalize_node_id(
+                result.target_node_id or self._quick_node_match(state["user_message"])
+            )
+            target_node_id = self._guard_mismatched_target(state["user_message"], target_node_id)
+            generation_request = self._parse_generation_request(state["user_message"])
+            profile_signal = self._is_profile_update_request(state["user_message"])
+            progress_signal = self._is_progress_update_request(state["user_message"])
             requested_types = list(result.resource_types)
+            if self._is_navigation_request(state["user_message"]):
+                state["intent"] = "navigation_help"
+                requested_types = []
+                target_node_id = None
+            elif generation_request["is_resource_request"]:
+                state["intent"] = "resource_generate"
+                requested_types.extend(generation_request["resource_types"])
+            elif progress_signal:
+                state["intent"] = "progress_update"
+                requested_types = []
+                target_node_id = target_node_id or self._quick_node_match(state["user_message"])
+                state["intent_confidence"] = max(float(state.get("intent_confidence") or 0.0), 0.9)
+                state["intent_reasoning"] = (
+                    (state.get("intent_reasoning") or "")
+                    + "；规则识别到学生在报告已完成学习、练习或掌握度，应记录为学习进度。"
+                )
+            elif (
+                profile_signal
+                and result.intent in {"general_learning_chat", "concept_explain", "clarify_intent"}
+                and not self._has_non_profile_task_request(state["user_message"])
+            ):
+                state["intent"] = "profile_update"
+                requested_types = []
+                target_node_id = None
+                state["intent_confidence"] = max(float(state.get("intent_confidence") or 0.0), 0.9)
+                state["intent_reasoning"] = (
+                    (state.get("intent_reasoning") or "")
+                    + "；规则识别到学生在补充背景、基础、学习目标、偏好或薄弱点，应写入画像。"
+                )
 
-            # 规则兜底：用户明确要求生成练习/出题
-            has_exercise_request = bool(generation_request.get("exercise_count") or generation_request.get("exercise_type"))
-            has_generation_keyword = any(token in state["user_message"] for token in ["生成", "出", "来", "设计"])
-            if has_exercise_request:
-                if "exercise" not in requested_types:
-                    requested_types.insert(0, "exercise")
-                if has_generation_keyword:
-                    state["intent"] = "resource_generate"
+            excluded_types = self._excluded_resource_types(state["user_message"])
+            if excluded_types:
+                requested_types = [item for item in requested_types if item not in excluded_types]
 
+            requested_types = list(dict.fromkeys(requested_types))
             state["requested_resource_types"] = requested_types
-            state["requested_exercise_count"] = generation_request.get("exercise_count")
-            state["requested_exercise_type"] = generation_request.get("exercise_type")
+            state["requested_exercise_count"] = result.exercise_count or generation_request.get("exercise_count")
+            state["requested_exercise_type"] = result.exercise_type or generation_request.get("exercise_type")
+            state["target_node_id"] = target_node_id
             state["entities"] = result.model_dump(mode="json")
 
             # 高优先级 1：意图置信度低于阈值时，主动生成澄清选项
             # 【关键修复】如果规则兜底已确定为 resource_generate，不触发澄清
             if (result.confidence < 0.6 and self.settings.llm_api_key
-                    and state["intent"] != "resource_generate"):
+                    and state["intent"] not in {"resource_generate", "profile_update", "navigation_help", "exercise_help", "progress_update", "path_plan", "assessment_review"}):
                 try:
                     clarify_result = await self._generate_clarification(
                         message=state["user_message"],
@@ -263,7 +338,13 @@ class AssistantTools:
                     "understand_intent",
                     "done",
                     f"识别意图为 {result.intent}，置信度 {result.confidence:.2f}。",
-                    {"target_topic": result.target_topic, "target_node_id": result.target_node_id},
+                    {
+                        "target_topic": result.target_topic,
+                        "target_node_id": result.target_node_id,
+                        "resource_types": requested_types,
+                        "exercise_count": result.exercise_count,
+                        "exercise_type": result.exercise_type,
+                    },
                 )
         except Exception as exc:
             state["status"] = "error"
@@ -302,6 +383,8 @@ class AssistantTools:
                     "message": prompt_context,
                     "profile": profile_json,
                     "evidence": "{}",
+                    "memory_context": self._format_memory_for_prompt(state),
+                    "behavior_context": self._format_behavior_for_prompt(state),
                 })
                 state["final_reply"] = str(reply.content if hasattr(reply, "content") else reply)
                 self._trace(state, "generate_profile_reply", "done", "已生成个性化画像更新回复。")
@@ -330,11 +413,12 @@ class AssistantTools:
         for item in evidence.student_profile_adaptation.get("hybrid_rag_trace", []):
             raw_status = item.get("status", "done")
             valid_status = raw_status if raw_status in ("started", "done", "skipped", "failed") else "done"
+            raw_node = item.get("node", "unknown")
             self._trace(
                 state,
-                f"hybrid_rag:{item.get('node', 'unknown')}",
+                f"hybrid_rag:{raw_node}",
                 valid_status,
-                item.get("summary", ""),
+                self._localize_trace_summary(item.get("summary", "")),
                 item.get("metadata", {}),
             )
 
@@ -342,20 +426,6 @@ class AssistantTools:
         summary = f"已通过 HybridRAG 子图围绕 {evidence.resolved_uid or '用户问题'} 完成证据检索。"
         if quality:
             summary += f" 质量评分：{float(quality.get('overall_score', 0.0) or 0.0):.2f}"
-        if evidence.ranking_reason:
-            summary += f" 推荐依据：{evidence.ranking_reason[0]}"
-        self._trace(state, "retrieve_evidence", "done", summary)
-        return state
-
-        profile = state.get("lightweight_profile")
-        target = state.get("target_node_id")
-        if target:
-            evidence = await self.graphrag_service.build_evidence_by_uid(target, profile)
-        else:
-            evidence = await self.graphrag_service.query(state["user_message"], profile)
-        state["evidence"] = evidence
-        state["target_node_id"] = evidence.resolved_uid or state.get("target_node_id")
-        summary = f"已围绕 {evidence.resolved_uid or '用户问题'} 检索图谱证据。"
         if evidence.ranking_reason:
             summary += f" 推荐依据：{evidence.ranking_reason[0]}"
         self._trace(state, "retrieve_evidence", "done", summary)
@@ -391,66 +461,6 @@ class AssistantTools:
             f"HybridRAG 子图已完成质量评估，评分 {score:.2f}。{'；'.join(weak_reasons[:2])}",
         )
         return state
-        """中优先级：评估 evidence 质量，如果不足则标记 retry_evidence。"""
-        evidence = state.get("evidence")
-        if not evidence:
-            state["evidence_quality_score"] = 0.0
-            state["evidence_evaluation_reason"] = "无证据可评估"
-            state["retry_evidence"] = False
-            return state
-
-        # 计算质量分数
-        score = 0.0
-        reasons = []
-
-        # 检查 completeness
-        completeness = getattr(evidence.evidence_completeness, "completeness_score", 0.0) if evidence.evidence_completeness else 0.0
-        if completeness >= 0.8:
-            score += 0.4
-            reasons.append(f"证据完整性高({completeness:.2f})")
-        elif completeness >= 0.5:
-            score += 0.2
-            reasons.append(f"证据完整性中等({completeness:.2f})")
-        else:
-            reasons.append(f"证据完整性不足({completeness:.2f})")
-
-        # 检查各类型证据数量
-        doc_count = len(evidence.document_chunks) if evidence.document_chunks else 0
-        code_count = len(evidence.code_cases) if evidence.code_cases else 0
-        exercise_count = len(evidence.exercises) if evidence.exercises else 0
-        faq_count = len(evidence.misconceptions) if evidence.misconceptions else 0
-
-        if doc_count > 0:
-            score += 0.15
-        if code_count > 0:
-            score += 0.15
-        if exercise_count > 0:
-            score += 0.15
-        if faq_count > 0:
-            score += 0.15
-
-        reasons.append(f"文档:{doc_count} 代码:{code_count} 练习:{exercise_count} FAQ:{faq_count}")
-
-        state["evidence_quality_score"] = min(score, 1.0)
-        state["evidence_evaluation_reason"] = "; ".join(reasons)
-
-        # 质量低于阈值时标记需要补充检索
-        state["retry_evidence"] = score < 0.5
-        if state["retry_evidence"]:
-            self._trace(
-                state,
-                "evaluate_evidence",
-                "skipped",
-                f"证据质量评分 {score:.2f} < 0.5，标记需要补充扩展检索。",
-            )
-        else:
-            self._trace(
-                state,
-                "evaluate_evidence",
-                "done",
-                f"证据质量评分 {score:.2f}，证据充足，无需补充。",
-            )
-        return state
 
     async def expand_evidence(self, state: AssistantState) -> AssistantState:
         evidence = state.get("evidence")
@@ -465,60 +475,37 @@ class AssistantTools:
         )
         return state
 
-        """证据质量不足时，尝试补充检索相关知识点和前置知识。"""
-        target = state.get("target_node_id")
-        evidence = state.get("evidence")
-
-        if not target:
-            self._trace(state, "expand_evidence", "skipped", "无目标节点，无法扩展证据。")
+    async def generate_resources(self, state: AssistantState) -> AssistantState:
+        unsupported_topic = self._unsupported_generation_topic(state["user_message"])
+        if unsupported_topic:
+            state["resources"] = None
+            state["resource_record_id"] = None
+            state["resource_has_exercises"] = False
+            state["resource_generation_failed"] = True
+            state["target_node_id"] = None
+            state["_suppress_resolution_notice"] = True
+            state["final_reply"] = (
+                f"这次没有生成资源，因为当前课程图谱还没有收录「{unsupported_topic}」。"
+                "如果你想学的是机器学习课程里的「线性回归」，我可以按线性回归重新生成；"
+                "如果确实是运筹优化里的线性规划，需要先把这个知识点补进课程图谱和资料库。"
+            )
+            self._trace(
+                state,
+                "generate_resources",
+                "failed",
+                f"请求主题「{unsupported_topic}」不在当前课程图谱中，已阻止误生成。",
+            )
             return state
 
-        try:
-            # 尝试通过前置知识扩展
-            from app.graph.neo4j_store import Neo4jGraphStore
-            from app.core.config import get_settings
-
-            settings = get_settings()
-            graph_store = Neo4jGraphStore(
-                uri=settings.neo4j_uri,
-                username=settings.neo4j_username,
-                password=settings.neo4j_password,
-                database=settings.neo4j_database,
-            )
-            await graph_store.initialize()
-
-            # 获取前置知识
-            prerequisites = await graph_store.get_prerequisites(target)
-            if prerequisites:
-                prereq_ids = [p.uid for p in prerequisites[:2]]  # 最多取 2 个前置节点
-                # 构建扩展证据
-                for prereq_id in prereq_ids:
-                    prereq_evidence = await self.graphrag_service.build_evidence_by_uid(
-                        prereq_id,
-                        state.get("lightweight_profile")
-                    )
-                    # 合并证据（简单合并，不去重）
-                    if evidence and prereq_evidence:
-                        if not evidence.document_chunks:
-                            evidence.document_chunks = []
-                        evidence.document_chunks.extend(prereq_evidence.document_chunks or [])
-                        if not evidence.code_cases:
-                            evidence.code_cases = []
-                        evidence.code_cases.extend(prereq_evidence.code_cases or [])
-                        if not evidence.exercises:
-                            evidence.exercises = []
-                        evidence.exercises.extend(prereq_evidence.exercises or [])
-
-            await graph_store.close()
-            self._trace(state, "expand_evidence", "done", f"已通过前置知识扩展证据，新增 {len(prerequisites) if prerequisites else 0} 个前置节点。")
-        except Exception as exc:
-            state.setdefault("errors", []).append(f"扩展证据失败：{exc}")
-            self._trace(state, "expand_evidence", "failed", f"扩展证据失败：{type(exc).__name__}")
-
-        return state
-
-    async def generate_resources(self, state: AssistantState) -> AssistantState:
+        excluded_types = self._excluded_resource_types(state["user_message"])
         resource_types = state.get("requested_resource_types") or self._default_resource_types(state)
+        if excluded_types:
+            resource_types = [item for item in resource_types if item not in excluded_types]
+        if not resource_types:
+            resource_types = [item for item in self._default_resource_types(state) if item not in excluded_types]
+        if not resource_types:
+            resource_types = ["document"]
+        state["requested_resource_types"] = list(dict.fromkeys(resource_types))
         response = await self.resource_service.generate(
             ResourceGenerateRequest(
                 query=state["user_message"],
@@ -531,11 +518,32 @@ class AssistantTools:
             )
         )
         state["evidence"] = response.evidence
-        state["resources"] = response.resources
+        has_generated_resource = self._has_generated_resource(response.resources)
+        state["resources"] = response.resources if has_generated_resource else None
         state["resource_record_id"] = response.resource_record_id
+        state["resource_has_exercises"] = bool(has_generated_resource and response.resources and response.resources.exercises)
+        state["resource_generation_status"] = response.generation_status
+        state["resource_success_types"] = list(response.success_types)
+        state["resource_failed_types"] = list(response.failed_types)
         for item in response.agent_trace:
             self._trace(state, f"resource:{item.agent}", "done" if item.status == "done" else item.status, item.summary)
-        self._trace(state, "generate_resources", "done", "已生成证据约束的学习资源并写入资源中心。")
+        if not has_generated_resource:
+            failed_reasons = [
+                item.summary for item in response.agent_trace
+                if item.status == "failed" and item.agent not in {"ResourceGenerationService"}
+            ]
+            reason_text = "；".join(failed_reasons[:3]) or "所有资源生成器都没有返回有效内容。"
+            state["resource_generation_failed"] = True
+            state["resource_record_id"] = None
+            state["final_reply"] = (
+                "这次没有生成可展示的学习资源，所以我没有把空结果写入知识中心。\n\n"
+                f"失败原因：{reason_text}\n\n"
+                "你可以换一个当前课程图谱中已有的知识点重试，或先补充该知识点的课程资料。"
+            )
+            state.setdefault("errors", []).append(f"资源生成失败：{reason_text}")
+            self._trace(state, "generate_resources", "failed", "未生成任何有效资源，已阻止空资源记录写入。")
+        else:
+            self._trace(state, "generate_resources", "done", "已生成证据约束的学习资源并写入资源中心。")
 
         # 中优先级：评估资源质量
         await self._evaluate_resource_quality(state)
@@ -576,6 +584,12 @@ class AssistantTools:
 
     async def reflect_on_resources(self, state: AssistantState) -> AssistantState:
         """中优先级：Agent 反思 - 资源生成后反思是否满足需求。"""
+        if state.get("resource_generation_failed"):
+            state["reflection"] = "资源生成失败，跳过反思。"
+            state["needs_refinement"] = False
+            self._trace(state, "reflect_on_resources", "skipped", "资源生成失败，跳过反思。")
+            return state
+
         if not self.settings.llm_api_key:
             state["reflection"] = "LLM 不可用，跳过反思。"
             state["needs_refinement"] = False
@@ -753,14 +767,19 @@ class AssistantTools:
 
         # 构建练习上下文供 LLM 参考
         exercise_context_parts = []
+        if state.get("exercise_context"):
+            exercise_context_parts.append(str(state["exercise_context"]))
         if evidence and evidence.exercises:
             for ex in evidence.exercises[:3]:
+                props = getattr(ex, "properties", {}) or {}
+                title = props.get("title") or props.get("name") or ex.uid
+                content = props.get("content") or props.get("question") or props.get("summary") or ""
                 exercise_context_parts.append(
-                    f"- [{ex.uid}] {ex.title}: {ex.content[:300]}..."
+                    f"- [{ex.uid}] {title}: {str(content)[:300]}..."
                 )
         if state.get("target_node_id"):
             exercise_context_parts.insert(
-                0, f"当前主题节点：{state['target_node_id']}"
+                0, f"当前主题节点：{node_label(state['target_node_id'])}"
             )
         exercise_context = "\n".join(exercise_context_parts) or "未找到关联练习，请结合证据包和知识点讲解。"
 
@@ -805,8 +824,13 @@ class AssistantTools:
                     related_node_ids=[state.get("target_node_id")] if state.get("target_node_id") else [],
                 )
         else:
+            fallback_exercise_title = state.get("target_node_id", "相关知识点")
+            if evidence and evidence.exercises:
+                first_exercise = evidence.exercises[0]
+                props = getattr(first_exercise, "properties", {}) or {}
+                fallback_exercise_title = props.get("title") or props.get("name") or first_exercise.uid
             state["exercise_feedback"] = ExerciseFeedback(
-                summary=f"已定位关联练习：{evidence.exercises[0].title if evidence and evidence.exercises else state.get('target_node_id', '相关知识点')}。建议先通过知识图谱和资源中心补充基础概念，再用练习验证掌握。",
+                summary=f"已定位关联练习：{fallback_exercise_title}。建议先通过知识图谱和资源中心补充基础概念，再用练习验证掌握。",
                 likely_causes=["前置概念掌握不稳", "公式或链式法则步骤不熟", "没有把题目条件映射到图谱知识点"],
                 hints=["先复述题目考查的核心概念", "把每一步推导对应到一个知识点", "完成后把结果回写到画像掌握度"],
                 related_node_ids=[state.get("target_node_id")] if state.get("target_node_id") else [],
@@ -817,17 +841,23 @@ class AssistantTools:
     async def plan_learning_path(self, state: AssistantState) -> AssistantState:
         profile_input = state.get("lightweight_profile")
         diagnosis = await self.diagnosis_service.recommend(profile_input, top_k=5) if profile_input else None
-        nodes = diagnosis.recommended_nodes if diagnosis and diagnosis.recommended_nodes else []
+        nodes = list(diagnosis.recommended_nodes if diagnosis and diagnosis.recommended_nodes else [])
         target = state.get("target_node_id")
         if target and target not in nodes:
-            nodes.append(target)
-        # 将遗忘预警节点加入推荐（优先级已在 diagnosis 中处理）
+            nodes.insert(0, target)
+
+        expanded_nodes = await self._expand_path_nodes(target, state)
+        for node_id in expanded_nodes:
+            if node_id not in nodes:
+                nodes.append(node_id)
+
         forgetting = state.get("_forgetting_nodes") or []
         for fn in forgetting:
             if fn not in nodes:
                 nodes.append(fn)
         if not nodes and state.get("evidence") and state["evidence"].resolved_uid:
             nodes.append(state["evidence"].resolved_uid)
+        nodes = nodes[:6]
 
         profile = state.get("profile")
         completed = set(profile.progress.completed_node_ids if profile else [])
@@ -840,7 +870,7 @@ class AssistantTools:
             plan_nodes.append(
                 PathPlanNode(
                     node_id=node_id,
-                    label=node_id,
+                    label=node_label(node_id),
                     status=status,  # type: ignore[arg-type]
                     reason=self._path_reason(node_id, state),
                     recommended_resource_types=self._default_resource_types(state),
@@ -848,24 +878,48 @@ class AssistantTools:
             )
         state["path_plan"] = AssistantPathPlan(
             mode="gap_filling" if profile_input and profile_input.weak_points else "current_goal",
-            title="可调整学习路径",
+            title="当前推荐队列",
             goal=(profile_input.goal if profile_input else None) or "围绕当前问题补齐关键知识点",
             nodes=plan_nodes,
-            reasons=(diagnosis.reasoning if diagnosis else []) + ["路径结合画像薄弱点、GraphRAG 前置关系和当前学习目标生成，可随时调整。"],
+            reasons=(diagnosis.reasoning if diagnosis else []) + [
+                "当前建议来自目标知识点、前置关系、画像薄弱点、遗忘预警和诊断推荐的合并排序。",
+                "需要加强的节点会优先显示为待复习，已经掌握或正在学习的节点会保留状态，便于学生调整节奏。",
+            ],
         )
-        self._trace(state, "plan_learning_path", "done", f"已规划 {len(plan_nodes)} 个路径节点。")
+        self._trace(state, "plan_learning_path", "done", f"已生成 {len(plan_nodes)} 个节点的当前推荐队列。")
         return state
 
     async def review_assessment(self, state: AssistantState) -> AssistantState:
         profile = state.get("profile")
-        weak = [item.node_id or item.label for item in (await self.profile_service.get_dashboard(state["student_id"])).weak_point_rank[:5]]
+        dashboard = await self.profile_service.get_dashboard(state["student_id"])
+        weak_items = dashboard.weak_point_rank[:5]
+        weak = [item.node_id or item.label for item in weak_items]
         state["path_plan"] = AssistantPathPlan(
             mode="exam_review",
-            title="掌握度复盘路径",
-            goal="根据最近画像和练习结果复盘薄弱点",
-            nodes=[PathPlanNode(node_id=item, label=item, status="needs_review", reason="来自画像掌握度或练习结果的薄弱信号。") for item in weak if item],
-            reasons=["复盘优先级来自画像 dashboard 的薄弱点排序。"],
+            title="评估复盘队列",
+            goal="根据最近画像、练习记录和掌握度变化复盘薄弱点",
+            nodes=[PathPlanNode(node_id=item, label=node_label(item), status="needs_review", reason="来自画像掌握度或练习结果的薄弱信号。") for item in weak if item],
+            reasons=["复盘优先级来自画像薄弱点、低掌握度节点和练习错误信号。"],
         )
+        mastery_overview = dashboard.mastery_overview[:5]
+        weak_names = [node_label(item.node_id or item.label, item.label) for item in weak_items]
+        mastery_lines = [
+            f"{item.node_name}：{item.mastery_score:.0%}"
+            for item in mastery_overview
+        ]
+        reply_lines = [
+            "我已经按当前画像和练习记录做了一次复盘。",
+            "",
+            f"需要优先加强：{'、'.join(weak_names) if weak_names else '暂时没有明确薄弱点，建议先完成一组诊断练习'}。",
+        ]
+        if mastery_lines:
+            reply_lines.extend(["", "掌握度概览：", *[f"- {line}" for line in mastery_lines]])
+        if weak:
+            reply_lines.extend([
+                "",
+                "下一步建议：先按下方“评估复盘队列”逐个复习，再做一组推荐复习题验证是否补上。",
+            ])
+        state["final_reply"] = "\n".join(reply_lines)
         self._trace(state, "review_assessment", "done", f"已汇总 {profile.display_name if profile else state['student_id']} 的掌握度和薄弱点。")
         return state
 
@@ -887,7 +941,8 @@ class AssistantTools:
                     "behavior_context": self._format_behavior_for_prompt(state),
                 }
             )
-            state["final_reply"] = str(reply.content if hasattr(reply, "content") else reply)
+            raw_reply = str(reply.content if hasattr(reply, "content") else reply)
+            state["final_reply"] = self._compact_tutor_reply(raw_reply, state)
             self._trace(state, "general_tutor", "done", "已结合画像和证据包生成讲解。")
         except Exception as exc:
             state.setdefault("errors", []).append(f"讲解生成失败：{type(exc).__name__}: {exc}")
@@ -897,16 +952,59 @@ class AssistantTools:
     async def record_progress(self, state: AssistantState) -> AssistantState:
         target = state.get("target_node_id")
         if target:
+            mastery_score = self._parse_mastery_score(state["user_message"])
+            completed = [target] if mastery_score is not None and mastery_score >= 0.85 else []
+            in_progress = [] if completed else [target]
             event = await self.profile_service.apply_learning_progress(
                 LearningProgressUpdateRequest(
                     student_id=state["student_id"],
-                    completed_node_ids=[],
-                    in_progress_node_ids=[target],
+                    completed_node_ids=completed,
+                    in_progress_node_ids=in_progress,
                     current_chapter_id=None,
                 )
             )
+            if mastery_score is not None:
+                now = event.profile.progress.last_active_at or datetime.utcnow().replace(tzinfo=timezone.utc).astimezone(timezone(timedelta(hours=8)))
+                existing = event.profile.node_mastery.get(target)
+                event.profile.node_mastery[target] = KnowledgePointMastery(
+                    node_id=target,
+                    node_name=node_label(target),
+                    chapter_id=existing.chapter_id if existing else "",
+                    mastery_score=round(mastery_score, 4),
+                    level=self._mastery_level(mastery_score),  # type: ignore[arg-type]
+                    confidence=max(existing.confidence if existing else 0.45, 0.65),
+                    attempts=existing.attempts if existing else 0,
+                    correct_count=existing.correct_count if existing else 0,
+                    last_practiced_at=existing.last_practiced_at if existing else None,
+                    updated_at=now,
+                )
+                await self.profile_service.repository.save_profile(event.profile)
+                await self.profile_service.repository.add_mastery_evidence(
+                    student_id=state["student_id"],
+                    node_id=target,
+                    source_type="self_reported_progress",
+                    source_id=state.get("run_id", "assistant_progress_update"),
+                    score_delta=round(mastery_score - (existing.mastery_score if existing else 0.0), 4),
+                    confidence_delta=0.1,
+                    summary=f"学生自述「{node_label(target)}」掌握度约 {mastery_score:.0%}。",
+                )
+                await self.profile_service.repository.add_update_event(
+                    student_id=state["student_id"],
+                    trigger="learning_progress",
+                    trigger_detail=target,
+                    updated_fields=["progress", "node_mastery"],
+                    summary=f"记录「{node_label(target)}」掌握度约 {mastery_score:.0%}。",
+                )
+                await self.profile_service.repository.session.commit()
             state["profile"] = event.profile
-            state["profile_update"] = {"updated_dimensions": ["progress"], "summary": event.update_event.summary}
+            summary = (
+                f"已记录「{node_label(target)}」掌握度约 {mastery_score:.0%}。"
+                if mastery_score is not None else event.update_event.summary
+            )
+            fields = ["progress", "node_mastery"] if mastery_score is not None else ["progress"]
+            state["profile_update"] = {"updated_dimensions": fields, "summary": summary}
+            state["final_reply"] = summary + " 后续路径和推荐复习会优先参考这条记录。"
+            state["_skip_path_tail"] = True
         self._trace(state, "record_progress", "done", "已记录当前学习进度。")
         return state
 
@@ -936,6 +1034,56 @@ class AssistantTools:
                 SuggestedNextAction(label="重新描述需求", description="用更具体的表达告诉学习助手你想了解什么。", action_type="retry", priority=1),
             ]
             self._trace(state, "compose_response", "done", "已生成意图澄清回复。")
+            return state
+
+        if state.get("resource_generation_failed"):
+            state["actions"] = self._base_actions(state)
+            state["suggested_next_actions"] = [
+                SuggestedNextAction(
+                    label="换一个课程内知识点",
+                    description="例如 K-Means、线性回归、反向传播、梯度下降等当前图谱已有知识点。",
+                    action_type="retry",
+                    priority=1,
+                ),
+            ]
+            self._trace(state, "compose_response", "done", "已生成资源生成失败说明。")
+            return state
+
+        if state.get("intent") == "navigation_help":
+            actions = self._base_actions(state)
+            actions.extend([
+                AssistantAction(
+                    type="open_resource_center",
+                    label="打开知识中心",
+                    description="查看之前生成并保存的讲解、导图、代码案例和练习题。",
+                    route="/knowledge-center",
+                ),
+                AssistantAction(
+                    type="open_exercise_history",
+                    label="查看练习记录",
+                    description="回看已完成练习、得分、错因反馈和掌握度变化。",
+                    route="/exercise-history",
+                ),
+            ])
+            state["actions"] = actions
+            state["suggested_next_actions"] = [
+                SuggestedNextAction(
+                    label="查看资源",
+                    route="/knowledge-center",
+                    description="进入知识中心查看历史生成资源。",
+                    action_type="navigate_resource",
+                    priority=1,
+                ),
+                SuggestedNextAction(
+                    label="查看练习记录",
+                    route="/exercise-history",
+                    description="查看做过的练习、错题和评分反馈。",
+                    action_type="navigate_exercise_history",
+                    priority=2,
+                ),
+            ]
+            state["final_reply"] = "可以从下面两个入口查看：知识中心用于查看历史生成资源；练习记录用于回看做过的题、得分和反馈。"
+            self._trace(state, "compose_response", "done", "已生成导航帮助回复。")
             return state
 
         actions = self._base_actions(state)
@@ -971,6 +1119,17 @@ class AssistantTools:
                     resource_record_id=state["resource_record_id"],
                 )
             )
+            if state.get("resource_has_exercises"):
+                actions.append(
+                    AssistantAction(
+                        type="start_generated_exercise",
+                        label="开始本轮练习",
+                        description="进入练习与评估，直接作答刚生成的题目。",
+                        route="/exercise",
+                        query={"resource_id": state["resource_record_id"]},
+                        resource_record_id=state["resource_record_id"],
+                    )
+                )
         if state.get("path_plan"):
             actions.append(
                 AssistantAction(
@@ -983,10 +1142,7 @@ class AssistantTools:
                 )
             )
         state["actions"] = actions
-        state["suggested_next_actions"] = [
-            SuggestedNextAction(label="查看证据包", description="核对本轮回答引用了哪些图谱和资料。", action_type="inspect_evidence", priority=1),
-            SuggestedNextAction(label="开始练习", route="/exercise", query={"node_id": state.get("target_node_id") or ""}, description="用练习验证掌握度。", priority=2),
-        ]
+        state["suggested_next_actions"] = self._build_suggested_next_actions(state)
 
         # 追加资源信息到回复（如果有资源生成）
         resource_appendix = self._resource_reply(state)
@@ -996,8 +1152,22 @@ class AssistantTools:
                 state["final_reply"] += "\n\n---\n\n" + resource_appendix
             else:
                 state["final_reply"] = resource_appendix
+        elif state.get("exercise_feedback") and not state.get("final_reply"):
+            state["final_reply"] = self._exercise_feedback_reply(state["exercise_feedback"])
+            state["final_reply"] += "\n\n我已经把后续练习入口放在下方按钮里，你可以用同类题目验证自己是否真正掌握。"
         elif not state.get("final_reply"):
             state["final_reply"] = self._fallback_reply(state)
+
+        # 改画像后追加"下一步建议"
+        if (state.get("intent") == "profile_update" and state.get("profile_update")
+                and "**下一步建议**" not in (state.get("final_reply") or "")):
+            state["final_reply"] = (state.get("final_reply") or "") + "\n\n画像已经更新，下面的操作按钮可以打开最新画像摘要。"
+
+        # 规划路线后追加"下一步建议"
+        if (not state.get("_skip_path_tail")
+                and state.get("intent") in {"path_plan", "assessment_review"} and state.get("path_plan") and not state.get("resources")
+                and "**下一步建议**" not in (state.get("final_reply") or "")):
+            state["final_reply"] = (state.get("final_reply") or "") + "\n\n学习路径已经生成，下面的操作按钮可以打开完整路径。"
 
         # 如果反思发现了改进空间，添加到回复
         if state.get("reflection") and state.get("needs_refinement"):
@@ -1012,7 +1182,7 @@ class AssistantTools:
 
         # 如果证据是降级匹配或无匹配，添加说明和建议
         evidence = state.get("evidence")
-        if evidence:
+        if evidence and not state.get("_suppress_resolution_notice"):
             res_quality = getattr(evidence, "resolution_quality", "exact") if hasattr(evidence, "resolution_quality") else "exact"
             alternatives = getattr(evidence, "suggested_alternatives", []) if hasattr(evidence, "suggested_alternatives") else []
             if res_quality == "none":
@@ -1132,7 +1302,7 @@ class AssistantTools:
             "朴素贝叶斯": "ml_naive_bayes",
             "特征工程": "ml_feature_selection",
             "集成学习": "ml_ensemble_learning",
-            "神经网络": "ml_neural_network",
+            "神经网络": "ml_multilayer_neural_network",
             "生成对抗": "ml_gan",
             "GAN": "ml_gan",
             "强化学习": "ml_reinforcement_learning",
@@ -1156,6 +1326,22 @@ class AssistantTools:
             if keyword.lower() in msg_lower:
                 return node_id
         return None
+
+    @staticmethod
+    def _extract_embedded_exercise_context(message: str) -> dict[str, Any] | None:
+        if "【练习求助上下文】" not in message:
+            return None
+        node_match = re.search(r"知识点ID[:：]\s*([A-Za-z0-9_\-]+)", message)
+        title_match = re.search(r"题目标题[:：]\s*(.+)", message)
+        answer_match = re.search(r"学生作答[:：]\s*(.+)", message)
+        correct_match = re.search(r"判定[:：]\s*(.+)", message)
+        return {
+            "node_id": node_match.group(1).strip() if node_match else None,
+            "title": title_match.group(1).strip() if title_match else None,
+            "student_answer": answer_match.group(1).strip() if answer_match else None,
+            "is_correct": correct_match.group(1).strip() if correct_match else None,
+            "context": message,
+        }
 
     def _format_behavior_for_prompt(self, state: AssistantState) -> str:
         """将行为画像格式化为 prompt 可用的文本。"""
@@ -1235,20 +1421,62 @@ class AssistantTools:
             if parts:
                 lines.append("- " + " | ".join(parts))
         return "\n".join(lines) if lines else "（暂无相关历史学习记忆）"
-        """格式化记忆条目为嵌入文本。"""
-        from app.memory.vector_store import MemoryVectorStore
-        # 重用 vector_store 中的格式化逻辑
-        parts = [
-            f"[{entry.intent}] 学生问题：{entry.student_question_summary}",
-            f"助教回复：{entry.agent_response_summary}",
+
+    @staticmethod
+    def _localize_trace_summary(summary: str) -> str:
+        text = str(summary or "")
+        replacements = {
+            "Normalized query": "已标准化查询",
+            "identified as": "识别为",
+            "general": "通用",
+            "Using user-provided target node": "使用用户指定的目标知识点",
+            "Retrieved Neo4j graph evidence": "已检索 Neo4j 图谱证据",
+            "documents": "文档",
+            "exercises": "练习",
+            "code": "代码",
+            "FAQ": "常见问题",
+            "Semantic search hit": "语义检索命中",
+            "student long-term memories": "条学生长期记忆",
+            "Fused": "已融合",
+            "canonical evidence": "规范证据",
+            "Evidence quality": "证据质量",
+            "coverage": "覆盖度",
+            "relevance": "相关性",
+            "Finalized HybridRAG EvidencePackage": "已生成 HybridRAG 证据包",
+            "ml_backpropagation": "反向传播",
+            "ml_gradient_descent": "梯度下降",
+            "ml_multilayer_neural_network": "多层神经网络",
+            "code_backprop_demo": "反向传播代码案例",
+        }
+        for old, new in replacements.items():
+            text = text.replace(old, new)
+        return text
+
+    def _compact_tutor_reply(self, reply: str, state: AssistantState) -> str:
+        """Keep chat replies actionable; detailed materials belong to resource cards."""
+        text = str(reply or "").strip()
+        if len(text) <= 1200 and "```" not in text:
+            return text
+
+        evidence = state.get("evidence")
+        center = self._node_display_name(state.get("target_node_id") or (evidence.resolved_uid if evidence else None))
+        score = state.get("evidence_quality_score")
+        quality_text = f"证据质量约 {score:.0%}" if isinstance(score, (int, float)) else "已检索图谱和课程证据"
+        actions = [
+            f"我先按「{center}」来处理你的问题。",
+            "",
+            "**核心结论**",
+            "反向传播负责沿计算图反向计算每个参数的梯度；梯度下降负责拿这些梯度更新参数。前者是“算方向”，后者是“走一步”。",
+            "",
+            "**我依据了什么**",
+            f"- {quality_text}，并结合你的薄弱点和资源偏好排序。",
+            "- 当前更适合先看计算图，再做一个小型代码例子，最后用练习确认链式法则是否打通。",
+            "",
+            "**建议下一步**",
+            "- 点右侧“生成学习资源”，把完整代码案例、图解和练习题保存到资源中心。",
+            "- 点“开始练习”，用 3 到 5 道题检查你是否真的会算梯度。",
         ]
-        if entry.key_insight:
-            parts.append(f"关键发现：{entry.key_insight}")
-        if entry.confusion_nodes:
-            parts.append(f"困惑点：{', '.join(entry.confusion_nodes)}")
-        if entry.learning_preference_hint:
-            parts.append(f"偏好：{entry.learning_preference_hint}")
-        return " | ".join(parts)
+        return "\n".join(actions)
 
     def _get_intent_chain(self):
         if self._intent_chain is not None:
@@ -1263,16 +1491,34 @@ class AssistantTools:
                     "profile_update（修改画像）、concept_explain（知识点讲解）、resource_generate（生成学习资源）、"
                     "exercise_help（练习辅导）、path_plan（学习路径规划）、progress_update（记录学习进度）、"
                     "assessment_review（评估回顾）、navigation_help（引导跳转）、general_learning_chat（通用学习问答）。"
+                    "画像更新判别必须优先：只要学生在陈述或修正自己的年级、专业、课程背景、编程/数学基础、学习目标、项目目标、"
+                    "薄弱点、已掌握内容、资源偏好、学习风格、可用时间或备考需求，即使没有直接说“更新画像”，intent 也必须是 profile_update。"
+                    "例如“我是计算机专业大二学生，Python 还可以，数学推导弱，想用机器学习做课程项目，喜欢图解和代码案例”必须识别为 profile_update。"
+                    "只有当学生没有提供任何可写入画像的新信息、只是普通问概念或闲聊时，才使用 concept_explain 或 general_learning_chat。"
+                    "判别规则：当学生要求你生成、出、设计、整理、准备某类学习材料时，intent 必须是 resource_generate。"
+                    "这包括生成选择题、单选题、简答题、编程题、案例题、练习、讲义、思维导图、视频脚本、代码案例、图片、插图、示意图。"
+                    "如果学生说“帮我生成五道神经网络选择题”，应识别为 resource_generate，不是 concept_explain、exercise_help 或 general_learning_chat。"
+                    "exercise_help 仅用于学生已经在做某道题并要求讲解、提示、判错、分析错因。"
                     "知识点 node_id 仅当用户明确指向某个具体知识点时才填写，参考课程图谱 ID："
                     "反向传播=ml_backpropagation，梯度下降=ml_gradient_descent，K-Means=ml_kmeans，逻辑回归=ml_logistic_regression，"
-                    "神经网络=ml_neural_network，卷积神经网络=ml_cnn，循环神经网络=ml_rnn，SVM=ml_svm，"
+                    "神经网络/多层神经网络=ml_multilayer_neural_network，卷积神经网络=ml_cnn，循环神经网络=ml_rnn，SVM=ml_svm，"
                     "决策树=ml_decision_tree，随机森林=ml_random_forest，过拟合=ml_overfitting_underfitting，"
                     "正则化=ml_regularization，PCA=ml_pca，LSTM=ml_lstm，Transformer=ml_transformer。"
                     "**重要**：如果用户问题过于宽泛/无法匹配到具体知识点，请将 target_node_id 设为 null，intent 设为 general_learning_chat。"
                     "不要强行匹配。"
-                    "资源类型使用 document、mindmap、exercise、video_script、code_case。"
+                    "资源类型使用 document、mindmap、exercise、video_script、code_case、image。"
+                    "当 resource_types 包含 exercise 时，需要尽量抽取 exercise_count 和 exercise_type。"
+                    "exercise_type 只能是 choice、short_answer、coding、case_analysis。"
+                    "中文题型映射：选择题/单选题=choice，简答题/问答题=short_answer，编程题/代码题=coding，案例题/案例分析=case_analysis。"
                     "\n请直接输出 JSON，不要输出其他文字。JSON 格式："
-                    '{{"intent": "...", "confidence": 0.95, "target_node_id": "ml_xxx", "resource_types": ["exercise"], "reasoning": "..."}}',
+                    '{{"intent": "...", "confidence": 0.95, "target_topic": "...", "target_node_id": "ml_xxx", '
+                    '"resource_types": ["exercise"], "exercise_count": 10, "exercise_type": "choice", "reasoning": "..."}}'
+                    "\n示例1：学生输入“帮我生成五道有关神经网络的选择题”时，输出："
+                    '{{"intent":"resource_generate","confidence":0.98,"target_topic":"神经网络","target_node_id":"ml_multilayer_neural_network",'
+                    '"resource_types":["exercise"],"exercise_count":5,"exercise_type":"choice","reasoning":"用户明确要求生成选择题，属于学习资源生成。"}}'
+                    "\n示例2：学生输入“这道神经网络题为什么选 B”时，输出："
+                    '{{"intent":"exercise_help","confidence":0.95,"target_topic":"神经网络","target_node_id":"ml_multilayer_neural_network",'
+                    '"resource_types":[],"exercise_count":null,"exercise_type":null,"reasoning":"用户正在询问已有练习题解析。"}}',
                 ),
                 ("human", "学生画像摘要：{profile}\n最近历史：{history}\n历史学习记忆：{memory_context}\n行为画像：{behavior_context}\n本轮输入：{message}\n请直接输出 JSON。"),
             ]
@@ -1295,8 +1541,10 @@ class AssistantTools:
             [
                 (
                     "system",
-                    "你是 EduGraph-Agent 的中文学习助手。回答要解释你理解了什么、使用了哪些证据、为什么这样推荐、下一步做什么。"
-                    "语气像学习教练，避免只说已完成。公式尽量克制，优先图解/代码/练习化表达。",
+                    "你是 EduGraph-Agent 的中文学习助手，也是系统主入口。聊天区回复必须短而可执行，不要写成长篇讲义。"
+                    "优先输出：1句你理解的需求、1个核心结论、2-3条证据/个性化依据、2个下一步动作。"
+                    "完整代码、长推导、FAQ、练习题、图解应建议保存到资源中心或通过右侧操作生成，不要在聊天气泡里大段展开。"
+                    "若需要代码，只给极短片段或说明将生成代码案例。避免未经证据支持地武断猜测学生经历。",
                 ),
                 ("human", "画像摘要：{profile}\n证据包：{evidence}\n历史学习记忆：{memory_context}\n行为画像：{behavior_context}\n学生问题：{message}"),
             ]
@@ -1313,7 +1561,7 @@ class AssistantTools:
                     "system",
                     "你是 EduGraph-Agent 的中文学习教练，擅长分析学生练习错误。"
                     "请结合学生画像和练习上下文，生成个性化反馈，必须严格按以下 JSON 格式输出（只输出 JSON，不要其他文字）：\n"
-                    "{\n  \"summary\": \"总述：学生哪里卡住了，整体思路是什么\",\n  \"likely_causes\": [\"原因1\", \"原因2\", \"原因3\"],\n  \"hints\": [\"提示1\", \"提示2\", \"提示3\"]\n}\n"
+                    "{{\n  \"summary\": \"总述：学生哪里卡住了，整体思路是什么\",\n  \"likely_causes\": [\"原因1\", \"原因2\", \"原因3\"],\n  \"hints\": [\"提示1\", \"提示2\", \"提示3\"]\n}}\n"
                     "likely_causes 要区分：概念理解错误 / 计算步骤错误 / 条件映射错误。\n"
                     "hints 要具体且可操作，避免空泛的\"多做题\"。",
                 ),
@@ -1334,7 +1582,7 @@ class AssistantTools:
                     "你是 EduGraph-Agent 的意图澄清专家。当学生意图不明确时，你需要生成 2-4 个具体选项供选择。"
                     "每个选项应该明确对应一种意图类型（concept_explain/resource_generate/exercise_help/path_plan/profile_update/progress_update）。"
                     "知识点 node_id 优先使用课程图谱 ID：反向传播=ml_backpropagation，梯度下降=ml_gradient_descent，"
-                    "K-Means=ml_kmeans，逻辑回归=ml_logistic_regression，神经网络=ml_neural_network，"
+                    "K-Means=ml_kmeans，逻辑回归=ml_logistic_regression，神经网络/多层神经网络=ml_multilayer_neural_network，"
                     "卷积神经网络=ml_cnn，循环神经网络=ml_rnn，支持向量机=ml_svm，决策树=ml_decision_tree，"
                     "随机森林=ml_random_forest，朴素贝叶斯=ml_naive_bayes，过拟合=ml_overfitting_underfitting，"
                     "正则化=ml_regularization，交叉验证=ml_cross_validation。"
@@ -1392,39 +1640,183 @@ class AssistantTools:
                 normalized.append(item)
         return list(dict.fromkeys(normalized))
 
-    def _parse_generation_request(self, message: str) -> dict[str, Any]:
-        request: dict[str, Any] = {}
-        text = message.strip()
-        exercise_tokens = ["选择题", "单选题", "编程题", "代码题", "简答题", "问答题", "案例题", "案例分析", "练习", "题", "自测", "测验"]
-        if any(token in text for token in exercise_tokens):
-            match = re.search(r"(\d{1,2})\s*[道个份套]?", text)
-            if match:
-                request["exercise_count"] = max(1, min(int(match.group(1)), 20))
-            else:
-                cn_match = re.search(r"([一二两三四五六七八九十]{1,3})\s*[道个份套]", text)
-                if cn_match:
-                    request["exercise_count"] = self._parse_chinese_number(cn_match.group(1))
-        if any(token in text for token in ["选择题", "单选题", "选择"]):
-            request["exercise_type"] = "choice"
-        elif "编程题" in text or "代码题" in text:
-            request["exercise_type"] = "coding"
-        elif "简答题" in text or "问答题" in text:
-            request["exercise_type"] = "short_answer"
-        elif "案例题" in text or "案例分析" in text:
-            request["exercise_type"] = "case_analysis"
-        return request
+    @staticmethod
+    def _normalize_node_id(value: str | None) -> str | None:
+        if not value:
+            return value
+        return _NODE_ID_ALIASES.get(value, value)
 
     @staticmethod
-    def _parse_chinese_number(text: str) -> int:
-        digits = {"一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
-        if text == "十":
-            return 10
-        if text.startswith("十"):
-            return max(1, min(10 + digits.get(text[1:], 0), 20))
-        if "十" in text:
-            left, _, right = text.partition("十")
-            return max(1, min(digits.get(left, 1) * 10 + digits.get(right, 0), 20))
-        return max(1, min(digits.get(text, 3), 20))
+    def _has_generated_resource(resources: Any) -> bool:
+        if not resources:
+            return False
+        return any(
+            (
+                getattr(resources, "document", None) is not None,
+                getattr(resources, "mindmap", None) is not None,
+                bool(getattr(resources, "exercises", None)),
+                getattr(resources, "video_script", None) is not None,
+                getattr(resources, "code_case", None) is not None,
+                getattr(resources, "image", None) is not None,
+            )
+        )
+
+    @staticmethod
+    def _unsupported_generation_topic(message: str) -> str | None:
+        text = str(message or "")
+        unsupported_topics = {
+            "线性规划": "线性规划",
+        }
+        for keyword, label in unsupported_topics.items():
+            if keyword in text:
+                return label
+        return None
+
+    @staticmethod
+    def _guard_mismatched_target(message: str, target_node_id: str | None) -> str | None:
+        text = str(message or "")
+        if "线性规划" in text and target_node_id == "ml_linear_regression":
+            return None
+        return target_node_id
+
+    def _parse_generation_request(self, message: str) -> dict[str, Any]:
+        text = str(message or "")
+        resource_types: list[str] = []
+
+        generation_verbs = ("生成", "出", "设计", "整理", "准备", "创建", "制作", "画", "绘制")
+        resource_keywords = (
+            "资源", "题", "练习", "选择题", "单选题", "简答题", "问答题", "编程题", "代码题",
+            "案例题", "讲解", "文档", "讲义", "图", "图解", "导图", "思维导图", "视频", "脚本",
+            "代码", "案例", "图片", "插图", "示意图", "配图", "可视化图片", "画",
+        )
+        is_resource_request = any(word in text for word in generation_verbs) and any(
+            word in text for word in resource_keywords
+        )
+
+        if any(word in text for word in ("讲解文档", "讲义", "文档", "讲解")):
+            resource_types.append("document")
+        wants_real_image = any(word in text for word in ("图片", "插图", "示意图", "配图", "可视化图片", "画一张", "画个", "画出", "绘制"))
+        if any(word in text for word in ("图解", "思维导图", "导图", "多一些图", "图")) and not wants_real_image:
+            resource_types.append("mindmap")
+        if wants_real_image:
+            resource_types.append("image")
+        if any(word in text for word in ("题", "练习", "选择题", "单选题", "简答题", "问答题", "编程题", "代码题", "案例题")):
+            resource_types.append("exercise")
+        if any(word in text for word in ("视频", "脚本", "分镜")):
+            resource_types.append("video_script")
+        if any(word in text for word in ("代码案例", "代码", "案例")):
+            resource_types.append("code_case")
+
+        excluded = self._excluded_resource_types(text)
+        if excluded:
+            resource_types = [item for item in resource_types if item not in excluded]
+
+        exercise_type = None
+        if any(word in text for word in ("选择题", "单选题")):
+            exercise_type = "choice"
+        elif any(word in text for word in ("简答题", "问答题")):
+            exercise_type = "short_answer"
+        elif any(word in text for word in ("编程题", "代码题")):
+            exercise_type = "coding"
+        elif any(word in text for word in ("案例题", "案例分析")):
+            exercise_type = "case_analysis"
+
+        exercise_count = self._extract_requested_count(text)
+        return {
+            "is_resource_request": is_resource_request,
+            "resource_types": list(dict.fromkeys(resource_types)),
+            "exercise_count": exercise_count,
+            "exercise_type": exercise_type,
+        }
+
+    @staticmethod
+    def _is_navigation_request(message: str) -> bool:
+        text = str(message or "")
+        navigation_terms = ("去哪里", "在哪里", "怎么进入", "怎么查看", "查看之前", "查看历史", "入口")
+        target_terms = ("资源", "知识中心", "练习记录", "做过的练习", "历史练习", "错题", "画像", "学习路径")
+        return any(term in text for term in navigation_terms) and any(term in text for term in target_terms)
+
+    @staticmethod
+    def _is_profile_update_request(message: str) -> bool:
+        text = str(message or "")
+        if not text.strip():
+            return False
+
+        first_person_terms = ("我是", "我叫", "我现在", "我目前", "我的", "我想", "我希望", "我打算", "我喜欢", "我更喜欢", "我不喜欢", "我觉得")
+        profile_terms = (
+            "专业", "大一", "大二", "大三", "大四", "研究生", "高中", "本科",
+            "Python", "python", "数学", "线性代数", "微积分", "概率", "基础",
+            "目标", "课程项目", "项目", "比赛", "考试", "考研", "求职",
+            "喜欢", "偏好", "图解", "代码", "案例", "视频", "练习", "讲解",
+            "薄弱", "弱", "不熟", "不会", "看不懂", "推导", "掌握", "学过",
+            "时间", "两周", "每天", "每周",
+        )
+        update_verbs = ("更新画像", "补充画像", "修改画像", "记住", "记录一下", "帮我记")
+        if any(term in text for term in update_verbs):
+            return True
+        return any(term in text for term in first_person_terms) and any(term in text for term in profile_terms)
+
+    @staticmethod
+    def _is_progress_update_request(message: str) -> bool:
+        text = str(message or "")
+        if not text.strip():
+            return False
+        progress_terms = (
+            "完成了", "刚完成", "做完", "做了", "复习了", "学完", "学到了",
+            "掌握程度", "掌握度", "掌握了", "会了", "进度", "正确率",
+        )
+        evidence_terms = ("%", "大概", "左右", "几道", "练习", "题", "复习", "完成")
+        return any(term in text for term in progress_terms) and any(term in text for term in evidence_terms)
+
+    @staticmethod
+    def _has_non_profile_task_request(message: str) -> bool:
+        text = str(message or "")
+        task_terms = (
+            "讲解", "解释", "为什么", "怎么理解",
+            "生成", "出题", "设计", "整理", "准备", "创建", "制作",
+            "规划", "路线", "路径", "计划",
+            "复盘", "回顾", "评估", "需要加强",
+            "在哪里", "去哪里", "怎么查看", "查看之前", "查看历史",
+            "做过的练习", "练习记录",
+            "为什么错", "错因", "提示", "判定",
+            "完成了", "掌握程度", "掌握度", "进度",
+        )
+        return any(term in text for term in task_terms)
+
+    @staticmethod
+    def _excluded_resource_types(message: str) -> set[str]:
+        text = str(message or "")
+        exclusions: set[str] = set()
+        negative_terms = ("不要", "不需要", "不用", "先不", "暂时不", "别")
+        checks = {
+            "exercise": ("练习", "题", "选择题", "简答题", "编程题", "代码题", "案例题"),
+            "document": ("讲解文档", "讲义", "文档"),
+            "mindmap": ("图解", "思维导图", "导图", "图"),
+            "video_script": ("视频", "脚本", "分镜"),
+            "code_case": ("代码案例", "代码"),
+            "image": ("图片", "插图", "示意图", "配图"),
+        }
+        for resource_type, keywords in checks.items():
+            for neg in negative_terms:
+                if any(f"{neg}{kw}" in text or f"{neg}生成{kw}" in text for kw in keywords):
+                    exclusions.add(resource_type)
+                    break
+        return exclusions
+
+    @staticmethod
+    def _extract_requested_count(text: str) -> int | None:
+        match = re.search(r"(\d{1,2})\s*[道个份张条]?", text)
+        if match:
+            return max(1, min(int(match.group(1)), 20))
+
+        digit_map = {
+            "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
+            "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+        }
+        match = re.search(r"([一二两三四五六七八九十])\s*[道个份张条]", text)
+        if match:
+            return digit_map.get(match.group(1))
+        return None
 
     def _default_resource_types(self, state: AssistantState) -> list[str]:
         text = state.get("user_message", "")
@@ -1441,33 +1833,200 @@ class AssistantTools:
         resources = state.get("resources")
         if not resources:
             return ""
+
+        success_types = state.get("resource_success_types") or self._generated_resource_types(resources)
+        failed_types = state.get("resource_failed_types") or []
+        success_labels = [self._resource_type_label(item) for item in success_types]
+        failed_labels = [self._resource_type_label(item) for item in failed_types]
+
         lines: list[str] = []
         if resources.exercises:
             count = len(resources.exercises)
-            center = state.get("target_node_id") or (state.get("evidence").resolved_uid if state.get("evidence") else "")
-            lines.append(f"已为你生成 {count} 道{self._exercise_type_label(state.get('requested_exercise_type'))}，主题围绕 {center or '当前知识点'}。")
-            lines.append("")
-            for idx, exercise in enumerate(resources.exercises, 1):
-                lines.append(f"### {idx}. {exercise.title or '练习题'}")
-                lines.append(exercise.question)
-                if exercise.options:
-                    for option in exercise.options:
-                        label = option.get("label", "")
-                        text = option.get("text", "")
-                        lines.append(f"- {label}. {text}")
-                correct = exercise.answer.get("correct") or exercise.answer.get("reference_answer")
-                if correct:
-                    lines.append(f"**答案**：{correct}")
-                explanation = exercise.answer.get("explanation")
-                if explanation:
-                    lines.append(f"**解析**：{explanation}")
-                lines.append("")
-        if resources.document and not lines:
-            lines.append(f"已生成讲解文档：{resources.document.title}")
-            lines.append(resources.document.content[:1200])
+            center_id = state.get("target_node_id") or (state.get("evidence").resolved_uid if state.get("evidence") else "")
+            center_name = self._node_display_name(center_id)
+            exercise_label = self._exercise_type_label(state.get("requested_exercise_type"))
+            lines.append(f"已生成 {count} 道{center_name}{exercise_label}，并保存到知识中心。")
+        elif success_labels:
+            lines.append(f"已生成并保存：{'、'.join(success_labels)}。")
+
+        if failed_labels:
+            lines.append(f"其中 {'、'.join(failed_labels)} 本轮没有生成有效内容，可以在资源详情里单独重试。")
+
         if state.get("resource_record_id"):
-            lines.append(f"> 已保存到资源中心，记录 ID：{state['resource_record_id']}")
+            lines.append("完整内容、重试入口和后续操作会在下方资源卡片中展示。")
+        elif success_labels:
+            lines.append("本轮资源已生成，但暂未拿到资源中心记录编号，请刷新资源中心确认。")
+
         return "\n".join(lines).strip()
+
+    @staticmethod
+    def _exercise_feedback_reply(feedback: ExerciseFeedback) -> str:
+        lines = [feedback.summary or "我已经结合题目、作答和画像生成了练习讲解。"]
+        if feedback.likely_causes:
+            lines.append("")
+            lines.append("可能卡住的地方：")
+            lines.extend(f"- {item}" for item in feedback.likely_causes[:4])
+        if feedback.hints:
+            lines.append("")
+            lines.append("建议你接下来这样处理：")
+            lines.extend(f"- {item}" for item in feedback.hints[:4])
+        return "\n".join(lines).strip()
+
+    def _build_suggested_next_actions(self, state: AssistantState) -> list[SuggestedNextAction]:
+        """根据本轮意图和已完成动作，生成"下一步建议"列表。"""
+        intent = state.get("intent")
+        actions: list[SuggestedNextAction] = []
+        target_node_id = state.get("target_node_id") or ""
+        resource_record_id = state.get("resource_record_id") or ""
+
+        # 资源生成后：只有真的生成了练习题，才展示练习入口
+        if state.get("resources"):
+            if resource_record_id and state.get("resource_has_exercises"):
+                actions.append(SuggestedNextAction(
+                    label="开始本轮练习",
+                    route="/exercise",
+                    query={"resource_id": resource_record_id},
+                    description="直接作答刚生成的题目，并把结果写入练习记录和画像。",
+                    action_type="navigate_exercise",
+                    priority=1,
+                ))
+            actions.append(SuggestedNextAction(
+                label="查看资源",
+                route="/knowledge-center",
+                query={"record_id": resource_record_id} if resource_record_id else {},
+                description="在知识中心查看完整资源详情。",
+                action_type="navigate_resource",
+                priority=2,
+            ))
+            return actions
+
+        # 讲错题后：去练习类似题目
+        if intent == "exercise_help" and state.get("exercise_feedback"):
+            actions.append(SuggestedNextAction(
+                label="去练习类似题目",
+                route="/exercise",
+                query={"node_id": target_node_id},
+                description="用同类题目验证你是否真正掌握。",
+                action_type="navigate_exercise",
+                priority=1,
+            ))
+            if target_node_id:
+                actions.append(SuggestedNextAction(
+                    label="查看图谱节点",
+                    route="/graph",
+                    query={"node_id": target_node_id},
+                    description="查看相关知识点及其前置关系。",
+                    action_type="navigate_graph",
+                    priority=2,
+                ))
+            return actions
+
+        # 改画像后：查看画像
+        if intent == "profile_update" and state.get("profile_update"):
+            actions.append(SuggestedNextAction(
+                label="查看画像",
+                route="/profile/panel",
+                description="查看更新后的画像摘要和薄弱点。",
+                action_type="navigate_profile",
+                priority=1,
+            ))
+            return actions
+
+        # 规划路线后：查看路径
+        if state.get("path_plan"):
+            actions.append(SuggestedNextAction(
+                label="查看路径",
+                route="/learning-path",
+                query={"target_node_id": target_node_id, "mode": state["path_plan"].mode},
+                description="查看可调整的学习路径详情。",
+                action_type="navigate_path",
+                priority=1,
+            ))
+            if target_node_id:
+                actions.append(SuggestedNextAction(
+                    label="开始练习",
+                    route="/exercise",
+                    query={"node_id": target_node_id},
+                    description="用练习验证掌握度。",
+                    action_type="navigate_exercise",
+                    priority=2,
+                ))
+            return actions
+
+        # 通用默认建议
+        actions.append(SuggestedNextAction(
+            label="查看证据包",
+            description="核对本轮回答引用了哪些图谱和资料。",
+            action_type="inspect_evidence",
+            priority=1,
+        ))
+        if target_node_id:
+            actions.append(SuggestedNextAction(
+                label="开始练习",
+                route="/exercise",
+                query={"node_id": target_node_id},
+                description="用练习验证掌握度。",
+                action_type="navigate_exercise",
+                priority=2,
+            ))
+        return actions
+
+    @staticmethod
+    def _parse_mastery_score(message: str) -> float | None:
+        text = str(message or "")
+        percent_match = re.search(r"(?:掌握|掌握度|学会|理解|进度|完成)[^\d]{0,8}(\d{1,3})\s*%", text)
+        if not percent_match:
+            percent_match = re.search(r"(\d{1,3})\s*%", text)
+        if percent_match:
+            value = int(percent_match.group(1))
+            if 0 <= value <= 100:
+                return value / 100
+
+        decimal_match = re.search(r"(?:掌握|掌握度|学会|理解|进度|完成)[^\d]{0,8}(0?\.\d+|1(?:\.0+)?)", text)
+        if decimal_match:
+            value = float(decimal_match.group(1))
+            if 0 <= value <= 1:
+                return value
+        return None
+
+    @staticmethod
+    def _mastery_level(score: float) -> str:
+        if score < 0.25:
+            return "weak"
+        if score < 0.55:
+            return "basic"
+        if score < 0.80:
+            return "intermediate"
+        return "advanced"
+
+    @staticmethod
+    def _resource_type_label(value: str) -> str:
+        return {
+            "document": "讲解文档",
+            "mindmap": "思维导图",
+            "diagram": "思维导图",
+            "exercise": "练习题",
+            "video_script": "视频脚本",
+            "code_case": "代码案例",
+            "image": "图片",
+        }.get(str(value or ""), str(value or "学习资源"))
+
+    @staticmethod
+    def _generated_resource_types(resources: GeneratedResources) -> list[str]:
+        generated: list[str] = []
+        if resources.document is not None:
+            generated.append("document")
+        if resources.mindmap is not None:
+            generated.append("mindmap")
+        if resources.exercises:
+            generated.append("exercise")
+        if resources.video_script is not None:
+            generated.append("video_script")
+        if resources.code_case is not None:
+            generated.append("code_case")
+        if resources.image is not None:
+            generated.append("image")
+        return generated
 
     @staticmethod
     def _exercise_type_label(value: str | None) -> str:
@@ -1478,21 +2037,122 @@ class AssistantTools:
             "case_analysis": "案例分析题",
         }.get(value or "choice", "练习题")
 
+    _NODE_LABEL_MAP: dict[str, str] = {
+        "ml_activation_function": "激活函数",
+        "ml_attention_mechanism": "注意力机制",
+        "ml_backpropagation": "反向传播",
+        "ml_basic_terms": "机器学习基本术语",
+        "ml_batchnorm": "批量归一化",
+        "ml_bayesian_classifier": "贝叶斯分类器",
+        "ml_bayesian_network": "贝叶斯网",
+        "ml_bias_variance": "偏差与方差",
+        "ml_calculus_optimization_basic": "微积分与优化基础",
+        "ml_clustering": "聚类",
+        "ml_cnn": "卷积神经网络",
+        "ml_course": "机器学习课程",
+        "ml_dataset_split": "训练集/验证集/测试集",
+        "ml_decision_tree": "决策树",
+        "ml_dimensionality_reduction": "降维",
+        "ml_dropout": "随机失活",
+        "ml_ensemble_learning": "集成学习",
+        "ml_evaluation_methods": "模型评估方法",
+        "ml_feature_selection": "特征选择",
+        "ml_generalization": "泛化能力",
+        "ml_gradient_descent": "梯度下降",
+        "ml_gradient_optimization_basic": "梯度与最优化",
+        "ml_kmeans": "K均值聚类",
+        "ml_linear_algebra_basic": "线性代数基础",
+        "ml_linear_discriminant_analysis": "线性判别分析",
+        "ml_linear_regression": "线性回归",
+        "ml_logistic_regression": "逻辑回归",
+        "ml_loss_function": "损失函数",
+        "ml_lstm": "长短期记忆网络",
+        "ml_markov_network": "马尔可夫网",
+        "ml_mdp": "马尔可夫决策过程",
+        "ml_metric_learning": "度量学习",
+        "ml_multilayer_neural_network": "多层神经网络",
+        "ml_overfitting_underfitting": "过拟合与欠拟合",
+        "ml_pac_learning": "概率近似正确学习",
+        "ml_perceptron": "感知机",
+        "ml_performance_metrics": "性能度量",
+        "ml_probability_statistics_basic": "概率论与统计基础",
+        "ml_q_learning": "Q学习",
+        "ml_random_forest": "随机森林",
+        "ml_regularization": "正则化",
+        "ml_reinforcement_learning": "强化学习",
+        "ml_rnn": "循环神经网络",
+        "ml_rule_learning": "规则学习",
+        "ml_semi_supervised_learning": "半监督学习",
+        "ml_sgd_minibatch": "小批量随机梯度下降",
+        "ml_sparse_learning": "稀疏学习",
+        "ml_supervised_unsupervised": "有监督与无监督",
+        "ml_svm": "支持向量机",
+        "ml_transformer": "Transformer模型",
+        "ml_vc_dimension": "VC维",
+    }
+
+    @staticmethod
+    def _get_node_label_map() -> dict[str, str]:
+        return AssistantTools._NODE_LABEL_MAP
+
+    @staticmethod
+    def _node_display_name(node_id: str | None) -> str:
+        return node_label(node_id, "当前知识点")
+
+    async def _expand_path_nodes(self, target: str | None, state: AssistantState) -> list[str]:
+        candidates: list[str] = []
+        if not target:
+            text = state.get("user_message", "")
+            quick = self._quick_node_match(text)
+            if quick:
+                target = quick
+        if not target:
+            return candidates
+
+        try:
+            prereq_paths = await self.diagnosis_service.graph_store.get_prerequisites(target, depth=2, limit=8)
+            for path in prereq_paths:
+                for node in path.nodes:
+                    if node.uid != target and node.uid not in candidates:
+                        candidates.append(node.uid)
+            related_paths = await self.diagnosis_service.graph_store.get_related_nodes(target, limit=4)
+            for path in related_paths:
+                for node in path.nodes:
+                    if node.uid != target and node.uid not in candidates:
+                        candidates.append(node.uid)
+        except Exception as exc:
+            logger.debug("Path graph expansion failed: %s", exc)
+
+        if target not in candidates:
+            candidates.insert(0, target)
+        return candidates[:6]
+
     def _path_reason(self, node_id: str, state: AssistantState) -> str:
         profile = state.get("profile")
+        if state.get("target_node_id") == node_id:
+            return "这是你当前问题的中心知识点，适合作为本轮学习目标。"
         if profile and any(node_id in {item.node_id, item.topic} for item in profile.weak_points.self_reported):
             return "来自画像中的自述薄弱点。"
+        if node_id in (state.get("_forgetting_nodes") or []):
+            return "该知识点存在遗忘风险，建议优先复习。"
         if profile and node_id in profile.progress.in_progress_node_ids:
             return "来自当前正在学习的进度记录。"
+        if profile and node_id in profile.node_mastery:
+            score = profile.node_mastery[node_id].mastery_score
+            if score < 0.45:
+                return f"当前掌握度约 {score:.0%}，需要加强。"
+            if score >= 0.8:
+                return f"当前掌握度约 {score:.0%}，可作为后续应用的基础。"
         evidence = state.get("evidence")
         if evidence and evidence.ranking_reason:
             return evidence.ranking_reason[0]
         return "来自 GraphRAG 前置关系和当前学习目标。"
 
     def _fallback_reply(self, state: AssistantState) -> str:
-        parts = [f"我理解你这次的需求是：{state.get('intent') or '学习支持'}。"]
+        intent_label = self._intent_label(state.get("intent"))
+        parts = [f"我理解你这次需要的是：{intent_label}。"]
         if state.get("evidence"):
-            center = state["evidence"].resolved_uid or "相关知识点"
+            center = node_label(state["evidence"].resolved_uid, "相关知识点")
             parts.append(f"我已通过 GraphRAG 围绕 {center} 检索了前置关系、资料、练习和常见误区。")
         if state.get("resources"):
             parts.append("我还调用资源生成能力，准备了适合当前偏好的学习材料。")
@@ -1502,6 +2162,21 @@ class AssistantTools:
             parts.append("我已把本轮明确表达的画像或学习进度变化写回数据库。")
         parts.append("建议下一步先查看右侧证据与行动卡片，再进入图谱、资源或练习工作区继续学习。")
         return "\n\n".join(parts)
+
+    @staticmethod
+    def _intent_label(intent: str | None) -> str:
+        return {
+            "profile_update": "更新学习画像",
+            "concept_explain": "讲解知识点",
+            "resource_generate": "生成学习资源",
+            "exercise_help": "讲解练习题",
+            "path_plan": "规划学习路线",
+            "progress_update": "记录学习进度",
+            "assessment_review": "复盘学习评估",
+            "navigation_help": "查找系统入口",
+            "general_learning_chat": "学习答疑",
+            "clarify_intent": "澄清学习需求",
+        }.get(intent or "", "学习支持")
 
     def _base_actions(self, state: AssistantState) -> list[AssistantAction]:
         return [

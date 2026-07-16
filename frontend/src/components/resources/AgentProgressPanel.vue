@@ -3,7 +3,7 @@
     <template #header>
       <div class="panel-title">
         <span>多智能体进度</span>
-        <el-tag :type="allDone ? 'success' : 'info'">{{ allDone ? '已完成' : '生成中' }}</el-tag>
+        <el-tag :type="panelStatusType">{{ panelStatusLabel }}</el-tag>
       </div>
     </template>
     <div class="agent-grid">
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { Check, Cpu, Document, Files, MagicStick, Search, VideoCamera } from '@element-plus/icons-vue'
+import { Cpu, Document, Files, MagicStick, Picture, Search, VideoCamera } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 
 import { agentStatusLabel } from '@/utils/format'
@@ -39,10 +39,25 @@ const agents = [
   { name: 'MindmapAgent', label: '思维导图智能体', icon: MagicStick },
   { name: 'ExerciseAgent', label: '练习生成智能体', icon: Files },
   { name: 'VideoScriptAgent', label: '视频脚本智能体', icon: VideoCamera },
-  { name: 'CodeAgent', label: '代码案例智能体', icon: Cpu }
+  { name: 'CodeAgent', label: '代码案例智能体', icon: Cpu },
+  { name: 'ImageAgent', label: '图片生成智能体', icon: Picture }
 ]
 
 const allDone = computed(() => agents.every((agent) => ['done', 'skipped'].includes(props.statuses[agent.name])))
+const hasFailed = computed(() => agents.some((agent) => props.statuses[agent.name] === 'failed'))
+const hasRunning = computed(() => agents.some((agent) => props.statuses[agent.name] === 'running'))
+const panelStatusType = computed(() => {
+  if (hasFailed.value) return 'danger'
+  if (allDone.value) return 'success'
+  if (hasRunning.value) return 'primary'
+  return 'info'
+})
+const panelStatusLabel = computed(() => {
+  if (hasFailed.value) return '有失败'
+  if (allDone.value) return '已完成'
+  if (hasRunning.value) return '生成中'
+  return '等待中'
+})
 
 function statusType(status?: string) {
   if (status === 'done') return 'success'

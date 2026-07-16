@@ -10,7 +10,7 @@ from app.graphrag.schemas import StudentProfileInput
 
 KnowledgeLevel = Literal["weak", "basic", "intermediate", "advanced"]
 AbilityLevel = Literal["weak", "basic", "intermediate", "advanced"]
-ResourceType = Literal["document", "diagram", "exercise", "video_script", "code_case"]
+ResourceType = Literal["document", "diagram", "exercise", "video_script", "code_case", "image"]
 
 
 class Background(BaseModel):
@@ -31,6 +31,9 @@ class LearningGoal(BaseModel):
     source: str = ""
     confidence: float = 0.0
     last_updated: datetime | None = None
+    # 多目标支持：可同时记录多个细分学习目标（如 ["考研复习", "课程项目实战"]）
+    # description 仍然保留作为主要目标的概览描述，向后兼容
+    goals: list[str] = Field(default_factory=list)
 
 
 class KnownTopic(BaseModel):
@@ -128,6 +131,19 @@ class ProfileUpdateRecord(BaseModel):
     summary: str = ""
 
 
+class MasteryEvidenceRecord(BaseModel):
+    """知识点掌握度证据记录。"""
+    id: str
+    student_id: str
+    node_id: str
+    source_type: str = ""
+    source_id: str = ""
+    score_delta: float = 0.0
+    confidence_delta: float = 0.0
+    summary: str = ""
+    created_at: datetime
+
+
 class ProfileChatMessageRecord(BaseModel):
     id: str | None = None
     role: Literal["user", "assistant", "system"] = "user"
@@ -163,10 +179,15 @@ class StudentProfile(BaseModel):
             for item in self.node_mastery.values()
             if item.mastery_score < 0.35 and item.confidence >= 0.3
         )
+        # 多目标：优先使用 goals 列表，回退到 description
+        goals = list(self.learning_goal.goals or [])
+        if not goals and self.learning_goal.description:
+            goals = [self.learning_goal.description]
         return StudentProfileInput(
             weak_points=list(dict.fromkeys(weak_points)),
             preferences=list(self.preferences.resource_ranking),
             goal=self.learning_goal.description or None,
+            goals=goals,
             mastery={key: value.mastery_score for key, value in self.node_mastery.items()},
         )
 
@@ -410,6 +431,9 @@ class TimelineEvent(BaseModel):
     score_before: float | None = None
     score_after: float | None = None
     chapter_id: str | None = None
+    related_id: str | None = None                # 关联实体 ID（记录 ID / 节点 ID）
+    related_type: str | None = None              # 关联实体类型（profile_update/node/exercise 等）
+    action_url: str | None = None                # 前端跳转链接（如 /exercise?node_id=xxx）
 
 
 class DailySummary(BaseModel):
@@ -451,6 +475,7 @@ class ForgettingNode(BaseModel):
     estimated_forgetting_rate: float              # 估算遗忘比例 (0-1)
     threshold_days: int                           # 该知识点的遗忘阈值天数
     urgency: str                                  # "low" | "medium" | "high"
+    action_url: str | None = None                 # 前端跳转链接（/exercise?node_id=xxx）
 
 
 class LearningStats(BaseModel):
@@ -476,3 +501,58 @@ class TimelineResponse(BaseModel):
     stats: LearningStats = Field(default_factory=LearningStats)
     forgetting_soon: list[ForgettingNode] = Field(default_factory=list)
     generated_at: str = ""
+
+
+# ═══════════════════════════════════════════════════════════════
+# 周报 / 月报
+# ═══════════════════════════════════════════════════════════════
+
+
+class ReportExerciseStats(BaseModel):
+    """周报中的练习统计。"""
+    total_sessions: int = 0
+    total_attempts: int = 0
+    correct_attempts: int = 0
+    accuracy: float = 0.0
+    practiced_nodes: int = 0
+    active_days: int = 0
+
+
+class ReportMasteryChangeItem(BaseModel):
+    """周报中单个知识点的掌握度变化。"""
+    node_id: str
+    node_name: str
+    mastery_score: float
+    level: KnowledgeLevel = "weak"
+    updated: bool = False
+
+
+class ReportMasteryChanges(BaseModel):
+    """周报中的掌握度变化汇总。"""
+    updated_nodes: list[ReportMasteryChangeItem] = Field(default_factory=list)
+    new_mastered: list[ReportMasteryChangeItem] = Field(default_factory=list)
+    needs_attention: list[ReportMasteryChangeItem] = Field(default_factory=list)
+    total_mastered: int = 0
+    total_strong: int = 0
+
+
+class ReportRecommendationItem(BaseModel):
+    """周报中的下一步推荐。"""
+    node_id: str
+    node_name: str
+    reason: str
+    urgency: Literal["high", "medium", "low"] = "medium"
+
+
+class WeeklyReportResponse(BaseModel):
+    """学习周报/月报响应。"""
+    student_id: str
+    period_days: int
+    period_label: str
+    generated_at: str
+    exercise_stats: ReportExerciseStats = Field(default_factory=ReportExerciseStats)
+    mastery_changes: ReportMasteryChanges = Field(default_factory=ReportMasteryChanges)
+    forgetting_warnings: list[ForgettingNode] = Field(default_factory=list)
+    recommendations: list[ReportRecommendationItem] = Field(default_factory=list)
+    profile_updates: list[ProfileUpdateRecord] = Field(default_factory=list)
+    summary: str = ""

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.core.labels import choose_node_label
 from app.graph.models import GraphNode, GraphPath
 from app.graph.node_resolver import NodeResolver
 from app.graph.neo4j_store import Neo4jGraphStore
@@ -67,7 +68,7 @@ class HybridRAGNodes:
             state["candidate_nodes"] = [
                 {
                     "uid": node.uid,
-                    "name": node.properties.get("name") or node.uid,
+                    "name": choose_node_label(node.properties.get("name"), node.uid),
                     "labels": node.labels,
                 }
                 for node in resolution.candidates
@@ -98,7 +99,7 @@ class HybridRAGNodes:
                     state["target_uid"] = fallback_uid
                     state["resolution_quality"] = "fallback"
                     state.setdefault("warnings", []).append(
-                        f"未精确匹配问题，暂按学生画像薄弱点 {fallback_uid} 组织证据。"
+                        f"未精确匹配问题，暂按学生画像薄弱点 {choose_node_label(None, fallback_uid)} 组织证据。"
                     )
                     state.setdefault("candidate_nodes", []).append({
                         "uid": fallback_uid,

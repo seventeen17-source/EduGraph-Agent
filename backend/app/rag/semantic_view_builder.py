@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Any
 
 from Scripts.import_to_neo4j import parse_code_case, parse_doc_chunks
 from app.rag.schemas import CourseSemanticView
+
+logger = logging.getLogger(__name__)
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -104,7 +107,7 @@ def build_course_semantic_views(root: Path | None = None) -> list[CourseSemantic
                 title=item.get("target_name", uid),
                 tags=item.get("keywords", []),
             )
-        print(f"[semantic_view_builder] 加载 {len(llm_views_raw)} 条 LLM 知识点视图")
+        logger.info(f"加载 {len(llm_views_raw)} 条 LLM 知识点视图")
     else:
         # 回退：模板生成
         for item in knowledge_points:

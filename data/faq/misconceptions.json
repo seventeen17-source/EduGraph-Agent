@@ -549,7 +549,7 @@
     "question": "ROC 曲线和 AUC 是什么？有什么优势？",
     "answer": "ROC 曲线以假阳性率（FPR）为横轴、真阳性率（TPR=召回率）为纵轴，展示模型在不同阈值下的表现。AUC 是 ROC 曲线下的面积，取值 0-1，越接近 1 越好。AUC 的优势是不受阈值选择的影响，能综合评估模型的排序能力（正样本排在负样本前面的概率），在类别不平衡时比准确率更可靠。",
     "misconception": "只看 ROC 曲线的形状，不理解 AUC 的含义，或者用 AUC 替代所有评估指标。",
-    "source_ids": ["book_zzhou_ml", "book_hands_on_ml_3e_zh"]
+    "source_ids": ["book_zhou_ml", "book_hands_on_ml_3e_zh"]
   },
   {
     "faq_id": "faq_metric_003",

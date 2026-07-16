@@ -94,7 +94,7 @@ export const useAssistantStore = defineStore('assistant', {
     hasMoreMessages: false as boolean,
     // 流式取消
     streamAbortController: null as AbortController | null,
-    messageFeedback: {} as Record<string, { tags: string[]; freeText: string; submitted: boolean }>,
+    messageFeedback: {} as Record<string, { tags: string[]; freeText: string; submitted: boolean; adaptationSummary: string; actionTaken: string; actionResult: string }>,
   }),
   getters: {
     /** 本次流式执行中实际经过的节点 */
@@ -288,7 +288,7 @@ export const useAssistantStore = defineStore('assistant', {
 
     initFeedback(messageId: string) {
       if (!this.messageFeedback[messageId]) {
-        this.messageFeedback[messageId] = { tags: [], freeText: '', submitted: false }
+        this.messageFeedback[messageId] = { tags: [], freeText: '', submitted: false, adaptationSummary: '', actionTaken: '', actionResult: '' }
       }
     },
 
@@ -332,6 +332,9 @@ export const useAssistantStore = defineStore('assistant', {
           target_node_id: assMsg?.target_node_id || targetNodeId,
         })
         fb.submitted = true
+        fb.adaptationSummary = response?.adaptation_summary || ''
+        fb.actionTaken = response?.action_taken || ''
+        fb.actionResult = response?.action_result || ''
 
         // 如果画像更新失败，暴露错误
         if (response?.profile_update_error) {
@@ -399,7 +402,9 @@ export const useAssistantStore = defineStore('assistant', {
         intent: response?.intent || '',
         target_node_id: response?.evidence?.resolved_uid || '',
         resource_record_id: response?.resource_record_id || null,
+        resource_has_exercises: response?.resource_has_exercises || false,
         actions: response?.actions || [],
+        suggested_next_actions: response?.suggested_next_actions || [],
         agent_trace: response?.agent_trace || [],
         created_at: new Date().toISOString()
       }

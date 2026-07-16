@@ -63,6 +63,9 @@ class FeedbackSubmitResponse(BaseModel):
     created: bool = True            # True=新增, False=更新已有
     profile_updated: bool = False   # 行为画像是否已更新
     profile_update_error: str = ""  # 画像更新失败时的错误信息
+    adaptation_summary: str = ""    # 展示给学生的下次个性化调整说明
+    action_taken: str = ""          # 系统触发的动作类型（re_explain/simplify/advance 等）
+    action_result: str = ""         # 系统响应给学生的说明消息
 
 
 def _extract_reply_features(content: str) -> dict:
@@ -104,10 +107,33 @@ def _extract_reply_features(content: str) -> dict:
     return features
 
 
+def _feedback_adaptation_summary(tags: list[str], free_text: str | None) -> str:
+    actions: list[str] = []
+    tag_set = set(tags or [])
+    if "dont_get" in tag_set:
+        actions.append("下次会先补前置概念，并减少跳步推理")
+    if "too_hard" in tag_set:
+        actions.append("下次会降低讲解难度，用更基础的例子开始")
+    if "too_easy" in tag_set:
+        actions.append("下次会提高挑战度，增加推导、对比或综合题")
+    if "want_examples" in tag_set:
+        actions.append("下次会优先加入例题、代码或具体场景")
+    if "want_summary" in tag_set:
+        actions.append("下次会在结尾给出更清晰的要点总结")
+    if "too_vague" in tag_set:
+        actions.append("下次会给出更具体的步骤、依据和可执行建议")
+    if not actions and tag_set.intersection({"helpful", "clear"}):
+        actions.append("系统会保留这类回答风格作为后续偏好")
+    if free_text:
+        actions.append("你的补充说明也会作为行为画像信号参与后续调整")
+    return "；".join(dict.fromkeys(actions)) or "反馈已记录，会用于后续个性化调整"
+
+
 @router.post("/feedback", response_model=FeedbackSubmitResponse)
 async def submit_feedback(
     payload: FeedbackSubmitRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> FeedbackSubmitResponse:
     # 1. 校验消息归属
     from sqlalchemy import select as sa_select
@@ -175,12 +201,35 @@ async def submit_feedback(
         except Exception as exc:
             profile_update_error = f"{type(exc).__name__}: {exc}"
 
+    # 6. 触发反馈闭环动作（按优先级匹配负反馈标签 → 生成系统响应）
+    action_taken = ""
+    action_result = ""
+    try:
+        from app.assistant.feedback_analyzer import FeedbackAnalyzer
+        analyzer = FeedbackAnalyzer(settings)
+        action_info = analyzer.trigger_feedback_action(
+            feedback_tags=payload.tags,
+            message_content=row.content or "",
+            student_id=payload.student_id,
+        )
+        action_taken = action_info.get("action", "")
+        action_result = action_info.get("user_message", "")
+        # 持久化到反馈记录
+        fb.action_taken = action_taken or None
+        fb.action_result = action_result or None
+    except Exception:
+        # 触发动作失败不影响反馈提交
+        pass
+
     await session.commit()
     return FeedbackSubmitResponse(
         feedback_id=fb.id,
         created=created,
         profile_updated=profile_updated,
         profile_update_error=profile_update_error,
+        adaptation_summary=_feedback_adaptation_summary(payload.tags, payload.free_text),
+        action_taken=action_taken,
+        action_result=action_result,
     )
 
 
@@ -245,6 +294,8 @@ async def get_feedback_stats(
                 "free_text": fb.free_text,
                 "intent": fb.intent,
                 "target_node_id": fb.target_node_id,
+                "action_taken": fb.action_taken or "",
+                "action_result": fb.action_result or "",
                 "created_at": fb.created_at.isoformat(),
             }
             for fb in recent

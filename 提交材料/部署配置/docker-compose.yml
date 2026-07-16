@@ -1,0 +1,47 @@
+services:
+  neo4j:
+    image: neo4j:5.20-community
+    container_name: edugraph-neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/edugraph123
+      - NEO4J_server_memory_heap_max__size=1G
+    ports:
+      - "7474:7474"   # Browser
+      - "7687:7687"   # Bolt
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ..           # 项目根目录（相对本 compose 文件位于 提交材料/部署配置/ 时请用 ../..）
+      dockerfile: 提交材料/部署配置/Dockerfile.backend
+    container_name: edugraph-backend
+    env_file:
+      - ./.env              # 复制 .env.example 为 .env 并填入密钥
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data   # 数据集 + SQLite + Chroma 持久化
+    depends_on:
+      neo4j:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../提交材料/部署配置/Dockerfile.frontend
+    container_name: edugraph-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  neo4j_data:

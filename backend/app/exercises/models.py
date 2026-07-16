@@ -73,6 +73,13 @@ class ExerciseAttempt(Base):
     feedback_json: Mapped[dict] = mapped_column(JSON, default=dict)
     misconception_tags_json: Mapped[list] = mapped_column(JSON, default=list)
     source_uids_json: Mapped[list] = mapped_column(JSON, default=list)
+    mode: Mapped[str] = mapped_column(String(40), default="practice")
+    viewed_answer: Mapped[bool] = mapped_column(default=False)
+    grading_method: Mapped[str] = mapped_column(String(40), default="rule")
+    grading_status: Mapped[str] = mapped_column(String(40), default="graded")
+    grading_confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    profile_update_allowed: Mapped[bool] = mapped_column(default=True)
+    error_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 

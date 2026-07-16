@@ -12,7 +12,7 @@ const routes = [
   { path: '/learning-path', component: () => import('@/views/LearningPathView.vue') },
   { path: '/resources', component: () => import('@/views/ResourceGenerationView.vue') },
   { path: '/knowledge-center', component: () => import('@/views/KnowledgeCenterView.vue') },
-  { path: '/tutor', component: () => import('@/views/TutorChatView.vue') },
+  { path: '/tutor', redirect: '/assistant' },
   { path: '/exercise', component: () => import('@/views/ExerciseView.vue') },
   { path: '/exercise-history', component: () => import('@/views/ExerciseHistoryView.vue') },
   { path: '/assessment', component: () => import('@/views/AssessmentView.vue') },

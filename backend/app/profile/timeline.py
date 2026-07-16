@@ -17,6 +17,7 @@ from app.profile.schemas import (
     TimelineResponse,
     WeeklySummary,
 )
+from app.core.labels import choose_node_label, localize_text
 
 # ── 事件构建阈值 ──
 
@@ -82,12 +83,13 @@ class TimelineBuilder:
 
         # 2. 从 node_mastery 快照生成事件
         for node_id, mastery in self.mastery.items():
-            if mastery.updated_at is None or mastery.updated_at < cutoff:
+            updated_at = self._as_naive_utc(mastery.updated_at)
+            if updated_at is None or updated_at < cutoff:
                 continue
             # 查找该时间点前后的 update event，避免重复
-            date_str = mastery.updated_at.strftime("%Y-%m-%d")
+            date_str = updated_at.strftime("%Y-%m-%d")
             if not self._has_event_on_date(events, date_str, node_id, "mastery"):
-                name = mastery.node_name or node_id
+                name = choose_node_label(mastery.node_name, node_id)
                 if mastery.mastery_score >= MASTERY_STRONG:
                     events.append(TimelineEvent(
                         date=date_str,
@@ -98,6 +100,8 @@ class TimelineBuilder:
                         node_id=node_id,
                         node_name=name,
                         score_after=mastery.mastery_score,
+                        related_id=node_id, related_type="node",
+                        action_url=f"/graph?node_id={node_id}",
                     ))
                 elif mastery.mastery_score >= MASTERY_MILESTONE:
                     events.append(TimelineEvent(
@@ -109,6 +113,8 @@ class TimelineBuilder:
                         node_id=node_id,
                         node_name=name,
                         score_after=mastery.mastery_score,
+                        related_id=node_id, related_type="node",
+                        action_url=f"/graph?node_id={node_id}",
                     ))
 
         # 3. 合并外部事件
@@ -137,18 +143,25 @@ class TimelineBuilder:
 
     def _from_profile_update(self, record: ProfileUpdateRecord) -> TimelineEvent | None:
         """从一条 ProfileUpdateRecord 生成时间轴事件。"""
-        date_str = record.timestamp.strftime("%Y-%m-%d")
-        time_str = record.timestamp.strftime("%H:%M")
+        timestamp = self._as_naive_utc(record.timestamp)
+        if timestamp is None:
+            return None
+        date_str = timestamp.strftime("%Y-%m-%d")
+        time_str = timestamp.strftime("%H:%M")
         trigger = record.trigger
         detail = record.trigger_detail or ""
-        summary = record.summary or ""
-        fields = record.updated_fields or []
+        display_detail = localize_text(detail)
+        summary = localize_text(record.summary or "")
+        fields = [localize_text(field) for field in (record.updated_fields or [])]
+
+        record_id = record.id
 
         if trigger == "init_dialogue":
             return TimelineEvent(
                 date=date_str, time=time_str, type="profile_created",
                 icon=EVENT_ICONS["profile_created"],
                 title="建立学习画像", description=summary or "通过对话建立了初始学习画像",
+                related_id=record_id, related_type="profile_update",
             )
 
         if trigger == "update_dialogue":
@@ -157,20 +170,25 @@ class TimelineBuilder:
                 date=date_str, time=time_str, type="profile_updated",
                 icon=EVENT_ICONS["profile_updated"],
                 title=f"更新了{field_names}",
-                description=summary or detail,
+                description=summary or display_detail,
+                related_id=record_id, related_type="profile_update",
             )
 
         if trigger == "exercise_result":
             node_id = detail
             node_name = ""
             if node_id and node_id in self.mastery:
-                node_name = self.mastery[node_id].node_name or node_id
+                node_name = choose_node_label(self.mastery[node_id].node_name, node_id)
+            else:
+                node_name = choose_node_label(None, node_id, fallback="")
             return TimelineEvent(
                 date=date_str, time=time_str, type="exercise_done",
                 icon=EVENT_ICONS["exercise_done"],
                 title=f"完成练习「{node_name or node_id or '未知'}」",
                 description=summary,
                 node_id=node_id, node_name=node_name,
+                related_id=record_id, related_type="exercise",
+                action_url=f"/exercise?node_id={node_id}" if node_id else None,
             )
 
         if trigger == "learning_progress":
@@ -178,7 +196,9 @@ class TimelineBuilder:
             node_id = detail
             node_name = ""
             if node_id and node_id in self.mastery:
-                node_name = self.mastery[node_id].node_name or node_id
+                node_name = choose_node_label(self.mastery[node_id].node_name, node_id)
+            else:
+                node_name = choose_node_label(None, node_id, fallback="")
             return TimelineEvent(
                 date=date_str, time=time_str,
                 type="concept_completed" if "completed" in str(fields) else "concept_started",
@@ -186,13 +206,16 @@ class TimelineBuilder:
                 title=f"{action}「{node_name or node_id or ''}」",
                 description=summary,
                 node_id=node_id, node_name=node_name,
+                related_id=record_id, related_type="learning_progress",
+                action_url=f"/graph?node_id={node_id}" if node_id else None,
             )
 
         if trigger == "manual_patch":
             return TimelineEvent(
                 date=date_str, time=time_str, type="profile_updated",
                 icon=EVENT_ICONS["profile_updated"],
-                title="手动更新画像", description=detail or summary,
+                title="手动更新画像", description=display_detail or summary,
+                related_id=record_id, related_type="profile_update",
             )
 
         # 未识别的事件类型 → 仍然展示
@@ -200,8 +223,9 @@ class TimelineBuilder:
             return TimelineEvent(
                 date=date_str, time=time_str, type="profile_updated",
                 icon=EVENT_ICONS["profile_updated"],
-                title=summary[:80] or detail[:80],
-                description=detail,
+                title=localize_text(summary[:80] or detail[:80]),
+                description=display_detail,
+                related_id=record_id, related_type="profile_update",
             )
 
         return None
@@ -386,6 +410,14 @@ class TimelineBuilder:
                     return True
         return False
 
+    @staticmethod
+    def _as_naive_utc(value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is not None:
+            return value.replace(tzinfo=None)
+        return value
+
 
 # ── 遗忘检测 ──
 
@@ -407,7 +439,10 @@ class ForgettingDetector:
             if m.last_practiced_at is None:
                 continue
 
-            days_since = (now - m.last_practiced_at).days
+            last_practiced_at = m.last_practiced_at
+            if last_practiced_at.tzinfo is not None:
+                last_practiced_at = last_practiced_at.replace(tzinfo=None)
+            days_since = (now - last_practiced_at).days
             threshold = self._threshold(m.mastery_score)
             if days_since < threshold:
                 continue
@@ -419,12 +454,13 @@ class ForgettingDetector:
 
             candidates.append(ForgettingNode(
                 node_id=node_id,
-                node_name=m.node_name or node_id,
+                node_name=choose_node_label(m.node_name, node_id),
                 mastery_score=m.mastery_score,
                 days_since_review=days_since,
                 estimated_forgetting_rate=round(forgetting_rate, 2),
                 threshold_days=threshold,
                 urgency=urgency,
+                action_url=f"/exercise?node_id={node_id}",
             ))
 
         candidates.sort(key=lambda x: (
@@ -443,3 +479,47 @@ class ForgettingDetector:
         if mastery_score >= 0.3:
             return 7
         return 5
+
+    def assess_node_risk(
+        self,
+        node_id: str,
+        mastery: float,
+        last_practice: datetime | None,
+    ) -> dict:
+        """评估单个节点的遗忘风险。
+
+        Args:
+            node_id: 知识点节点 ID
+            mastery: 当前掌握度 (0-1)
+            last_practice: 上次练习时间，None 表示从未练习
+
+        Returns:
+            {"level": "high"|"medium"|"low"|"unknown",
+             "days_since_last": int|None,
+             "suggested_review_date": str|None}
+        """
+        if last_practice is None:
+            return {"level": "unknown", "days_since_last": None, "suggested_review_date": None}
+
+        now = datetime.utcnow()
+        last = last_practice
+        if last.tzinfo is not None:
+            last = last.replace(tzinfo=None)
+        days_since = (now - last).days
+
+        if days_since > 14 and mastery < 0.7:
+            level = "high"
+        elif days_since > 7 and mastery < 0.8:
+            level = "medium"
+        elif days_since > 3 and mastery < 0.6:
+            level = "medium"
+        else:
+            level = "low"
+
+        suggested_review = datetime.utcnow()
+
+        return {
+            "level": level,
+            "days_since_last": days_since,
+            "suggested_review_date": suggested_review.isoformat(),
+        }

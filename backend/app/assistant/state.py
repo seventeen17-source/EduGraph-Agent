@@ -39,6 +39,9 @@ class AssistantState(TypedDict, total=False):
     entities: dict[str, Any]
     target_node_id: str | None
     requested_resource_types: list[str]
+    requested_exercise_count: int | None
+    requested_exercise_type: str | None
+    exercise_context: str | None
 
     evidence: EvidencePackage | None
     # Tool 效果评分
@@ -52,6 +55,10 @@ class AssistantState(TypedDict, total=False):
     resource_evaluation_reason: str
 
     resource_record_id: str | None
+    resource_has_exercises: bool
+    resource_generation_status: str
+    resource_success_types: list[str]
+    resource_failed_types: list[str]
     path_plan: AssistantPathPlan | None
     exercise_feedback: ExerciseFeedback | None
     profile_update: dict[str, Any]

@@ -6,7 +6,7 @@
         <div class="muted">通过自然语言初始化画像，并实时观察 8 维画像变化。</div>
       </div>
       <div class="title-actions">
-        <el-button type="primary" :loading="profileStore.loading" @click="useDemo">使用演示学生</el-button>
+        <el-button v-if="authStore.isDemoUser" type="primary" :loading="profileStore.loading" @click="useDemo">使用演示学生</el-button>
         <el-button @click="$router.push('/profile/panel')">已完成</el-button>
       </div>
     </div>

@@ -7,6 +7,7 @@ export interface GeneratedDocument {
   content: string
   key_points: string[]
   source_uids: string[]
+  illustrations?: GeneratedImage[]
 }
 
 export interface GeneratedMindmap {
@@ -25,6 +26,7 @@ export interface GeneratedExercise {
   options: Array<{ label: string; text: string }>
   answer: Record<string, any>
   adaptive_feedback: Record<string, any>
+  rubric?: Array<{ criterion: string; score: number }>
   source_uids: string[]
 }
 
@@ -51,12 +53,26 @@ export interface GeneratedCodeCase {
   source_uids: string[]
 }
 
+export interface GeneratedImage {
+  title: string
+  prompt: string
+  negative_prompt: string
+  image_url: string
+  local_path: string
+  mime_type: string
+  width: number | null
+  height: number | null
+  provider: string
+  source_uids: string[]
+}
+
 export interface GeneratedResources {
   document: GeneratedDocument | null
   mindmap: GeneratedMindmap | null
   exercises: GeneratedExercise[]
   video_script: GeneratedVideoScript | null
   code_case: GeneratedCodeCase | null
+  image: GeneratedImage | null
 }
 
 export interface AgentTraceItem {
@@ -81,8 +97,15 @@ export interface ResourceGenerateResponse {
   quality_report: {
     grounded: boolean
     score: number
+    coverage_score?: number
+    relevance_score?: number
+    grounding_score?: number
+    personal_fit_score?: number
     warnings: string[]
+    weak_reasons?: string[]
+    repair_actions?: string[]
     source_uids: string[]
+    fallback_used?: boolean
   }
   agent_trace: AgentTraceItem[]
   uncertainty: string[]
@@ -91,6 +114,17 @@ export interface ResourceGenerateResponse {
   resolution_quality: 'exact' | 'fallback' | 'none'
   suggested_alternatives: AlternativeNode[]
   resolution_notice: string
+}
+
+export interface RetryResourceResponse {
+  success: boolean
+  resource_id: string
+  resource_type: ResourceType
+  student_id: string
+  field: 'document' | 'mindmap' | 'exercises' | 'video_script' | 'code_case' | 'image'
+  resource: GeneratedDocument | GeneratedMindmap | GeneratedExercise[] | GeneratedVideoScript | GeneratedCodeCase | GeneratedImage | null
+  agent_trace?: AgentTraceItem[]
+  quality_report?: ResourceGenerateResponse['quality_report']
 }
 
 export interface ResourceGenerateRequest {
@@ -112,6 +146,10 @@ export interface ResourceCenterItem {
   resource_types: ResourceType[]
   quality_score: number
   created_at: string
+  related_nodes: string[]
+  is_practiced: boolean
+  practice_accuracy: number | null
+  source: string
 }
 
 export interface ResourceCenterListResponse {

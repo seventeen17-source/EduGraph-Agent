@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.core.errors import NotFoundError
+from app.core.labels import choose_node_label, localize_text, node_label
 from app.profile.completeness import compute_completeness, missing_dimensions
 from app.profile.extractor import ExtractionMode, ProfileExtractionResult, ProfileExtractor
 from app.profile.repository import ProfileRepository
@@ -13,11 +14,13 @@ from app.profile.schemas import (
     ExerciseAttemptProfileUpdate,
     ExerciseResultProfileUpdateRequest,
     ExerciseRoundProfileUpdateRequest,
+    ForgettingNode,
     KnowledgePointMastery,
     LearningProgressUpdateRequest,
     KnownTopic,
     LearningGoal,
     ManualProfilePatchRequest,
+    MasteryEvidenceRecord,
     Preferences,
     ProfileChatMessageRecord,
     ProfileChatResponse,
@@ -25,10 +28,15 @@ from app.profile.schemas import (
     ProfileDimensionView,
     ProfileEventResponse,
     ProfileUpdateRecord,
+    ReportExerciseStats,
+    ReportMasteryChangeItem,
+    ReportMasteryChanges,
+    ReportRecommendationItem,
     SelfReportedWeakPoint,
     StudentProfile,
     WeakPointRankItem,
     WeakPoints,
+    WeeklyReportResponse,
     MasteryOverviewItem,
 )
 
@@ -52,9 +60,10 @@ RESOURCE_LABELS: dict[str, str] = {
     "exercise": "练习题",
     "video_script": "视频脚本",
     "code_case": "代码案例",
+    "image": "图片",
 }
 
-VALID_RESOURCE_TYPES = {"document", "diagram", "exercise", "video_script", "code_case"}
+VALID_RESOURCE_TYPES = {"document", "diagram", "exercise", "video_script", "code_case", "image"}
 
 RESOURCE_TYPE_ALIASES: dict[str, str] = {
     "article": "document",
@@ -73,7 +82,7 @@ RESOURCE_TYPE_ALIASES: dict[str, str] = {
     "阅读": "document",
     "diagram": "diagram",
     "graph": "diagram",
-    "image": "diagram",
+    "image": "image",
     "mind_map": "diagram",
     "mindmap": "diagram",
     "visual": "diagram",
@@ -83,6 +92,11 @@ RESOURCE_TYPE_ALIASES: dict[str, str] = {
     "图谱": "diagram",
     "思维导图": "diagram",
     "可视化": "diagram",
+    "图片": "image",
+    "插图": "image",
+    "示意图": "image",
+    "配图": "image",
+    "可视化图片": "image",
     "exercise": "exercise",
     "exercises": "exercise",
     "practice": "exercise",
@@ -326,7 +340,7 @@ class ProfileService:
                         source_id=trigger_detail,
                         score_delta=mastery.mastery_score,
                         confidence_delta=mastery.confidence,
-                        summary=f"学生自述相关薄弱点：{mastery.node_name or mastery.node_id}",
+                        summary=localize_text(f"学生自述相关薄弱点：{choose_node_label(mastery.node_name, mastery.node_id)}"),
                     )
         missing = missing_dimensions(profile)
         completed = profile.completeness >= 0.75 and not any(
@@ -444,7 +458,10 @@ class ProfileService:
             )
         round_id = payload.round_id or f"exercise_round_{now.strftime('%Y%m%d%H%M%S')}"
         correct_count = sum(1 for attempt in payload.attempts if attempt.is_correct)
-        summary = f"完成一轮练习：{correct_count}/{len(payload.attempts)} 题正确，已统一更新知识点掌握度。"
+        if payload.attempts:
+            summary = f"完成一轮练习：{correct_count}/{len(payload.attempts)} 题正确，已统一更新知识点掌握度。"
+        else:
+            summary = "本轮练习暂无可自动评分题目，画像掌握度未更新。"
         return await self._commit_exercise_profile_update(
             profile=profile,
             trigger_detail=round_id,
@@ -464,7 +481,7 @@ class ProfileService:
             if not node_id or not node_id.strip():
                 continue
             existing = profile.node_mastery.get(node_id)
-            node_name = existing.node_name if existing else node_id
+            node_name = choose_node_label(existing.node_name if existing else None, node_id)
             chapter_id = existing.chapter_id if existing else ""
             current_score = existing.mastery_score if existing else 0.35
             delta = self._exercise_delta(
@@ -487,6 +504,7 @@ class ProfileService:
                 attempts=attempts,
                 correct_count=correct_count,
                 last_practiced_at=now,
+                updated_at=now,
             )
             profile.node_mastery[node_id] = mastery
             updated_nodes.append(node_id)
@@ -502,7 +520,17 @@ class ProfileService:
             )
 
             if not attempt.is_correct:
-                self._upsert_diagnosed_weak_point(profile, node_id, now)
+                is_new_weak = self._upsert_diagnosed_weak_point(profile, node_id, now)
+                if is_new_weak:
+                    await self.repository.add_mastery_evidence(
+                        student_id=profile.student_id,
+                        node_id=node_id,
+                        source_type="diagnosis",
+                        source_id=attempt.exercise_id,
+                        score_delta=0.0,
+                        confidence_delta=0.0,
+                        summary=f"答错练习 {attempt.exercise_id}，新增诊断薄弱点：{node_name}。",
+                    )
 
         return updated_nodes
 
@@ -622,6 +650,302 @@ class ProfileService:
     async def list_chat_messages(self, student_id: str) -> list[ProfileChatMessageRecord]:
         _ = await self.get_profile(student_id)
         return await self.repository.list_chat_messages(student_id)
+
+    async def list_node_evidence(self, student_id: str, node_id: str) -> list[MasteryEvidenceRecord]:
+        """返回某知识点的掌握度证据列表。"""
+        _ = await self.get_profile(student_id)
+        rows = await self.repository.list_mastery_evidence(student_id, node_id)
+        return [
+            MasteryEvidenceRecord(
+                id=row.id,
+                student_id=row.student_id,
+                node_id=row.node_id,
+                source_type=row.source_type,
+                source_id=row.source_id,
+                score_delta=row.score_delta,
+                confidence_delta=row.confidence_delta,
+                summary=row.summary,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+
+    async def record_forgetting_evidence(
+        self,
+        student_id: str,
+        forgetting_nodes: list[ForgettingNode],
+    ) -> None:
+        """为遗忘检测预警的知识点写入证据（去重：7天内已有则跳过）。"""
+        if not forgetting_nodes:
+            return
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        wrote = False
+        for node in forgetting_nodes:
+            existing = await self.repository.list_mastery_evidence(student_id, node.node_id, limit=50)
+            has_recent = any(
+                row.source_type == "forgetting_detection" and row.created_at >= cutoff
+                for row in existing
+            )
+            if has_recent:
+                continue
+            await self.repository.add_mastery_evidence(
+                student_id=student_id,
+                node_id=node.node_id,
+                source_type="forgetting_detection",
+                source_id="timeline_detector",
+                score_delta=0.0,
+                confidence_delta=0.0,
+                summary=(
+                    f"遗忘预警：{node.node_name}，已 {node.days_since_review} 天未复习，"
+                    f"估算遗忘率 {node.estimated_forgetting_rate:.0%}。"
+                ),
+            )
+            wrote = True
+        if wrote:
+            await self.repository.session.commit()
+
+    async def generate_weekly_report(self, student_id: str, days: int = 7) -> WeeklyReportResponse:
+        """生成学习周报/月报。
+
+        数据来源：
+        1. 最近 N 天的练习统计（从 node_mastery 复用）
+        2. 画像变化（从 ProfileUpdateRecord 复用）
+        3. 遗忘预警节点（从 ForgettingDetector 复用）
+        4. 推荐下一步学习（从薄弱点 + 遗忘预警 + 低掌握度节点综合）
+        """
+        from app.profile.timeline import ForgettingDetector, TimelineBuilder
+
+        # 1. 获取画像和历史
+        profile = await self.get_profile(student_id)
+        history = await self.repository.list_update_history(student_id, limit=200)
+
+        # 按时间过滤历史记录
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        recent_history: list[ProfileUpdateRecord] = []
+        for h in history:
+            if not h.timestamp:
+                continue
+            ts = h.timestamp
+            if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
+                ts = ts.replace(tzinfo=None)
+            if ts >= cutoff:
+                recent_history.append(h)
+
+        # 2. 构建时间轴统计（复用 TimelineBuilder）
+        builder = TimelineBuilder(
+            profile_updates=recent_history,
+            node_mastery=profile.node_mastery,
+        )
+        timeline = builder.build(days=days)
+
+        # 3. 练习统计（从 node_mastery 复用）
+        total_attempts = sum(m.attempts for m in profile.node_mastery.values())
+        correct_attempts = sum(m.correct_count for m in profile.node_mastery.values())
+        practiced_nodes = sum(1 for m in profile.node_mastery.values() if m.attempts > 0)
+        accuracy = round(correct_attempts / total_attempts, 4) if total_attempts else 0.0
+        exercise_stats = ReportExerciseStats(
+            total_sessions=timeline.stats.total_exercises,
+            total_attempts=total_attempts,
+            correct_attempts=correct_attempts,
+            accuracy=accuracy,
+            practiced_nodes=practiced_nodes,
+            active_days=timeline.stats.total_active_days,
+        )
+
+        # 4. 掌握度变化（从历史记录提取被更新的节点）
+        mastery_changes = self._compute_mastery_changes_for_report(
+            recent_history, profile.node_mastery
+        )
+
+        # 5. 遗忘预警
+        detector = ForgettingDetector()
+        forgetting_warnings = detector.detect(profile.node_mastery)
+
+        # 6. 推荐下一步学习
+        recommendations = self._compute_report_recommendations(
+            profile, forgetting_warnings
+        )
+
+        # 7. 生成总结
+        period_label = "本周" if days <= 7 else "本月" if days <= 31 else f"近{days}天"
+        summary = self._build_report_summary(
+            profile=profile,
+            exercise_stats=exercise_stats,
+            mastery_changes=mastery_changes,
+            forgetting_warnings=forgetting_warnings,
+            period_label=period_label,
+        )
+
+        return WeeklyReportResponse(
+            student_id=student_id,
+            period_days=days,
+            period_label=period_label,
+            generated_at=_now().isoformat(),
+            exercise_stats=exercise_stats,
+            mastery_changes=mastery_changes,
+            forgetting_warnings=forgetting_warnings,
+            recommendations=recommendations,
+            profile_updates=recent_history[:10],
+            summary=summary,
+        )
+
+    def _compute_mastery_changes_for_report(
+        self,
+        recent_history: list[ProfileUpdateRecord],
+        node_mastery: dict[str, KnowledgePointMastery],
+    ) -> ReportMasteryChanges:
+        """从历史记录中提取本周期内被更新的知识点，并按当前掌握度分组。"""
+        # 从 exercise_result 触发的记录中提取被更新的 node_id
+        updated_node_ids: set[str] = set()
+        for record in recent_history:
+            if record.trigger == "exercise_result" and record.trigger_detail:
+                updated_node_ids.add(record.trigger_detail)
+            # 从 learning_progress 事件也提取
+            if record.trigger == "learning_progress" and record.trigger_detail:
+                updated_node_ids.add(record.trigger_detail)
+
+        updated_nodes: list[ReportMasteryChangeItem] = []
+        new_mastered: list[ReportMasteryChangeItem] = []
+        needs_attention: list[ReportMasteryChangeItem] = []
+
+        for node_id in updated_node_ids:
+            mastery = node_mastery.get(node_id)
+            if mastery is None:
+                continue
+            item = ReportMasteryChangeItem(
+                node_id=node_id,
+                node_name=choose_node_label(mastery.node_name, node_id),
+                mastery_score=mastery.mastery_score,
+                level=mastery.level,  # type: ignore[arg-type]
+                updated=True,
+            )
+            updated_nodes.append(item)
+            if mastery.mastery_score >= 0.6:
+                new_mastered.append(item)
+            elif mastery.mastery_score < 0.35:
+                needs_attention.append(item)
+
+        # 按掌握度排序
+        updated_nodes.sort(key=lambda x: x.mastery_score, reverse=True)
+        new_mastered.sort(key=lambda x: x.mastery_score, reverse=True)
+        needs_attention.sort(key=lambda x: x.mastery_score)
+
+        total_mastered = sum(1 for m in node_mastery.values() if m.mastery_score >= 0.6)
+        total_strong = sum(1 for m in node_mastery.values() if m.mastery_score >= 0.8)
+
+        return ReportMasteryChanges(
+            updated_nodes=updated_nodes[:15],
+            new_mastered=new_mastered[:10],
+            needs_attention=needs_attention[:10],
+            total_mastered=total_mastered,
+            total_strong=total_strong,
+        )
+
+    def _compute_report_recommendations(
+        self,
+        profile: StudentProfile,
+        forgetting_warnings: list[ForgettingNode],
+    ) -> list[ReportRecommendationItem]:
+        """综合薄弱点、遗忘预警、低掌握度节点生成推荐。"""
+        recommendations: list[ReportRecommendationItem] = []
+        seen_node_ids: set[str] = set()
+
+        # 1. 遗忘预警（高优先级）
+        for node in forgetting_warnings[:3]:
+            if node.node_id in seen_node_ids:
+                continue
+            seen_node_ids.add(node.node_id)
+            urgency = "high" if node.urgency == "high" else "medium"
+            recommendations.append(ReportRecommendationItem(
+                node_id=node.node_id,
+                node_name=choose_node_label(node.node_name, node.node_id),
+                reason=localize_text(f"已 {node.days_since_review} 天未复习，估算遗忘率 {node.estimated_forgetting_rate:.0%}"),
+                urgency=urgency,  # type: ignore[arg-type]
+            ))
+
+        # 2. 诊断薄弱点（高优先级）
+        for weak in profile.weak_points.diagnosed[:3]:
+            if weak.node_id in seen_node_ids:
+                continue
+            seen_node_ids.add(weak.node_id)
+            mastery = profile.node_mastery.get(weak.node_id)
+            node_name = choose_node_label(mastery.node_name if mastery else None, weak.node_id)
+            recommendations.append(ReportRecommendationItem(
+                node_id=weak.node_id,
+                node_name=node_name,
+                reason=localize_text(f"练习错误率 {weak.error_rate:.0%}，建议优先巩固"),
+                urgency="high",
+            ))
+
+        # 3. 自述薄弱点（中优先级）
+        for weak in profile.weak_points.self_reported[:2]:
+            node_id = weak.node_id or weak.topic
+            if node_id in seen_node_ids:
+                continue
+            seen_node_ids.add(node_id)
+            recommendations.append(ReportRecommendationItem(
+                node_id=node_id,
+                node_name=choose_node_label(weak.topic, node_id),
+                reason=localize_text("你自述的薄弱点，建议系统学习"),
+                urgency="medium",
+            ))
+
+        # 4. 低掌握度节点（中优先级）
+        low_mastery = sorted(
+            (m for m in profile.node_mastery.values() if m.mastery_score < 0.4),
+            key=lambda x: x.mastery_score,
+        )[:3]
+        for mastery in low_mastery:
+            if mastery.node_id in seen_node_ids:
+                continue
+            seen_node_ids.add(mastery.node_id)
+            recommendations.append(ReportRecommendationItem(
+                node_id=mastery.node_id,
+                node_name=choose_node_label(mastery.node_name, mastery.node_id),
+                reason=localize_text(f"当前掌握度仅 {mastery.mastery_score:.0%}，建议加强"),
+                urgency="medium",
+            ))
+
+        return recommendations[:5]
+
+    def _build_report_summary(
+        self,
+        profile: StudentProfile,
+        exercise_stats: ReportExerciseStats,
+        mastery_changes: ReportMasteryChanges,
+        forgetting_warnings: list[ForgettingNode],
+        period_label: str,
+    ) -> str:
+        """生成周报/月报的自然语言总结。"""
+        parts: list[str] = []
+
+        if exercise_stats.total_attempts > 0:
+            parts.append(
+                f"{period_label}共练习 {exercise_stats.total_attempts} 题，"
+                f"正确率 {exercise_stats.accuracy:.0%}，覆盖 {exercise_stats.practiced_nodes} 个知识点。"
+            )
+        else:
+            parts.append(f"{period_label}暂无练习记录，建议开始做题以追踪学习进度。")
+
+        if exercise_stats.active_days > 0:
+            parts.append(f"活跃 {exercise_stats.active_days} 天。")
+
+        if mastery_changes.new_mastered:
+            names = "、".join(n.node_name for n in mastery_changes.new_mastered[:3])
+            parts.append(f"新增掌握 {len(mastery_changes.new_mastered)} 个知识点：{names}。")
+
+        if mastery_changes.needs_attention:
+            names = "、".join(n.node_name for n in mastery_changes.needs_attention[:3])
+            parts.append(f"有 {len(mastery_changes.needs_attention)} 个知识点需要重点关注：{names}。")
+
+        if forgetting_warnings:
+            high_count = sum(1 for f in forgetting_warnings if f.urgency == "high")
+            if high_count:
+                parts.append(f"有 {high_count} 个知识点遗忘风险较高，建议尽快复习。")
+
+        parts.append(f"累计掌握 {mastery_changes.total_mastered} 个知识点，其中熟练掌握 {mastery_changes.total_strong} 个。")
+
+        return " ".join(parts)
 
     async def _apply_extraction_or_fallback(
         self,
@@ -799,6 +1123,8 @@ class ProfileService:
         resource_ranking: list[str] = []
         if "图解" in message or "图" in message:
             resource_ranking.append("diagram")
+        if any(term in message for term in ("图片", "插图", "示意图", "配图", "可视化图片")):
+            resource_ranking.append("image")
         if "代码" in message or "编程" in message:
             resource_ranking.append("code_case")
         if "练习" in message or "题" in message:
@@ -910,13 +1236,14 @@ class ProfileService:
             confidence=0.65,
         )
 
-    def _upsert_diagnosed_weak_point(self, profile: StudentProfile, node_id: str, now: datetime) -> None:
+    def _upsert_diagnosed_weak_point(self, profile: StudentProfile, node_id: str, now: datetime) -> bool:
+        """更新诊断薄弱点，返回 True 表示新增了薄弱点。"""
         for item in profile.weak_points.diagnosed:
             if item.node_id == node_id:
                 item.total_attempts += 1
                 item.error_rate = min(1.0, round((item.error_rate + 1.0) / 2, 4))
                 item.last_wrong_at = now
-                return
+                return False
         profile.weak_points.diagnosed.append(
             DiagnosedWeakPoint(
                 node_id=node_id,
@@ -925,6 +1252,7 @@ class ProfileService:
                 last_wrong_at=now,
             )
         )
+        return True
 
     def _exercise_delta(
         self,
@@ -1107,7 +1435,7 @@ class ProfileService:
             if mastery.mastery_score < 0.35:
                 items.append(
                     WeakPointRankItem(
-                        label=mastery.node_name or mastery.node_id,
+                        label=choose_node_label(mastery.node_name, mastery.node_id),
                         node_id=mastery.node_id,
                         source="mastery",
                         score=round(1.0 - mastery.mastery_score, 4),
@@ -1125,7 +1453,7 @@ class ProfileService:
         if profile.preferences.resource_ranking:
             labels = [_resource_label(item) for item in profile.preferences.resource_ranking]
             reasons.append(f"资源生成会优先匹配偏好：{' > '.join(labels)}。")
-        weak = [item.node_name or item.node_id for item in profile.node_mastery.values() if item.mastery_score < 0.35]
+        weak = [choose_node_label(item.node_name, item.node_id) for item in profile.node_mastery.values() if item.mastery_score < 0.35]
         if weak:
             reasons.append(f"路径规划会优先补强薄弱知识点：{', '.join(weak[:3])}。")
         if profile.learning_goal.description:

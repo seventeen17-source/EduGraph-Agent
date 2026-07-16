@@ -33,7 +33,10 @@ class CourseSemanticRetriever:
     ) -> list[CourseSemanticHit]:
         if not query.strip():
             return []
-        embedding = await self.embedding_service.embed(query)
+        try:
+            embedding = await self.embedding_service.embed(query)
+        except RuntimeError:
+            return []
         if not any(embedding):
             return []
         return await self.vector_store.query(
