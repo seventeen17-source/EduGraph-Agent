@@ -1,4 +1,86 @@
 {
-  "count": 0,
-  "items": []
+  "count": 3,
+  "items": [
+    {
+      "title": "梯度下降参数更新方向",
+      "type": "choice",
+      "related_node_id": "",
+      "difficulty": 2,
+      "question": "如果某参数的梯度为正（grad > 0），学习率为正，梯度下降会如何更新该参数？",
+      "options": [
+        {
+          "label": "A",
+          "text": "减小参数值"
+        },
+        {
+          "label": "B",
+          "text": "增大参数值"
+        },
+        {
+          "label": "C",
+          "text": "保持参数不变"
+        },
+        {
+          "label": "D",
+          "text": "将参数设为梯度值"
+        }
+      ],
+      "answer": {
+        "correct": "A",
+        "explanation": "梯度为正表示沿参数增大方向损失上升，因此沿负梯度方向更新会使参数减小。"
+      },
+      "adaptive_feedback": {
+        "default": "梯度方向是函数值上升最快的方向，因此为了降低损失，应沿梯度反方向更新参数。正梯度意味着参数增加会导致损失增加，所以应该减小参数。"
+      },
+      "source_uids": [
+        "book_zhou_ml",
+        "course_stanford_cs229"
+      ]
+    },
+    {
+      "title": "负梯度方向与学习率的作用",
+      "type": "short_answer",
+      "related_node_id": "",
+      "difficulty": 3,
+      "question": "请用自己的话解释：为什么梯度下降沿负梯度方向更新参数？学习率在这过程中起什么作用？",
+      "options": [],
+      "answer": {
+        "reference_answer": "梯度方向是损失函数局部上升最快的方向，因此为了使损失下降，应沿反方向（负梯度）移动。学习率控制每次移动的步长大小：学习率过小则收敛慢，学习率过大可能导致震荡甚至发散。",
+        "key_points": [
+          "梯度指向上升方向",
+          "负梯度使损失下降",
+          "学习率控制步长",
+          "学习率需适当"
+        ]
+      },
+      "adaptive_feedback": {
+        "default": "你的答案需要包含梯度方向的意义和学习率的作用。参考要点：梯度是上升方向，负梯度使损失下降；学习率控制步长，过大过小都有问题。"
+      },
+      "source_uids": [
+        "book_zhou_ml",
+        "course_stanford_cs229",
+        "book_mml_deisenroth"
+      ]
+    },
+    {
+      "title": "实现梯度下降参数更新",
+      "type": "coding",
+      "related_node_id": "",
+      "difficulty": 3,
+      "question": "请编写一个Python函数 `update_parameter`，实现一维参数的梯度下降更新公式。函数接收当前参数值`w`、梯度`grad`和学习率`lr`，返回更新后的参数值。",
+      "options": [],
+      "answer": {
+        "reference_code": "def update_parameter(w, grad, lr):\n    return w - lr * grad",
+        "explanation": "梯度下降更新公式为 w = w - lr * grad。其中grad是损失函数对w的梯度。"
+      },
+      "adaptive_feedback": {
+        "default": "请检查你的公式是否正确。梯度下降更新公式：新参数 = 旧参数 - 学习率 × 梯度。"
+      },
+      "source_uids": [
+        "book_hands_on_ml",
+        "docs_sklearn_user_guide",
+        "course_stanford_cs229"
+      ]
+    }
+  ]
 }
